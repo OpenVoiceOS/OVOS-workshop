@@ -7,7 +7,7 @@ from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.gui import GUIInterface
 from ovos_utils.log import LOG
 
-from ovos_workshop.utils.youtube import is_youtube, \
+from ovos_workshop.frameworks.cps.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
 
 

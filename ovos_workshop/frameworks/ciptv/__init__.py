@@ -6,7 +6,8 @@ from ovos_utils.json_helper import merge_dict, is_compatible_dict
 from ovos_utils.parse import match_all, MatchStrategy, match_one, fuzzy_match
 from ovos_utils.log import LOG
 
-from ovos_workshop.utils import check_stream, StreamStatus, M3UParser
+from ovos_workshop.frameworks.ciptv.m3u8 import M3UParser, check_stream, \
+    StreamStatus
 
 
 class CommonIPTV(Thread):
@@ -15,13 +16,13 @@ class CommonIPTV(Thread):
     dead_channels = {}
     remove_threshold = 2  # stream dead N checks in a row is removed
     time_between_updates = 30  # minutes between re-checking stream status of
-                               # expired {TTL} channels
+    # expired {TTL} channels
     max_checks = 15  # max number of streams to check every {time_between_updates}
     _duplicates = {}  # url:[idx] uniquely identifying duplicate channels
     _duplicate_candidates = {}  # url:[idx] uniquely identifying possible
-                                # duplicates (fuzzy tvg-id matching)
+    # duplicates (fuzzy tvg-id matching)
     duplicate_threshold = 0.95  # if fuzzy_match confidence is above,
-                                # merge channels
+    # merge channels
     bus = None  # mycroft bus connection
 
     def __init__(self, bus=None, *args, **kwargs):
@@ -182,7 +183,7 @@ class CommonIPTV(Thread):
     @staticmethod
     def channel2id(channel):
         return channel.get("identifier") or channel.get("id") or \
-                     channel.get("tvg-id") or channel.get("title")
+               channel.get("tvg-id") or channel.get("title")
 
     # automated actions
     @classmethod

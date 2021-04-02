@@ -17,6 +17,7 @@ from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
 from mycroft.dialog import load_dialogs
 from mycroft.util import resolve_resource_file
 from ovos_workshop.patches.skill_gui import SkillGUI
+from ovos_workshop.utils import resolve_ovos_resource_file
 
 
 def get_non_properties(obj):
@@ -189,6 +190,9 @@ class MycroftSkill(_MycroftSkill):
             if not voc:  # Check for vocab in mycroft core resources
                 voc = resolve_resource_file(join('text', lang,
                                                  voc_filename + '.voc'))
+            if not voc:
+                voc = resolve_ovos_resource_file(join('text', lang,
+                                                      voc_filename + '.voc'))
 
             if not voc or not exists(voc):
                 return False

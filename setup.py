@@ -13,5 +13,6 @@ setup(
     license='apache-2.0',
     author='jarbasAi',
     author_email='jarbasai@mailfence.com',
+    include_package_data=True,
     description='frameworks, templates and patches for the mycroft universe'
 )
