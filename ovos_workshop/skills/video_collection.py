@@ -180,7 +180,7 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
         self.gui["videosHomeModel"] = self.filter_videos(self.videos)
         self.gui["historyModel"] = JsonStorageXDG("{msg_base}.history".format(msg_base=self.message_namespace)) \
             .get("model", [])
-        self.gui.show_page("Homescreen.qml", override_idle=True)
+        self.gui.show_page("SYSTEM_MediaCollectionSkillHomescreen.qml", override_idle=True)
 
     def play_video_event(self, message):
         video_data = message.data["modelData"]
