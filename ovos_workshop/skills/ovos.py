@@ -5,8 +5,6 @@ from ovos_utils.log import LOG
 from ovos_utils import camel_case_split, get_handler_name
 from ovos_utils.messagebus import Message
 from ovos_utils.skills.settings import PrivateSettings
-from ovos_utils.skills.decorators.killable import killable_event, \
-    AbortEvent, AbortQuestion
 
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
@@ -16,6 +14,8 @@ from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from mycroft.skills.settings import get_local_settings, save_settings
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
+from ovos_workshop.skills.decorators.killable import killable_event, \
+    AbortEvent, AbortQuestion
 
 
 class OVOSSkill(MycroftSkill):
