@@ -1,11 +1,11 @@
 from ovos_utils.messagebus import Message
-from ovos_workshop.frameworks.cwindows import AbstractWindow
+from ovos_workshop.frameworks.ccanvas import AbstractCanvas
 import imutils
 import cv2
 import numpy as np
 
 
-class OpenCVService(AbstractWindow):
+class OpenCVService(AbstractCanvas):
     """
         Display backend for opencv package.
     """
