@@ -14,6 +14,13 @@ class OpenCVService(AbstractCanvas):
         self.bus.on("ovos.ccanvas.opencv.display", self._display)
         self.current_image = None
 
+    @staticmethod
+    def supported_uris():
+        """
+            Returns: list of supported uri types.
+        """
+        return ['file', 'http', 'https', "numpy"]
+
     def _display(self, message=None):
         self._prepare_window()
         self._is_displaying = True

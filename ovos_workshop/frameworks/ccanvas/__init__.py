@@ -276,7 +276,7 @@ class AbstractCanvas:
         # change window width in pixels
         pass
 
-    def window(self):
+    def display(self):
         """
            Display self.index in Pictures List of paths
         """
@@ -317,7 +317,7 @@ class AbstractCanvas:
         self.index += 1
         if self.index > len(self.pictures):
             self.index = 0
-        self.window()
+        self.display()
 
     def previous(self):
         """
@@ -326,7 +326,7 @@ class AbstractCanvas:
         self.index -= 1
         if self.index > 0:
             self.index = len(self.pictures)
-        self.window()
+        self.display()
 
     def lock(self):
         """
@@ -345,7 +345,7 @@ class AbstractCanvas:
            Change picture index
         """
         self.index = index
-        self.window()
+        self.display()
 
     def change_fullscreen(self, value=True):
         """
