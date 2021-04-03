@@ -1,5 +1,5 @@
 from ovos_utils.messagebus import Message
-from ovos_workshop.frameworks.ccanvas import AbstractCanvas
+from ovos_workshop.frameworks.ccanvas.base import AbstractCanvas
 import imutils
 import cv2
 import numpy as np
