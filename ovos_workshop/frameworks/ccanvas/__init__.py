@@ -25,7 +25,7 @@ class CommonCanvas:
 
         # Register end of picture callback
         for s in self.services:
-            s.set_window_start_callback(self.window_start)
+            s.set_window_start_callback(self.on_display_start)
 
         # Find default backend
         default_name = self.config.get('default-backend', '')
@@ -65,11 +65,8 @@ class CommonCanvas:
             prefered_service = None
         return prefered_service
 
-    def window_start(self, picture):
-        """
-            Callback method called from the services to indicate start of
-            playback of a picture.
-        """
+    def on_display_start(self, picture):
+        """Callback method to indicate new display content"""
         self.bus.emit(Message('ovos.ccanvas.display_picture',
                               data={'picture': picture}))
 
