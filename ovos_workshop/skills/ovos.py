@@ -37,6 +37,12 @@ class OVOSSkill(MycroftSkill):
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
 
+    def voc_match(self, *args, **kwargs):
+        try:
+            return super().voc_match(*args, **kwargs)
+        except FileNotFoundError:
+            return False
+
     # this method can probably use a better refactor, we are only changing one
     # of the internal callbacks
     def add_event(self, name, handler, handler_info=None, once=False):

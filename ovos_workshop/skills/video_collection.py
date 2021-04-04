@@ -1,6 +1,7 @@
 from os.path import join, dirname, basename
 from ovos_utils import datestr2ts, resolve_ovos_resource_file
 from ovos_utils.log import LOG
+from ovos_utils.messagebus import Message
 from ovos_utils.parse import fuzzy_match
 from ovos_utils.json_helper import merge_dict
 from json_database import JsonStorageXDG
@@ -185,7 +186,20 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
     def play_video_event(self, message):
         video_data = message.data["modelData"]
         if video_data["skill_id"] == self.skill_id:
-            pass  # TODO
+            # ensure all data fields present
+            video_data = merge_dict(video_data, {
+                "match_confidence": 100,
+                "media_type": self.media_type,
+                "playback": self.playback_type,
+                "skill_icon": self.skill_icon,
+                "skill_logo": self.skill_logo,
+                "bg_image": video_data.get("logo") or self.default_bg,
+                "image": video_data.get("logo") or self.default_image,
+                "author": self.name
+            })
+            self.bus.emit(Message("better_cps.play", {
+                "tracks": [video_data]
+            }))
 
     # watch history database
     def add_to_history(self, video_data):

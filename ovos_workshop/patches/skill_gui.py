@@ -22,7 +22,7 @@ from mycroft.enclosure.gui import SkillGUI as _SkillGUI
 from mycroft.util import resolve_resource_file
 from mycroft.messagebus.message import Message
 from ovos_workshop.patches.settings_gui_generator import SettingsGuiGenerator
-from ovos_workshop.utils import resolve_ovos_resource_file
+from ovos_utils import resolve_ovos_resource_file
 # implements the following GUI functionality
 # https://github.com/MycroftAI/mycroft-core/pull/2683
 # https://github.com/MycroftAI/mycroft-core/pull/2698

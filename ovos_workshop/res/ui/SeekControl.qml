@@ -62,44 +62,7 @@ Item {
             RowLayout {
                 id: mainLayout2
                 Layout.fillHeight: true
-                Controls.RoundButton {
-                    id: backButton
-                    Layout.preferredWidth: parent.width > 600 ? Kirigami.Units.iconSizes.large : Kirigami.Units.iconSizes.medium
-                    Layout.preferredHeight: Layout.preferredWidth
-                    highlighted: focus ? 1 : 0
-                    z: 1000
-                    
-                    background: Rectangle {
-                        radius: 200
-                        color: "#1a1a1a"
-                        border.width: 1.25
-                        border.color: "white"
-                    }
-                    
-                    contentItem: Item {
-                        Image {
-                            width: parent.width - Kirigami.Units.largeSpacing
-                            height: width
-                            anchors.centerIn: parent
-                            source: "images/back.svg"
-                        }
-                    }
-                    
-                    onClicked: {
-                        Mycroft.MycroftController.sendRequest("mycroft.gui.screen.close", {});
-                        video.stop();
-                    }
-                    KeyNavigation.up: video
-                    KeyNavigation.right: button
-                    Keys.onReturnPressed: {
-                        hideTimer.restart();
-                        Mycroft.MycroftController.sendRequest("mycroft.gui.screen.close", {});
-                        video.stop();
-                    }
-                    onFocusChanged: {
-                        hideTimer.restart();
-                    }
-                }
+
                 Controls.RoundButton {
                     id: button
                     Layout.preferredWidth: parent.width > 600 ? Kirigami.Units.iconSizes.large : Kirigami.Units.iconSizes.medium

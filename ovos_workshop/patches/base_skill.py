@@ -1,7 +1,6 @@
 import re
 from os.path import join, exists
 import os
-from itertools import chain
 from ovos_utils.lang import get_language_dir
 from ovos_utils.intents import ConverseTracker
 from ovos_utils.log import LOG
@@ -15,9 +14,7 @@ from mycroft.skills.fallback_skill import FallbackSkill as _FallbackSkill
 from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
     load_regex
 from mycroft.dialog import load_dialogs
-from mycroft.util import resolve_resource_file
 from ovos_workshop.patches.skill_gui import SkillGUI
-from ovos_workshop.utils import resolve_ovos_resource_file
 
 
 def get_non_properties(obj):
