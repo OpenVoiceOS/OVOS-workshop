@@ -9,13 +9,15 @@ from ovos_utils.skills.settings import PrivateSettings
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
 ensure_mycroft_import()
-
+from adapt.intent import Intent, IntentBuilder
 from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from mycroft.skills.settings import get_local_settings, save_settings
+from mycroft.skills.mycroft_skill.mycroft_skill import get_non_properties
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
+from ovos_workshop.skills.layers import IntentLayers
 
 
 class OVOSSkill(MycroftSkill):
@@ -24,24 +26,65 @@ class OVOSSkill(MycroftSkill):
         - all patches for MycroftSkill class
         - self.private_settings
         - killable intents
+        - IntentLayers
     """
     def __init__(self, *args, **kwargs):
         super(OVOSSkill, self).__init__(*args, **kwargs)
         self.private_settings = None
         self._threads = []
         self._original_converse = self.converse
+        self.intent_layers = IntentLayers()
 
     def bind(self, bus):
         super().bind(bus)
         if bus:
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
+            self.intent_layers.bind(self)
 
     def voc_match(self, *args, **kwargs):
         try:
             return super().voc_match(*args, **kwargs)
         except FileNotFoundError:
             return False
+
+    def _register_decorated(self):
+        """Register all intent handlers that are decorated with an intent.
+
+        Looks for all functions that have been marked by a decorator
+        and read the intent data from them.  The intent handlers aren't the
+        only decorators used.  Skip properties as calling getattr on them
+        executes the code which may have unintended side-effects
+        """
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'intents'):
+                for intent in getattr(method, 'intents'):
+                    self.register_intent(intent, method)
+
+            if hasattr(method, 'intent_files'):
+                for intent_file in getattr(method, 'intent_files'):
+                    self.register_intent_file(intent_file, method)
+
+            if hasattr(method, 'intent_layers'):
+                for layer_name, intent_file in \
+                        getattr(method, 'intent_layers').items():
+                    self.register_intent_file(intent_file, method)
+                    if isinstance(intent_file, IntentBuilder):
+                        intent_file = intent_file.build()
+                        intent_file = intent_file.name or method.__name__
+                    self.intent_layers.update_layer(layer_name, [intent_file])
+
+    def register_intent_layer(self, layer_name, intent_list):
+        for intent_file in intent_list:
+            if isinstance(intent_file, IntentBuilder):
+                intent = intent_file.build()
+                name = intent.name
+            elif isinstance(intent_file, Intent):
+                name = intent_file.name
+            else:
+                name = f'{self.skill_id}:{intent_file}'
+            self.intent_layers.update_layer(layer_name, [name])
 
     # this method can probably use a better refactor, we are only changing one
     # of the internal callbacks
@@ -77,6 +120,7 @@ class OVOSSkill(MycroftSkill):
             if handler_info:
                 # Indicate that the skill handler is starting if requested
                 msg_type = handler_info + '.start'
+                message.context["skill_id"] = self.skill_id
                 self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_end(message):
@@ -87,6 +131,7 @@ class OVOSSkill(MycroftSkill):
                 self._initial_settings = deepcopy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
+                message.context["skill_id"] = self.skill_id
                 self.bus.emit(message.forward(msg_type, skill_data))
 
         wrapper = create_wrapper(handler, self.skill_id,
@@ -94,7 +139,8 @@ class OVOSSkill(MycroftSkill):
         return self.events.add(name, wrapper, once)
 
     def __handle_stop(self, _):
-        self.bus.emit(Message(self.skill_id + ".stop"))
+        self.bus.emit(Message(self.skill_id + ".stop",
+                              context={"skill_id": self.skill_id}))
         super().__handle_stop(_)
 
     # abort get_response gracefully
@@ -197,7 +243,8 @@ class OVOSSkill(MycroftSkill):
             if line:
                 self.speak(line, expect_response=True)
             else:
-                self.bus.emit(Message('mycroft.mic.listen'))
+                self.bus.emit(Message('mycroft.mic.listen',
+                                      context={"skill_id": self.skill_id}))
 
 
 class OVOSFallbackSkill(FallbackSkill):
