@@ -60,13 +60,9 @@ class OVOSSkill(MycroftSkill):
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
             if hasattr(method, 'intent_layers'):
-                for layer_name, intent_file in \
+                for layer_name, intent_files in \
                         getattr(method, 'intent_layers').items():
-                    self.register_intent_file(intent_file, method)
-                    if isinstance(intent_file, IntentBuilder):
-                        intent_file = intent_file.build()
-                        intent_file = intent_file.name or method.__name__
-                    self.intent_layers.update_layer(layer_name, [intent_file])
+                    self.register_intent_layer(layer_name, intent_files)
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:

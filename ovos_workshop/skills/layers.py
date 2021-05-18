@@ -5,11 +5,12 @@ class IntentLayers:
     def __init__(self):
         self._skill = None
         self._layers = {}
+        self._active_layers = []
 
     def bind(self, skill):
         if skill:
             self._skill = skill
-        return skill
+        return self
 
     @property
     def skill(self):
@@ -23,6 +24,10 @@ class IntentLayers:
     def skill_id(self):
         return self._skill.skill_id if self._skill else "IntentLayers"
 
+    @property
+    def active_layers(self):
+        return self._active_layers
+
     def disable(self):
         LOG.info("Disabling layers")
         # disable all layers
@@ -32,15 +37,17 @@ class IntentLayers:
     def update_layer(self, layer_name, intent_list=None):
         layer_name = f"{self.skill_id}:{layer_name}"
         intent_list = intent_list or []
-        self._layers.setdefault(layer_name, [])
+        if layer_name not in self._layers:
+            self._layers[layer_name] = []
         self._layers[layer_name] += intent_list or []
         LOG.info(f"Adding {intent_list} to {layer_name}")
 
     def activate_layer(self, layer_name):
         layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
-            self.disable()
             LOG.info("activating layer named: " + layer_name)
+            if layer_name not in self._active_layers:
+                self._active_layers.append(layer_name)
             for intent in self._layers[layer_name]:
                 self.skill.enable_intent(intent)
         else:
@@ -50,6 +57,8 @@ class IntentLayers:
         layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
             LOG.info("deactivating layer named: " + layer_name)
+            if layer_name in self._active_layers:
+                self._active_layers.remove(layer_name)
             for intent in self._layers[layer_name]:
                 self.skill.disable_intent(intent)
         else:
@@ -58,6 +67,7 @@ class IntentLayers:
     def remove_layer(self, layer_name):
         layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
+            self.deactivate_layer(layer_name)
             LOG.info("removing layer named: " + layer_name)
             self._layers.pop(layer_name)
         else:
@@ -70,3 +80,6 @@ class IntentLayers:
             self._layers[layer_name] = intent_list or []
         else:
             self.update_layer(layer_name, intent_list)
+
+    def is_active(self, layer_name):
+        return layer_name in self.active_layers

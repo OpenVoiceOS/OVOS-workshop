@@ -88,10 +88,21 @@ def layer_intent(intent_parser, layer_name):
             func.intents = []
         if not hasattr(func, 'intent_layers'):
             func.intent_layers = {}
+
         func.intents.append(intent_parser)
         if layer_name not in func.intent_layers:
             func.intent_layers[layer_name] = []
-        func.intent_layers[layer_name].append(intent_parser)
+
+        # get intent_name
+        if hasattr(intent_parser, "build"):
+            intent = intent_parser.build()
+            intent_name = intent.name or func.__name__
+        elif hasattr(intent_parser, "name"):
+            intent_name = intent_parser.name
+        else:
+            intent_name = intent_parser
+
+        func.intent_layers[layer_name].append(intent_name)
         return func
 
     return real_decorator
