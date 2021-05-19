@@ -239,6 +239,20 @@ class OVOSSkill(MycroftSkill):
                                       context={"skill_id": self.skill_id}))
 
 
-class OVOSFallbackSkill(FallbackSkill):
+class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
     """ monkey patched mycroft fallback skill """
+
+    def _register_decorated(self):
+        """Register all intent handlers that are decorated with an intent.
+
+        Looks for all functions that have been marked by a decorator
+        and read the intent data from them.  The intent handlers aren't the
+        only decorators used.  Skip properties as calling getattr on them
+        executes the code which may have unintended side-effects
+        """
+        super()._register_decorated()
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'fallback_priority'):
+                self.register_fallback(method, method.fallback_priority)
 
