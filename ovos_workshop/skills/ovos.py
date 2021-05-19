@@ -63,6 +63,9 @@ class OVOSSkill(MycroftSkill):
                 for layer_name, intent_files in \
                         getattr(method, 'intent_layers').items():
                     self.register_intent_layer(layer_name, intent_files)
+            # TODO support for multiple converse handler
+            if hasattr(method, 'converse'):
+                self.converse = method
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ovos_workshop',
-    version='0.0.1a3',
+    version='0.0.2a1',
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
