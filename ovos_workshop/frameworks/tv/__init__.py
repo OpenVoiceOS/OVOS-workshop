@@ -6,11 +6,11 @@ from ovos_utils.json_helper import merge_dict, is_compatible_dict
 from ovos_utils.parse import match_all, MatchStrategy, match_one, fuzzy_match
 from ovos_utils.log import LOG
 
-from ovos_workshop.frameworks.ciptv.m3u8 import M3UParser, check_stream, \
+from ovos_workshop.frameworks.tv.m3u8 import M3UParser, check_stream, \
     StreamStatus
 
 
-class CommonIPTV(Thread):
+class OVOSCommonTV(Thread):
     stream_providers = {}
     channels = {}
     dead_channels = {}
@@ -30,7 +30,7 @@ class CommonIPTV(Thread):
             self.bind(bus)
         self.stop_event = Event()
         self._last_check = time.time()
-        super(CommonIPTV, self).__init__(*args, **kwargs)
+        super(OVOSCommonTV, self).__init__(*args, **kwargs)
 
     @classmethod
     def bind(cls, bus=None):

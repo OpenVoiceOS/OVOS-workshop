@@ -47,7 +47,7 @@ def get_youtube_audio_stream(url, download=False, convert=False):
 
 def get_youtube_video_stream(url, download=False):
     if pafy is None:
-        LOG.error("can not extract audio stream, pafy is not available")
+        LOG.error("can not extract stream, pafy is not available")
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
         return url

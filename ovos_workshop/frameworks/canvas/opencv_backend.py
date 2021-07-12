@@ -1,10 +1,11 @@
 from ovos_utils.messagebus import Message
-from ovos_workshop.frameworks.ccanvas.base import AbstractCanvas
+from ovos_workshop.frameworks.canvas.base import AbstractCanvas
 import imutils
 import cv2
 import numpy as np
 
 
+# TODO move to opm
 class OpenCVService(AbstractCanvas):
     """
         Display backend for opencv package.

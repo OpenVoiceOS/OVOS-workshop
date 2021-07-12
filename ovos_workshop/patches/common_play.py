@@ -72,7 +72,7 @@ class CommonPlaySkill(MycroftSkill, _CommonPlaySkill):
     def __handle_play_query(self, message):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
-        media_type = message.data.get("media_type", CPSMatchType.GENERIC)
+        media_type = message.data.get("question_type", CPSMatchType.GENERIC)
 
         if media_type not in self.supported_media:
             return
@@ -87,7 +87,7 @@ class CommonPlaySkill(MycroftSkill, _CommonPlaySkill):
         if len(signature(self.CPS_match_query_phrase).parameters) == 2:
             result = self.CPS_match_query_phrase(search_phrase, media_type)
         else:
-            # needed for old skills which are not expecting media_type
+            # needed for old skills which are not expecting question_type
             # TODO remove in next major release
             result = self.CPS_match_query_phrase(search_phrase)
 

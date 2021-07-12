@@ -7,7 +7,7 @@ from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.gui import GUIInterface
 from ovos_utils.log import LOG
 
-from ovos_workshop.frameworks.cps.youtube import is_youtube, \
+from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
 
 
@@ -109,7 +109,7 @@ class CommonPlayInterface:
         self.query_replies[phrase] = []
         self.query_extensions[phrase] = []
         self.bus.emit(Message('play:query', {"phrase": phrase,
-                                             "media_type": media_type}))
+                                             "question_type": media_type}))
 
     def get_results(self, phrase):
         if self.query_replies.get(phrase):
@@ -159,15 +159,15 @@ class CommonPlayInterface:
             will_resume = False
             return {"skill_id": selected["skill_id"],
                     "phrase": phrase,
-                    "media_type": media_type,
+                    "question_type": media_type,
                     "trigger_stop": not will_resume,
                     "callback_data": selected.get("callback_data")}
 
         return {}
 
 
-class BetterCommonPlayInterface:
-    """ interface for better common play """
+class OVOSCommonPlaybackInterface:
+    """ interface for OVOS Common Playback Service """
 
     def __init__(self, bus=None, min_timeout=1, max_timeout=5,
                  allow_extensions=True, audio_service=None, gui=None,
@@ -192,7 +192,7 @@ class BetterCommonPlayInterface:
         """
         self.bus = bus or get_mycroft_bus()
         self.audio_service = audio_service or AudioServiceInterface(self.bus)
-        self.gui = gui or GUIInterface("better-cps", bus=self.bus)
+        self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
 
         self.min_timeout = min_timeout
         self.max_timeout = max_timeout
@@ -217,13 +217,15 @@ class BetterCommonPlayInterface:
                               "playlist": [],
                               "disambiguation": []}
 
-        self.bus.on("better_cps.query.response", self.handle_cps_response)
-        self.bus.on("better_cps.status.update", self.handle_cps_status_change)
+        self.bus.on("ovos.common_play.query.response",
+                    self.handle_cps_response)
+        self.bus.on("ovos.common_play.status.update",
+                    self.handle_cps_status_change)
         self.register_gui_handlers()
 
     def shutdown(self):
-        self.bus.remove("better_cps.query.response", self.handle_cps_response)
-        self.bus.remove("better_cps.status.update",
+        self.bus.remove("ovos.common_play.query.response", self.handle_cps_response)
+        self.bus.remove("ovos.common_play.status.update",
                         self.handle_cps_status_change)
         self.gui.shutdown()
 
@@ -253,9 +255,9 @@ class BetterCommonPlayInterface:
         self.query_timeouts[phrase] = self.min_timeout
         self.search_start = time.time()
         self.waiting = True
-        self.bus.emit(Message('better_cps.query',
+        self.bus.emit(Message('ovos.common_play.query',
                               {"phrase": phrase,
-                               "media_type": media_type}))
+                               "question_type": media_type}))
 
         # old common play will send the messages expected by the official
         # mycroft stack, but skills are know to over match, dont support
@@ -323,7 +325,7 @@ class BetterCommonPlayInterface:
                           data.get("uri")
 
             # Essentially a random guess....
-            data["media_type"] = media_type
+            data["question_type"] = media_type
             data["playback"] = CPSPlayback.SKILL
             if not data.get("image"):
                 data["image"] = data.get("logo") or \
@@ -411,7 +413,7 @@ class BetterCommonPlayInterface:
             self.playback_status = status
 
     def update_status(self, status):
-        self.bus.emit(Message('better_cps.status.update', status))
+        self.bus.emit(Message('ovos.common_play.status.update', status))
 
     # playback control
     def play(self):
@@ -435,7 +437,7 @@ class BetterCommonPlayInterface:
                                        "callback_data": data,
                                        "phrase": data["phrase"]}))
             else:
-                self.bus.emit(Message(f'better_cps.{skill_id}.play', data))
+                self.bus.emit(Message(f'ovos.common_play.{skill_id}.play', data))
         elif data["playback"] == CPSPlayback.GUI:
             pass  # plays in display_ui
         else:
@@ -462,7 +464,7 @@ class BetterCommonPlayInterface:
         elif self.active_backend == CPSTrackStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.next()
         elif self.active_backend is not None:
-            self.bus.emit(Message(f'better_cps.{self.active_skill}.next'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.next'))
 
     def play_prev(self):
         # TODO playlist handling
@@ -471,7 +473,7 @@ class BetterCommonPlayInterface:
         elif self.active_backend == CPSTrackStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.prev()
         elif self.active_backend is not None:
-            self.bus.emit(Message(f'better_cps.{self.active_skill}.prev'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.prev'))
 
     def pause(self):
         self.update_status({"status": CPSTrackStatus.PAUSED})
@@ -480,7 +482,7 @@ class BetterCommonPlayInterface:
         elif self.active_backend == CPSTrackStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.pause()
         elif self.active_backend is not None:
-            self.bus.emit(Message(f'better_cps.{self.active_skill}.pause'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.pause'))
 
     def resume(self):
         if self.active_backend == CPSTrackStatus.PLAYING_GUI:
@@ -488,7 +490,7 @@ class BetterCommonPlayInterface:
         elif self.active_backend == CPSTrackStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.resume()
         elif self.active_backend is not None:
-            self.bus.emit(Message(f'better_cps.{self.active_skill}.resume'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.resume'))
         self.update_status({"status": self.active_backend})
 
     def stop(self):
@@ -497,7 +499,7 @@ class BetterCommonPlayInterface:
         elif self.active_backend == CPSTrackStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.stop()
         elif self.active_backend is not None:
-            self.bus.emit(Message(f'better_cps.{self.active_skill}.stop'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.stop'))
         self.update_status({"status": CPSTrackStatus.END_OF_MEDIA})
         stopped = self.active_backend is not None
         self.active_backend = None
@@ -506,20 +508,20 @@ class BetterCommonPlayInterface:
 
     # ######### GUI integration ###############
     def register_gui_handlers(self):
-        self.gui.register_handler('better-cps.gui.play',
+        self.gui.register_handler('ovos.common_play.gui.play',
                                   self.handle_click_resume)
-        self.gui.register_handler('better-cps.gui.pause',
+        self.gui.register_handler('ovos.common_play.gui.pause',
                                   self.handle_click_pause)
-        self.gui.register_handler('better-cps.gui.next',
+        self.gui.register_handler('ovos.common_play.gui.next',
                                   self.handle_click_next)
-        self.gui.register_handler('better-cps.gui.previous',
+        self.gui.register_handler('ovos.common_play.gui.previous',
                                   self.handle_click_previous)
-        self.gui.register_handler('better-cps.gui.seek',
+        self.gui.register_handler('ovos.common_play.gui.seek',
                                   self.handle_click_seek)
 
-        self.gui.register_handler('better-cps.gui.playlist.play',
+        self.gui.register_handler('ovos.common_play.gui.playlist.play',
                                   self.handle_play_from_playlist)
-        self.gui.register_handler('better-cps.gui.search.play',
+        self.gui.register_handler('ovos.common_play.gui.search.play',
                                   self.handle_play_from_search)
 
     def update_player_status(self, status, page=0):
@@ -574,7 +576,7 @@ class BetterCommonPlayInterface:
         for r in self._search_results:
             status = dict(r)
             status["status"] = CPSTrackStatus.DISAMBIGUATION
-            self.bus.emit(Message('better_cps.status.update', status))
+            self.bus.emit(Message('ovos.common_play.status.update', status))
         results = sorted(results, key=lambda k: k.get("match_confidence"),
                          reverse=True)[:100]
         results = self._res2playlist(results)
@@ -597,7 +599,7 @@ class BetterCommonPlayInterface:
     def _set_now_playing(self, data):
         if data.get("bg_image", "").startswith("/"):
             data["bg_image"] = "file:/" + data["bg_image"]
-        data["skill"] = data.get("skill_id", "better-cps")
+        data["skill"] = data.get("skill_id", "ovos.common_play")
         data["position"] = data.get("position", 0)
 
         data["length"] = data.get("length") or data.get("track_length") or \
@@ -650,32 +652,32 @@ class BetterCommonPlayInterface:
 class CPSTracker:
     def __init__(self, bus=None, gui=None):
         self.bus = bus or get_mycroft_bus()
-        self.bus.on("better_cps.query.response", self.handle_cps_response)
-        self.bus.on("better_cps.status.update", self.handle_cps_status_change)
+        self.bus.on("ovos.common_play.query.response", self.handle_cps_response)
+        self.bus.on("ovos.common_play.status.update", self.handle_cps_status_change)
 
-        self.gui = gui or GUIInterface("better-cps", bus=self.bus)
+        self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
         self.register_gui_handlers()
 
     def register_gui_handlers(self):
-        self.gui.register_handler('better-cps.gui.play',
+        self.gui.register_handler('ovos.common_play.gui.play',
                                   self.handle_click_resume)
-        self.gui.register_handler('better-cps.gui.pause',
+        self.gui.register_handler('ovos.common_play.gui.pause',
                                   self.handle_click_pause)
-        self.gui.register_handler('better-cps.gui.next',
+        self.gui.register_handler('ovos.common_play.gui.next',
                                   self.handle_click_next)
-        self.gui.register_handler('better-cps.gui.previous',
+        self.gui.register_handler('ovos.common_play.gui.previous',
                                   self.handle_click_previous)
-        self.gui.register_handler('better-cps.gui.seek',
+        self.gui.register_handler('ovos.common_play.gui.seek',
                                   self.handle_click_seek)
 
-        self.gui.register_handler('better-cps.gui.playlist.play',
+        self.gui.register_handler('ovos.common_play.gui.playlist.play',
                                   self.handle_play_from_playlist)
-        self.gui.register_handler('better-cps.gui.search.play',
+        self.gui.register_handler('ovos.common_play.gui.search.play',
                                   self.handle_play_from_search)
 
     def shutdown(self):
-        self.bus.remove("better_cps.query.response", self.handle_cps_response)
-        self.bus.remove("better_cps.status.update",
+        self.bus.remove("ovos.common_play.query.response", self.handle_cps_response)
+        self.bus.remove("ovos.common_play.status.update",
                         self.handle_cps_status_change)
         self.gui.shutdown()
 
@@ -746,7 +748,7 @@ class CPSTracker:
 if __name__ == "__main__":
     from pprint import pprint
 
-    cps = BetterCommonPlayInterface(max_timeout=10, min_timeout=2)
+    cps = OVOSCommonPlaybackInterface(max_timeout=10, min_timeout=2)
 
     # test lovecraft skills
     pprint(cps.search_skill("skill-omeleto", "movie", CPSMatchType.SHORT_FILM))

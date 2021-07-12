@@ -6,8 +6,8 @@ from ovos_utils.parse import fuzzy_match
 from ovos_utils.json_helper import merge_dict
 from json_database import JsonStorageXDG
 import random
-from ovos_workshop.skills.common_play import BetterCommonPlaySkill
-from ovos_workshop.frameworks.cps import CPSMatchType, CPSPlayback
+from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
+from ovos_workshop.frameworks.playback import CPSMatchType, CPSPlayback
 
 try:
     import pyvod
@@ -17,7 +17,7 @@ except ImportError:
     pyvod = None
 
 
-class VideoCollectionSkill(BetterCommonPlaySkill):
+class VideoCollectionSkill(OVOSCommonPlaybackSkill):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -189,10 +189,10 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
             # ensure all data fields present
             video_data = merge_dict(video_data, {
                 "match_confidence": 100,
-                "media_type": self.media_type,
+                "question_type": self.media_type,
                 "playback": self.playback_type,
-                "skill_icon": self.skill_icon,
-                "skill_logo": self.skill_logo,
+             #   "skill_icon": self.skill_icon,
+             #   "skill_logo": self.skill_logo,
                 "bg_image": video_data.get("logo") or self.default_bg,
                 "image": video_data.get("logo") or self.default_image,
                 "author": self.name
@@ -277,7 +277,7 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
         elif self.settings["filter_trailers"] and \
                 self.voc_match(title, "trailer") or \
                 "trailer" in title.lower():
-            # trailer in title, but not in media_type, let's skip it
+            # trailer in title, but not in question_type, let's skip it
             # TODO bundle trailer.voc in ovos_utils
             score = 0
 
@@ -289,7 +289,7 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
         elif self.settings["filter_behind_scenes"] and \
                 self.voc_match(title, "behind_scenes") or \
                 "behind the scenes" in title.lower():
-            # trailer in title, but not in media_type, let's skip it
+            # trailer in title, but not in question_type, let's skip it
             # TODO bundle behind_scenes.voc in ovos_utils
             score = 0
 
@@ -328,10 +328,10 @@ class VideoCollectionSkill(BetterCommonPlaySkill):
                 continue
             cps_results.append(merge_dict(video, {
                 "match_confidence": min(100, score),
-                "media_type": self.media_type,
+                "question_type": self.media_type,
                 "playback": self.playback_type,
-                "skill_icon": self.skill_icon,
-                "skill_logo": self.skill_logo,
+           #     "skill_icon": self.skill_icon,
+           #     "skill_logo": self.skill_logo,
                 "bg_image": video.get("logo") or self.default_bg,
                 "image": video.get("logo") or self.default_image,
                 "author": self.name

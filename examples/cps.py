@@ -1,8 +1,8 @@
-from ovos_workshop.frameworks.cps import BetterCommonPlayInterface, CPSMatchType
+from ovos_workshop.frameworks.playback import OVOSCommonPlaybackInterface, CPSMatchType
 from pprint import pprint
 
 
-cps = BetterCommonPlayInterface(max_timeout=4, min_timeout=3)
+cps = OVOSCommonPlaybackInterface(max_timeout=4, min_timeout=3)
 
 res = cps.search_skill("skill-simple-youtube", "rob zombie",
                        media_type=CPSMatchType.VIDEO)

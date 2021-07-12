@@ -1,10 +1,10 @@
 from abc import abstractmethod
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.frameworks.cps import CPSMatchType
+from ovos_workshop.frameworks.playback import CPSMatchType
 from ovos_utils.messagebus import Message
 
 
-class BetterCommonPlaySkill(OVOSSkill):
+class OVOSCommonPlaybackSkill(OVOSSkill):
     """ To integrate with the better common play infrastructure of Mycroft
     skills should use this base class and override
     `CPS_search` (for searching the skill for media to play ) and
@@ -32,8 +32,8 @@ class BetterCommonPlaySkill(OVOSSkill):
         """
         if bus:
             super().bind(bus)
-            self.add_event('better_cps.query', self.__handle_cps_query)
-            self.add_event(f'better_cps.{self.skill_id}.play',
+            self.add_event('ovos.common_play.query', self.__handle_cps_query)
+            self.add_event(f'ovos.common_play.{self.skill_id}.play',
                            self.__handle_cps_play)
 
     def __handle_cps_play(self, message):
@@ -43,7 +43,7 @@ class BetterCommonPlaySkill(OVOSSkill):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
-        media_type = message.data.get("media_type", CPSMatchType.GENERIC)
+        media_type = message.data.get("question_type", CPSMatchType.GENERIC)
 
         if media_type not in self.supported_media:
             return
@@ -71,7 +71,7 @@ class BetterCommonPlaySkill(OVOSSkill):
         better-common-play framework, by default max total time is 5 seconds
         per query """
         if self._current_query:
-            self.bus.emit(Message("better_cps.query.response",
+            self.bus.emit(Message("ovos.common_play.query.response",
                                   {"phrase": self._current_query,
                                    "skill_id": self.skill_id,
                                    "timeout": timeout,
@@ -92,7 +92,7 @@ class BetterCommonPlaySkill(OVOSSkill):
             search_results (list): list of dictionaries with result entries
             {
                 "match_confidence": CPSMatchConfidence.HIGH,
-                "media_type":  CPSMatchType.MUSIC,
+                "question_type":  CPSMatchType.MUSIC,
                 "uri": "https://audioservice.or.gui.will.play.this",
                 "playback": CPSPlayback.GUI,
                 "image": "http://optional.audioservice.jpg",
@@ -117,7 +117,7 @@ class BetterCommonPlaySkill(OVOSSkill):
 
          {
             "match_confidence": CPSMatchConfidence.HIGH,
-            "media_type":  CPSMatchType.MUSIC,
+            "question_type":  CPSMatchType.MUSIC,
             "uri": "https://audioservice.or.gui.will.play.this",
             "playback": CPSPlayback.SKILL,
             "image": "http://optional.audioservice.jpg",

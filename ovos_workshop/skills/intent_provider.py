@@ -80,10 +80,10 @@ class IntentEngineSkill(OVOSFallbackSkill):
         self.train_time = get_time() + self.train_delay
 
     def register_messages(self, name):
-        self.emitter.on('mycroft.skills.initialized', self.train)
-        self.emitter.on(name + ':register_intent', self._register_intent)
-        self.emitter.on(name + ':register_entity', self._register_entity)
-        self.emitter.on(name + ':register_regex', self._register_regex)
+        self.bus.on('mycroft.skills.initialized', self.train)
+        self.bus.on(name + ':register_intent', self._register_intent)
+        self.bus.on(name + ':register_entity', self._register_entity)
+        self.bus.on(name + ':register_regex', self._register_regex)
 
     def train(self, message=None):
         single_thread = message.data.get('single_thread', False)
@@ -154,5 +154,5 @@ class IntentEngineSkill(OVOSFallbackSkill):
 
         self.make_active()
 
-        self.emitter.emit(message.reply(data["name"], data=data))
+        self.bus.emit(message.reply(data["name"], data=data))
         return True
