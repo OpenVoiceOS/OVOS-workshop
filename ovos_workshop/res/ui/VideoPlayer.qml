@@ -36,10 +36,6 @@ Mycroft.Delegate {
         controlBarItem.forceActiveFocus()
     }
 
-    onFocusChanged: {
-        video.forceActiveFocus();
-    }
-
     onVideoStatusChanged: {
         switch(videoStatus){
         case "Stopped":
