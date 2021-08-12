@@ -229,6 +229,9 @@ class OVOSCommonPlaybackInterface:
                     self.handle_cps_response)
         self.bus.on("ovos.common_play.status.update",
                     self.handle_cps_status_change)
+        self.bus.on("mycroft.audio.queue_end",
+                    self.handle_playback_ended)
+
         self.register_gui_handlers()
 
     def shutdown(self):
@@ -236,6 +239,13 @@ class OVOSCommonPlaybackInterface:
         self.bus.remove("ovos.common_play.status.update",
                         self.handle_cps_status_change)
         self.gui.shutdown()
+
+    def handle_playback_ended(self, message):
+        self.update_status({"status": CPSTrackStatus.END_OF_MEDIA})
+        # go to search results page
+        player_qml = "AudioPlayer.qml"
+        video_player_qml = "VideoPlayer.qml"
+        self.gui.remove_pages([player_qml, video_player_qml])
 
     def handle_cps_response(self, message):
         search_phrase = message.data["phrase"]
@@ -554,6 +564,8 @@ class OVOSCommonPlaybackInterface:
                                   self.handle_click_previous)
         self.gui.register_handler('ovos.common_play.gui.seek',
                                   self.handle_click_seek)
+        self.gui.register_handler('ovos.common_play.video.media.playback.ended',
+                                  self.handle_playback_ended)
 
         self.gui.register_handler('ovos.common_play.gui.playlist.play',
                                   self.handle_play_from_playlist)
@@ -663,9 +675,9 @@ class OVOSCommonPlaybackInterface:
     def handle_click_seek(self, message):
         position = message.data.get("seekValue", "")
         if position:
-            self.audio_service.set_track_position(position)
+            self.audio_service.set_track_position(position / 1000)
             self.gui["media"]["position"] = position
-            self.update_screen()
+            #self.update_screen()
 
     def handle_play_from_playlist(self, message):
         playlist_data = message.data["playlistData"]
