@@ -85,7 +85,7 @@ Mycroft.Delegate {
         id: idleCheckTimer
         interval: 60000
         repeat: true
-        onTriggered {
+        onTriggered: {
             if (video.playbackState != MediaPlayer.PlayingState || video.playbackState != MediaPlayer.PausedState) {
                 triggerGuiEvent("video.media.playback.ended", {})
             }
