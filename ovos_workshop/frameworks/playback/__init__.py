@@ -305,10 +305,15 @@ class OVOSCommonPlaybackInterface:
 
     def process_search(self, selected, results):
         # TODO playlist
-        self._update_current_media(selected)
-        self._update_disambiguation(results)
-        self._set_search_results(results, best=selected)
-        self._set_now_playing(selected)
+        self.play_media(selected, results)
+
+    def play_media(self, track, disambiguation=None, playlist=None):
+        # TODO playlist
+        self._update_current_media(track)
+        if disambiguation:
+            self._update_disambiguation(disambiguation)
+            self._set_search_results(disambiguation, best=track)
+        self._set_now_playing(track)
         self.play()
 
     @staticmethod
@@ -416,8 +421,17 @@ class OVOSCommonPlaybackInterface:
         self.bus.emit(Message('ovos.common_play.status.update', status))
 
     # playback control
-    def play(self):
+    @staticmethod
+    def get_stream(uri, video=False):
+        real_url = None
+        if is_youtube(uri):
+            if not video:
+                real_url = get_youtube_audio_stream(uri)
+            if video or not real_url:
+                real_url = get_youtube_video_stream(uri)
+        return real_url or uri
 
+    def play(self):
         data = self.playback_data.get("playing") or {}
         uri = data.get("stream") or data.get("uri") or data.get("url")
         skill_id = self.active_skill = data["skill_id"]
@@ -446,16 +460,6 @@ class OVOSCommonPlaybackInterface:
         self._set_now_playing(data)
         self.display_ui()
         self.update_player_status("Playing")
-
-    @staticmethod
-    def get_stream(uri, video=False):
-        real_url = None
-        if is_youtube(uri):
-            if not video:
-                real_url = get_youtube_audio_stream(uri)
-            if video or not real_url:
-                real_url = get_youtube_video_stream(uri)
-        return real_url or uri
 
     def play_next(self):
         # TODO playlist handling

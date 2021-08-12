@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.frameworks.playback import CPSMatchType
+from ovos_workshop.frameworks.playback import CPSMatchType, CPSMatchConfidence
 from ovos_utils.messagebus import Message
 
 
@@ -35,6 +35,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.add_event('ovos.common_play.query', self.__handle_cps_query)
             self.add_event(f'ovos.common_play.{self.skill_id}.play',
                            self.__handle_cps_play)
+
+    def play_media(self, media, disambiguation=None, playlist=None):
+        disambiguation = disambiguation or [media]
+        playlist = playlist or [media]
+        self.bus.emit(Message("better_cps.play",
+                              {"media": media,
+                               "disambiguation": disambiguation,
+                               "playlist": playlist}))
 
     def __handle_cps_play(self, message):
         self.CPS_play(message.data)
