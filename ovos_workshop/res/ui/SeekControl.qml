@@ -82,7 +82,7 @@ Item {
                             width: parent.width - Kirigami.Units.largeSpacing
                             height: width
                             anchors.centerIn: parent
-                            source: videoControl.playbackState === MediaPlayer.PlayingState ? "images/media-pause.svg" : "images/media-play.svg"
+                            source: videoControl.playbackState === MediaPlayer.PlayingState ? Qt.resolvedUrl("images/media-pause.svg") : Qt.resolvedUrl("images/media-play.svg")
                         }
                     }
                     
