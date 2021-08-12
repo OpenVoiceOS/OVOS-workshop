@@ -171,7 +171,8 @@ class OVOSCommonPlaybackInterface:
 
     def __init__(self, bus=None, min_timeout=1, max_timeout=5,
                  allow_extensions=True, audio_service=None, gui=None,
-                 backwards_compatibility=True, media_fallback=True):
+                 backwards_compatibility=True, media_fallback=True,
+                 early_stop_conf=90, early_stop_grace_period=0.7):
         """
         Arguments:
             bus (MessageBus): mycroft messagebus connection
@@ -189,7 +190,14 @@ class OVOSCommonPlaybackInterface:
                                             results from "old style" skills
             media_fallback (bool): if no results, perform a second query
                                    with CPSMatchType.GENERIC
+            early_stop_conf (int): stop collecting results if we get a
+                                   match with confidence >= early_stop_conf
+            early_stop_grace_period (float): sleep this ammount before early stop,
+                                   allows skills that "just miss" to also be
+                                   taken into account
         """
+        self.early_stop_thresh = early_stop_conf
+        self.early_stop_grace_period = early_stop_grace_period
         self.bus = bus or get_mycroft_bus()
         self.audio_service = audio_service or AudioServiceInterface(self.bus)
         self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
@@ -249,6 +257,18 @@ class OVOSCommonPlaybackInterface:
             if time.time() - self.search_start > self.query_timeouts[
                 search_phrase]:
                 self.waiting = False
+
+        for res in message.data.get("results", []):
+            if res.get("match_confidence", 0) >= self.early_stop_thresh:
+                # got a really good match, dont search further
+                LOG.info("Receiving very high confidence match, stopping "
+                         "search early")
+                # allow other skills to "just miss"
+                if self.early_stop_grace_period:
+                    LOG.debug("grace period: " + str(self.early_stop_grace_period))
+                    time.sleep(self.early_stop_grace_period)
+                self.waiting = False
+                return
 
     def search(self, phrase, media_type=CPSMatchType.GENERIC):
         self.query_replies[phrase] = []
@@ -438,7 +458,7 @@ class OVOSCommonPlaybackInterface:
         self.gui["media"]["length"] = track_lenth
         while self.audio_service.is_playing:
             self.gui["media"]["position"] = self.audio_service.get_track_position()
-            self.update_screen()
+            #self.update_screen()
             time.sleep(1)
 
     def play(self):
@@ -453,7 +473,7 @@ class OVOSCommonPlaybackInterface:
             real_url = self.get_stream(uri)
             self.audio_service.play(real_url)
             # TODO - live update from audio service
-            create_daemon(self._fake_seekbar)
+            # create_daemon(self._fake_seekbar)
 
         elif data["playback"] == CPSPlayback.SKILL:
             data["status"] = CPSTrackStatus.PLAYING
@@ -557,6 +577,10 @@ class OVOSCommonPlaybackInterface:
         search = search or self.gui.get("searchModel", {}).get("data") or {}
         playlist = playlist or self.gui.get("playlistModel", {}).get("data") or {}
 
+        # remove previous pages
+        pages = [player_qml, search_qml, playlist_qml, video_player_qml]
+        self.gui.remove_pages(pages)
+
         # display "now playing" video page
         if media.get("playback", -1) == CPSPlayback.GUI:
             uri = media.get("stream") or \
@@ -566,17 +590,13 @@ class OVOSCommonPlaybackInterface:
             self.gui["title"] = media.get("title", "")
             self.gui["playStatus"] = "play"
             pages = [video_player_qml, search_qml, playlist_qml]
+
         # display "now playing" music page
         else:
             pages = [player_qml, search_qml, playlist_qml]
 
         self.gui["searchModel"] = {"data": search}
         self.gui["playlistModel"] = {"data": playlist}
-
-        # remove old pages
-        _pages = [player_qml, search_qml, playlist_qml, video_player_qml]
-        self.gui.remove_pages([p for p in _pages if p not in pages])
-
         self.gui.show_pages(pages, page, override_idle=True)
 
     def _set_search_results(self, results, best=None):
