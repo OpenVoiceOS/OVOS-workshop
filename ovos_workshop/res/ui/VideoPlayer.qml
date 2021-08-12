@@ -29,15 +29,12 @@ Mycroft.Delegate {
     
     Component.onCompleted: {
         syncStatusTimer.restart()
+        idleCheckTimer.restart()
     }
     
     Keys.onDownPressed: {
         controlBarItem.opened = true
         controlBarItem.forceActiveFocus()
-    }
-
-    onFocusChanged: {
-        video.forceActiveFocus();
     }
 
     onVideoStatusChanged: {
@@ -82,6 +79,17 @@ Mycroft.Delegate {
     
     Timer {
         id: delaytimer
+    }
+
+    Timer {
+        id: idleCheckTimer
+        interval: 60000
+        repeat: true
+        onTriggered {
+            if (video.playbackState != MediaPlayer.PlayingState || video.playbackState != MediaPlayer.PausedState) {
+                triggerGuiEvent("video.media.playback.ended", {})
+            }
+        }
     }
 
     function delay(delayTime, cb) {
