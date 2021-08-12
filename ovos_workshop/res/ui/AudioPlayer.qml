@@ -45,7 +45,6 @@ Mycroft.Delegate {
     property var playerState: media.status
     property var nextAction: "gui.next"
     property var previousAction: "gui.previous"
-    property bool countdowntimerpaused: false
 
     onIsVerticalChanged: {
         if(isVertical){
@@ -68,27 +67,11 @@ Mycroft.Delegate {
         console.log(playerState)
         if(playerState === "Playing"){
             playerPosition = media.position
-            countdowntimer.running = true
         } else if(playerState === "Paused") {
             playerPosition = media.position
-            countdowntimer.running = false
         }
     }
 
-    Timer {
-        id: countdowntimer
-        interval: 1000
-        running: false
-        repeat: true
-        onTriggered: {
-            if(media.length > playerPosition){
-                if(!countdowntimerpaused){
-                    playerPosition = playerPosition + 1000
-                }
-            }
-        }
-    }
-    
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: bigMode ? parent.width * 0.025 : 0
@@ -267,17 +250,7 @@ Mycroft.Delegate {
             value: playerPosition
 
             onPressedChanged: {
-                if(seekableslider.pressed){
-                    root.countdowntimerpaused = true
-                } else (
-                    root.countdowntimerpaused = false
-                )
-            }
-
-            onValueChanged: {
-                if(root.countdowntimerpaused){
-                    triggerGuiEvent("gui.seek", {"seekValue": value})
-                }
+                triggerGuiEvent("gui.seek", {"seekValue": value})
             }
 
             handle: Item {

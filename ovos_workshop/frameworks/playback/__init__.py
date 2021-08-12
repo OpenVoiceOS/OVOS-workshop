@@ -6,7 +6,7 @@ from ovos_utils.messagebus import Message, get_mycroft_bus, wait_for_reply
 from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.gui import GUIInterface
 from ovos_utils.log import LOG
-
+from ovos_utils import create_daemon
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
 
@@ -431,6 +431,16 @@ class OVOSCommonPlaybackInterface:
                 real_url = get_youtube_video_stream(uri)
         return real_url or uri
 
+    def _fake_seekbar(self):
+        track_lenth = self.audio_service.get_track_length()
+        while not track_lenth:
+            track_lenth = self.audio_service.get_track_length()
+        self.gui["media"]["length"] = track_lenth
+        while self.audio_service.is_playing:
+            self.gui["media"]["position"] = self.audio_service.get_track_position()
+            self.update_screen()
+            time.sleep(1)
+
     def play(self):
         data = self.playback_data.get("playing") or {}
         uri = data.get("stream") or data.get("uri") or data.get("url")
@@ -442,6 +452,8 @@ class OVOSCommonPlaybackInterface:
             data["status"] = CPSTrackStatus.PLAYING_AUDIOSERVICE
             real_url = self.get_stream(uri)
             self.audio_service.play(real_url)
+            # TODO - live update from audio service
+            create_daemon(self._fake_seekbar)
 
         elif data["playback"] == CPSPlayback.SKILL:
             data["status"] = CPSTrackStatus.PLAYING
@@ -458,7 +470,7 @@ class OVOSCommonPlaybackInterface:
             raise ValueError("invalid playback request")
         self.update_status(data)
         self._set_now_playing(data)
-        self.display_ui()
+        self.update_screen()
         self.update_player_status("Playing")
 
     def play_next(self):
@@ -530,9 +542,9 @@ class OVOSCommonPlaybackInterface:
 
     def update_player_status(self, status, page=0):
         self.gui["media"]["status"] = status
-        self.display_ui(page=page)
+        self.update_screen(page=page)
 
-    def display_ui(self, search=None, media=None, playlist=None, page=0):
+    def update_screen(self, search=None, media=None, playlist=None, page=0):
         search_qml = "Disambiguation.qml"
         player_qml = "AudioPlayer.qml"
         video_player_qml = "VideoPlayer.qml"
@@ -545,10 +557,6 @@ class OVOSCommonPlaybackInterface:
         search = search or self.gui.get("searchModel", {}).get("data") or {}
         playlist = playlist or self.gui.get("playlistModel", {}).get("data") or {}
 
-        # remove previous pages
-        pages = [player_qml, search_qml, playlist_qml, video_player_qml]
-        self.gui.remove_pages(pages)
-
         # display "now playing" video page
         if media.get("playback", -1) == CPSPlayback.GUI:
             uri = media.get("stream") or \
@@ -558,13 +566,17 @@ class OVOSCommonPlaybackInterface:
             self.gui["title"] = media.get("title", "")
             self.gui["playStatus"] = "play"
             pages = [video_player_qml, search_qml, playlist_qml]
-
         # display "now playing" music page
         else:
             pages = [player_qml, search_qml, playlist_qml]
 
         self.gui["searchModel"] = {"data": search}
         self.gui["playlistModel"] = {"data": playlist}
+
+        # remove old pages
+        _pages = [player_qml, search_qml, playlist_qml, video_player_qml]
+        self.gui.remove_pages([p for p in _pages if p not in pages])
+
         self.gui.show_pages(pages, page, override_idle=True)
 
     def _set_search_results(self, results, best=None):
@@ -585,7 +597,7 @@ class OVOSCommonPlaybackInterface:
                          reverse=True)[:100]
         results = self._res2playlist(results)
         playlist = self._res2playlist([best])  # TODO cps playlist
-        self.display_ui(media=best, playlist=playlist, search=results)
+        self.update_screen(media=best, playlist=playlist, search=results)
 
     @staticmethod
     def _res2playlist(res):
@@ -630,11 +642,10 @@ class OVOSCommonPlaybackInterface:
 
     def handle_click_seek(self, message):
         position = message.data.get("seekValue", "")
-        print("seek:", position)
         if position:
-            self.audio_service.set_track_position(position / 1000)
+            self.audio_service.set_track_position(position)
             self.gui["media"]["position"] = position
-            self.display_ui()
+            self.update_screen()
 
     def handle_play_from_playlist(self, message):
         playlist_data = message.data["playlistData"]
