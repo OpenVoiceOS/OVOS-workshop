@@ -85,6 +85,8 @@ class Playlist(list):
         if isinstance(entry, dict):
             entry = MediaEntry.from_dict(entry)
         assert isinstance(entry, MediaEntry)
+        if index == -1:
+            index = len(self)
         self.insert(index, entry)
 
     def remove_entry(self, entry):
@@ -114,6 +116,9 @@ class Playlist(list):
     @property
     def current_track(self):
         if len(self) == 0:
+            return None
+        if self.position >= len(self):
+            LOG.error("Playlist pointer is in an invalid position!")
             return None
         return self[self.position]
 

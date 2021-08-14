@@ -158,7 +158,7 @@ Mycroft.Delegate {
                 }
                 
                 onClicked: {
-                    triggerGuiEvent("gui.playlist.play", {"playlistData": modelData})
+                    triggerGuiEvent("playlist.play", {"playlistData": modelData})
                 }
             }
         }

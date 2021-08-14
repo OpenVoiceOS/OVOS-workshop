@@ -57,7 +57,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
             LOG.error("py_VOD not installed!")
             LOG.info("pip install py_VOD>=0.4.0")
             raise ImportError
-        self.playback_type = CommonPlayPlaybackType.GUI
+        self.playback_type = CommonPlayPlaybackType.VIDEO
         self.media_type = CommonPlayMediaType.VIDEO
         self.default_bg = "https://github.com/OpenVoiceOS/ovos_assets/raw/master/Logo/ovos-logo-512.png"
         self.default_image = resolve_ovos_resource_file("ui/images/moviesandfilms.png")
@@ -197,7 +197,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
                 "image": video_data.get("logo") or self.default_image,
                 "author": self.name
             })
-            self.bus.emit(Message("better_cps.play", {
+            self.bus.emit(Message("ovos.common_play.play", {
                 "tracks": [video_data]
             }))
 

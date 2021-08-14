@@ -22,6 +22,6 @@ if res:
                  reverse=True)
 pprint(res)
 # test lovecraft skills
-#pprint(cps.search_skill("skill-omeleto", "movie",
+#pprint(common_play.search_skill("skill-omeleto", "movie",
 # CommonPlayMediaType.SHORT_FILM))
 

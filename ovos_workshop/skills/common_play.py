@@ -39,7 +39,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     def play_media(self, media, disambiguation=None, playlist=None):
         disambiguation = disambiguation or [media]
         playlist = playlist or [media]
-        self.bus.emit(Message("better_cps.play",
+        self.bus.emit(Message("ovos.common_play.play",
                               {"media": media,
                                "disambiguation": disambiguation,
                                "playlist": playlist}))
@@ -61,7 +61,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         if results:
             # inject skill id in individual results, will be needed later
-            # for proper GUI playback handling
+            # for proper VIDEO playback handling
             for idx, r in enumerate(results):
                 results[idx]["skill_id"] = self.skill_id
             self.bus.emit(message.response({"phrase": search_phrase,
@@ -102,7 +102,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 "match_confidence": CommonPlayMatchConfidence.HIGH,
                 "question_type":  CPSMatchType.MUSIC,
                 "uri": "https://audioservice.or.gui.will.play.this",
-                "playback": CommonPlayPlaybackType.GUI,
+                "playback": CommonPlayPlaybackType.VIDEO,
                 "image": "http://optional.audioservice.jpg",
                 "bg_image": "http://optional.audioservice.background.jpg"
             }
@@ -116,7 +116,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         Playback will be handled manually by the skill, eg, spotify or some
         other external service
 
-        NOTE: CommonPlayPlaybackType.AUDIO and CommonPlayPlaybackType.GUI are handled
+        NOTE: CommonPlayPlaybackType.AUDIO and CommonPlayPlaybackType.VIDEO are handled
               automatically by BetterCommonPlay, this is only called for
               CommonPlayPlaybackType.SKILL results
 

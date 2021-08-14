@@ -5,10 +5,14 @@ from ovos_utils.messagebus import get_mycroft_bus
 
 
 class CommonPlayPlaybackType(IntEnum):
-    SKILL = 0
-    GUI = 1
-    AUDIO = 2
-    UNDEFINED = 100
+    SKILL = 0  # skills handle playback whatever way they see fit,
+    # eg spotify / mycroft common play
+    GUI = 1  # Results should be played with the GUI Media framework
+    AUDIO = 2  # Results should be played audio only (audio service)
+    VIDEO = 3  # Video results, player configurable in skill,
+               # by default GUI Media framework
+    UNDEFINED = 100  # data not available,
+                     # hopefully status will be updated soon..
 
 
 class CommonPlayMatchConfidence(IntEnum):
@@ -26,8 +30,8 @@ class CommonPlayStatus(IntEnum):
     DISAMBIGUATION = 1  # not queued for playback, show in gui
     PLAYING = 20  # Skill is handling playback internally
     PLAYING_AUDIOSERVICE = 21  # Skill forwarded playback to audio service
-    PLAYING_GUI = 22  # Skill forwarded playback to gui
-    PLAYING_ENCLOSURE = 23  # Skill forwarded playback to enclosure
+    PLAYING_OVOS = 22  # Skill forwarded playback to ovos common play
+    PLAYING_MYCROFTGUI = 23  # Skill forwarded playback to enclosure
     QUEUED = 30  # Waiting playback to be handled inside skill
     QUEUED_AUDIOSERVICE = 31  # Waiting playback in audio service
     QUEUED_GUI = 32  # Waiting playback in gui
@@ -68,25 +72,35 @@ class CommonPlayTracker:
                     self.handle_cps_response)
         self.bus.on("ovos.common_play.status.update",
                     self.handle_cps_status_change)
+        self.bus.on('ovos.common_play.play',
+                    self.handle_click_resume)
+        self.bus.on('ovos.common_play.pause',
+                    self.handle_click_pause)
+        self.bus.on('ovos.common_play.next',
+                    self.handle_click_next)
+        self.bus.on('ovos.common_play.previous',
+                    self.handle_click_previous)
+        self.bus.on('ovos.common_play.seek',
+                    self.handle_click_seek)
 
         self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
         self.register_gui_handlers()
 
     def register_gui_handlers(self):
-        self.gui.register_handler('ovos.common_play.gui.play',
+        self.gui.register_handler('ovos.common_play.play',
                                   self.handle_click_resume)
-        self.gui.register_handler('ovos.common_play.gui.pause',
+        self.gui.register_handler('ovos.common_play.pause',
                                   self.handle_click_pause)
-        self.gui.register_handler('ovos.common_play.gui.next',
+        self.gui.register_handler('ovos.common_play.next',
                                   self.handle_click_next)
-        self.gui.register_handler('ovos.common_play.gui.previous',
+        self.gui.register_handler('ovos.common_play.previous',
                                   self.handle_click_previous)
-        self.gui.register_handler('ovos.common_play.gui.seek',
+        self.gui.register_handler('ovos.common_play.seek',
                                   self.handle_click_seek)
 
-        self.gui.register_handler('ovos.common_play.gui.playlist.play',
+        self.gui.register_handler('ovos.common_play.playlist.play',
                                   self.handle_play_from_playlist)
-        self.gui.register_handler('ovos.common_play.gui.search.play',
+        self.gui.register_handler('ovos.common_play.search.play',
                                   self.handle_play_from_search)
 
     def shutdown(self):

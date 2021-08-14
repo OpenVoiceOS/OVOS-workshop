@@ -9,6 +9,17 @@ from ovos_workshop.frameworks.playback.playlists import Playlist, MediaEntry
 from ovos_workshop.frameworks.playback.status import *
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
+import enum
+
+
+class VideoPlayerType(enum.Enum):
+    SIMPLE = enum.auto()
+    MYCROFT = enum.auto()
+
+
+class AudioPlayerType(enum.Enum):
+    SIMPLE = enum.auto()
+    MYCROFT = enum.auto()
 
 
 class MycroftCommonPlayInterface:
@@ -119,7 +130,8 @@ class OVOSCommonPlaybackInterface:
                  allow_extensions=True, audio_service=None, gui=None,
                  backwards_compatibility=True, media_fallback=True,
                  early_stop_conf=90, early_stop_grace_period=1.0,
-                 min_score=30):
+                 min_score=30, video_player=VideoPlayerType.SIMPLE,
+                 audio_player=AudioPlayerType.SIMPLE):
         """
         Arguments:
             bus (MessageBus): mycroft messagebus connection
@@ -143,12 +155,14 @@ class OVOSCommonPlaybackInterface:
                                    allows skills that "just miss" to also be
                                    taken into account
             min_score (int): only display results above this confidence in
-                             disambiguation GUI page
+                             disambiguation VIDEO page
         """
         self.bus = bus or get_mycroft_bus()
         self.audio_service = audio_service or AudioServiceInterface(self.bus)
         self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
 
+        self.video_player = video_player
+        self.audio_player = audio_player
         self.min_timeout = min_timeout
         self.max_timeout = max_timeout
         self.min_score = min_score
@@ -180,9 +194,9 @@ class OVOSCommonPlaybackInterface:
         self.now_playing = None
 
         self.bus.on("ovos.common_play.query.response",
-                    self.handle_cps_response)
+                    self.handle_skill_response)
         self.bus.on("ovos.common_play.status.update",
-                    self.handle_cps_status_change)
+                    self.handle_status_change)
         self.bus.on("ovos.common_play.playback_time",
                     self.handle_sync_seekbar)
         self.bus.on("mycroft.audio.queue_end",
@@ -190,31 +204,113 @@ class OVOSCommonPlaybackInterface:
 
         self.register_gui_handlers()
 
+        # audio service GUI player plugin
+        # (mycroft version lives in playback control skill)
+        self.bus.on('playback.display.video.type',
+                       self.handle_adapter_video_request)
+        self.bus.on('playback.display.audio.type',
+                       self.handle_adapter_audio_request)
+        self.bus.on('playback.display.remove',
+                       self.handle_playback_ended)
+
     def shutdown(self):
         self.bus.remove("ovos.common_play.query.response",
-                        self.handle_cps_response)
+                        self.handle_skill_response)
         self.bus.remove("ovos.common_play.status.update",
-                        self.handle_cps_status_change)
+                        self.handle_status_change)
         self.gui.shutdown()
 
-    def handle_playback_ended(self, message):
-        self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
-
+    # audio service plugin adapter
+    def handle_adapter_video_request(self, message):
         search_qml = "Disambiguation.qml"
-        player_qml = "AudioPlayer.qml"
-        video_player_qml = "VideoPlayer.qml"
+        media_player_qml = "MycroftVideoPlayer.qml"
         playlist_qml = "Playlist.qml"
-        # remove previous pages
-        pages = [player_qml, playlist_qml, video_player_qml]
-        self.gui.remove_pages(pages)
-        # show search results, release screen after 15 seconds
-        self.gui.show_pages([search_qml], 0, override_idle=15)
 
-    def handle_cps_response(self, message):
+        pages = [media_player_qml, search_qml, playlist_qml]
+        self.gui.show_pages(pages, override_idle=True)
+
+    def handle_adapter_audio_request(self, message):
+        search_qml = "Disambiguation.qml"
+        audiomedia_player_qml = "MycroftAudioPlayer.qml"
+        playlist_qml = "Playlist.qml"
+        pages = [audiomedia_player_qml, search_qml, playlist_qml]
+        self._show_pages(pages)
+
+    # searching
+    def search(self, phrase, media_type=CommonPlayMediaType.GENERIC):
+        self.disambiguation_playlist = Playlist()  # reset
+        self.query_replies[phrase] = []
+        self.query_timeouts[phrase] = self.min_timeout
+        self.search_start = time.time()
+        self.waiting = True
+        self.bus.emit(Message('ovos.common_play.query',
+                              {"phrase": phrase,
+                               "question_type": media_type}))
+
+        # old common play will send the messages expected by the official
+        # mycroft stack, but skills are know to over match, dont support
+        # match type, and the VIDEO is different for every skill, it may also
+        # cause issues with status tracking and mess up playlists
+        if self.old_cps:
+            self.old_cps.send_query(phrase, media_type)
+
+        # if there is no match type defined, lets increase timeout a bit
+        # since all skills need to search
+        if media_type == CommonPlayMediaType.GENERIC:
+            bonus = 3  # timeout bonus
+        else:
+            bonus = 0
+
+        while self.waiting and \
+                time.time() - self.search_start <= self.max_timeout + bonus:
+            time.sleep(0.1)
+
+        self.waiting = False
+
+        # convert the returned data to the expected new format, playback
+        # type is consider Skill, better common_play will not handle the playback
+        # life cycle but instead delegate to the skill
+        if self.old_cps:
+            old_style = self.old_cps.get_results(phrase)
+            self.query_replies[phrase] += self._convert_to_new_style(old_style,
+                                                                     media_type)
+
+        if self.query_replies.get(phrase):
+            return [s for s in self.query_replies[phrase] if s.get("results")]
+
+        # fallback to generic media type
+        if self.media_fallback and media_type != CommonPlayMediaType.GENERIC:
+            LOG.debug(
+                "OVOSCommonPlay falling back to CommonPlayMediaType.GENERIC")
+            return self.search(phrase, media_type=CommonPlayMediaType.GENERIC)
+        return []
+
+    def search_skill(self, skill_id, phrase,
+                     media_type=CommonPlayMediaType.GENERIC):
+        res = [r for r in self.search(phrase, media_type)
+               if r["skill_id"] == skill_id]
+        if not len(res):
+            return None
+        return res[0]
+
+    def play_media(self, track, disambiguation=None, playlist=None):
+        self.set_now_playing(track)
+        if disambiguation:
+            self.disambiguation_playlist = Playlist(disambiguation)
+        if playlist:
+            self.playlist = Playlist(playlist)
+        self.play()
+        self.update_screen()
+
+    def handle_skill_response(self, message):
         search_phrase = message.data["phrase"]
         timeout = message.data.get("timeout")
-        LOG.debug(f"OVOSCommonPlay received results:"
+        LOG.debug(f"OVOSCommonPlay result:"
                   f" {message.data['skill_id']}")
+        if not self.waiting:
+            LOG.debug("  too late!! ignored in track selection process")
+            LOG.warning(f"{message.data['skill_id']} is not answering fast "
+                      "enough!")
 
         if message.data.get("searching"):
             # extend the timeout by N seconds
@@ -251,70 +347,6 @@ class OVOSCommonPlaybackInterface:
                     self.waiting = False
                     return
 
-    def search(self, phrase, media_type=CommonPlayMediaType.GENERIC):
-        self.query_replies[phrase] = []
-        self.query_timeouts[phrase] = self.min_timeout
-        self.search_start = time.time()
-        self.waiting = True
-        self.bus.emit(Message('ovos.common_play.query',
-                              {"phrase": phrase,
-                               "question_type": media_type}))
-
-        # old common play will send the messages expected by the official
-        # mycroft stack, but skills are know to over match, dont support
-        # match type, and the GUI is different for every skill, it may also
-        # cause issues with status tracking and mess up playlists
-        if self.old_cps:
-            self.old_cps.send_query(phrase, media_type)
-
-        # if there is no match type defined, lets increase timeout a bit
-        # since all skills need to search
-        if media_type == CommonPlayMediaType.GENERIC:
-            bonus = 3  # timeout bonus
-        else:
-            bonus = 0
-
-        while self.waiting and \
-                time.time() - self.search_start <= self.max_timeout + bonus:
-            time.sleep(0.1)
-
-        self.waiting = False
-
-        # convert the returned data to the expected new format, playback
-        # type is consider Skill, better cps will not handle the playback
-        # life cycle but instead delegate to the skill
-        if self.old_cps:
-            old_style = self.old_cps.get_results(phrase)
-            self.query_replies[phrase] += self._convert_to_new_style(old_style,
-                                                                     media_type)
-
-        if self.query_replies.get(phrase):
-            return [s for s in self.query_replies[phrase] if s.get("results")]
-
-        # fallback to generic media type
-        if self.media_fallback and media_type != CommonPlayMediaType.GENERIC:
-            LOG.debug(
-                "OVOSCommonPlay falling back to CommonPlayMediaType.GENERIC")
-            return self.search(phrase, media_type=CommonPlayMediaType.GENERIC)
-        return []
-
-    def search_skill(self, skill_id, phrase,
-                     media_type=CommonPlayMediaType.GENERIC):
-        res = [r for r in self.search(phrase, media_type)
-               if r["skill_id"] == skill_id]
-        if not len(res):
-            return None
-        return res[0]
-
-    def play_media(self, track, disambiguation=None, playlist=None):
-        self.set_now_playing(track)
-        if disambiguation:
-            self.disambiguation_playlist = Playlist(disambiguation)
-        if playlist:
-            self.playlist = Playlist(playlist)
-        self.play()
-        self.update_screen()
-
     @staticmethod
     def _convert_to_new_style(results, media_type=CommonPlayMediaType.GENERIC):
         new_style = []
@@ -348,7 +380,7 @@ class OVOSCommonPlaybackInterface:
         return new_style
 
     # status tracking
-    def handle_cps_status_change(self, message):
+    def handle_status_change(self, message):
         # message.data contains the media entry from search results and in
         # addition a "status" for that entry, this can be used to control
         # the playlist or simply communicate changes from the "playback
@@ -365,7 +397,7 @@ class OVOSCommonPlaybackInterface:
             self.set_now_playing(message.data)
             self.playback_status = status
             self.active_backend = status
-        elif status == CommonPlayStatus.PLAYING_GUI:
+        elif status == CommonPlayStatus.PLAYING_OVOS:
             # gui is handling playback
             self.set_now_playing(message.data)
             self.playback_status = status
@@ -431,6 +463,8 @@ class OVOSCommonPlaybackInterface:
 
     def handle_sync_seekbar(self, message):
         """ event sent by ovos audio backend plugins """
+        if not self.gui.get("media"):
+            self.gui["media"] = {"length": 0, "position": 0}
         self.gui["media"]["length"] = message.data["length"]
         self.gui["media"]["position"] = message.data["position"]
 
@@ -441,27 +475,49 @@ class OVOSCommonPlaybackInterface:
             track = MediaEntry.from_dict(track)
         assert isinstance(track, MediaEntry)
         self.now_playing = track
+        if self.now_playing not in self.playlist:
+            self.playlist.add_entry(self.now_playing)
+            self.playlist.position = len(self.playlist) - 1
 
     def play(self):
         # fallback to playlists if there is nothing to play
-        if not self.now_playing and self.playlist.current_track:
-            self.now_playing = self.playlist.current_track
-        if not self.now_playing and self.disambiguation_playlist.current_track:
-            self.now_playing = self.disambiguation_playlist.current_track
-
+        if not self.now_playing:
+            if self.playlist.current_track:
+                self.now_playing = self.playlist.current_track
+            if self.disambiguation_playlist.current_track:
+                self.now_playing = self.disambiguation_playlist.current_track
         assert isinstance(self.now_playing, MediaEntry)
 
         self.active_skill = self.now_playing.skill_id
 
         self.stop()
 
-        if self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
+        # video playback configured to use mycroft media player
+        if self.video_player == VideoPlayerType.MYCROFT and \
+            self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
+            self.now_playing.playback = CommonPlayPlaybackType.GUI
+        # audio playback configured to use mycroft media player
+        if self.audio_player == AudioPlayerType.MYCROFT and \
+                self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
+            self.now_playing.playback = CommonPlayPlaybackType.GUI
+
+        if self.now_playing.playback == CommonPlayPlaybackType.GUI:
+            self.now_playing.status = CommonPlayStatus.PLAYING_MYCROFTGUI
+            real_url = self.get_stream(self.now_playing.uri)
+            # TODO create a string Enum of supported backends, add an alias
+            #  to utterance arg name.
+            #  user utterance should be parsed, but that logic was
+            #  never finished and it just checks
+            #       if utterance(arg) in utterance(user play request)
+            # send it to the mycroft gui media subsystem
+            self.audio_service.play(real_url, utterance="mycroft_mediaplayer")
+        elif self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
             self.now_playing.status = CommonPlayStatus.PLAYING_AUDIOSERVICE
             real_url = self.get_stream(self.now_playing.uri)
-            self.audio_service.play(real_url)
-            # ovos_vlc sends a live update from audio service
+            # we explicitly want to use vlc for audio only output in this case
+            self.audio_service.play(real_url, utterance="vlc")
+            # ovos_vlc sends a live update from audio service, not needed
             # create_daemon(self._fake_seekbar)
-
         elif self.now_playing.playback == CommonPlayPlaybackType.SKILL:
             self.now_playing.status = CommonPlayStatus.PLAYING
             if data.get("is_old_style"):
@@ -473,17 +529,10 @@ class OVOSCommonPlaybackInterface:
                 self.bus.emit(Message(
                     f'ovos.common_play.{self.now_playing.skill_id}.play',
                     self.now_playing.as_dict))
-        elif self.now_playing.playback == CommonPlayPlaybackType.GUI:
-            self.now_playing.status = CommonPlayStatus.PLAYING_GUI
+        elif self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
+            self.now_playing.status = CommonPlayStatus.PLAYING_OVOS
         else:
             raise ValueError("invalid playback request")
-
-        self.gui["media"] = self.now_playing.info
-        self.gui["media"]["status"] = "Playing"
-        self.gui["title"] = self.now_playing.title
-        self.gui["bg_image"] = self.now_playing.bg_image
-        self.gui["stream"] = self.get_stream(self.now_playing.uri,
-                                             video=True)
 
     def play_next(self):
         if len(self.playlist) > 1:
@@ -511,7 +560,7 @@ class OVOSCommonPlaybackInterface:
 
     def pause(self):
         self.update_status({"status": CommonPlayStatus.PAUSED})
-        if self.active_backend == CommonPlayStatus.PLAYING_GUI:
+        if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
             self.gui.pause_video()
         elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.pause()
@@ -520,7 +569,7 @@ class OVOSCommonPlaybackInterface:
                 Message(f'ovos.common_play.{self.active_skill}.pause'))
 
     def resume(self):
-        if self.active_backend == CommonPlayStatus.PLAYING_GUI:
+        if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
             self.gui.resume_video()
         elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.resume()
@@ -530,57 +579,43 @@ class OVOSCommonPlaybackInterface:
         self.update_status({"status": self.active_backend})
 
     def stop(self):
-        if self.active_backend == CommonPlayStatus.PLAYING_GUI:
-            self.gui.stop_video()
-        elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
-            self.audio_service.stop()
-        elif self.active_backend is not None:
-            self.bus.emit(
-                Message(f'ovos.common_play.{self.active_skill}.stop'))
+        # NOTE: these checks have been removed in case only the skills
+        # service is restarted, in that case the active_backend can not be used
+        #if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
+        self.gui.stop_video()
+        #elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
+        self.audio_service.stop()
+        #elif self.active_backend is not None:
+        self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.stop'))
+
         self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
         stopped = self.active_backend is not None
         self.active_backend = None
         self.active_skill = None
         return stopped
 
-    # ######### GUI integration ###############
+    # ######### VIDEO integration ###############
     def register_gui_handlers(self):
-        self.gui.register_handler('ovos.common_play.gui.play',
+        self.gui.register_handler('ovos.common_play.play',
                                   self.handle_click_resume)
-        self.gui.register_handler('ovos.common_play.gui.pause',
+        self.gui.register_handler('ovos.common_play.pause',
                                   self.handle_click_pause)
-        self.gui.register_handler('ovos.common_play.gui.next',
+        self.gui.register_handler('ovos.common_play.next',
                                   self.handle_click_next)
-        self.gui.register_handler('ovos.common_play.gui.previous',
+        self.gui.register_handler('ovos.common_play.previous',
                                   self.handle_click_previous)
-        self.gui.register_handler('ovos.common_play.gui.seek',
+        self.gui.register_handler('ovos.common_play.seek',
                                   self.handle_click_seek)
         self.gui.register_handler(
             'ovos.common_play.video.media.playback.ended',
             self.handle_playback_ended)
 
-        self.gui.register_handler('ovos.common_play.gui.playlist.play',
+        self.gui.register_handler('ovos.common_play.playlist.play',
                                   self.handle_play_from_playlist)
-        self.gui.register_handler('ovos.common_play.gui.search.play',
+        self.gui.register_handler('ovos.common_play.search.play',
                                   self.handle_play_from_search)
 
-    def update_screen(self, search=None, media=None, playlist=None, page=0):
-        search_qml = "Disambiguation.qml"
-        player_qml = "AudioPlayer.qml"
-        video_player_qml = "VideoPlayer.qml"
-        playlist_qml = "Playlist.qml"
-
-        # remove previous pages
-        pages = [player_qml, search_qml, playlist_qml, video_player_qml]
-        self.gui.remove_pages(pages)
-
-        if self.now_playing.playback == CommonPlayPlaybackType.GUI:
-            self.gui["playStatus"] = "play"
-            pages = [video_player_qml, search_qml, playlist_qml]
-        # display "now playing" music page
-        else:
-            pages = [player_qml, search_qml, playlist_qml]
-
+    def _show_pages(self, pages):
         search_results = [e.info for e in
                           sorted(self.disambiguation_playlist.entries,
                                  key=lambda k: k.match_confidence,
@@ -592,7 +627,46 @@ class OVOSCommonPlaybackInterface:
         self.gui["playlistModel"] = {
             "data": [e.info for e in self.playlist.entries]
         }
-        self.gui.show_pages(pages, page, override_idle=True)
+        self.gui.show_pages(pages, override_idle=True)
+
+    def update_screen(self, search=None, media=None, playlist=None, page=0):
+        search_qml = "Disambiguation.qml"
+        player_qml = "AudioPlayer.qml"
+        media_player_qml = "MycroftVideoPlayer.qml"
+        audiomedia_player_qml = "MycroftAudioPlayer.qml"
+        playlist_qml = "Playlist.qml"
+        video_player_qml = "VideoPlayer.qml"
+
+
+        # remove previous pages TODO is this needed? why?
+        pages = [player_qml, search_qml, playlist_qml,
+                 video_player_qml, audiomedia_player_qml]
+        self.gui.remove_pages(pages)
+
+        # gui data shared by audio/video
+        self.gui["media"] = self.now_playing.info
+        self.gui["media"]["status"] = "Playing"
+        self.gui["title"] = self.now_playing.title
+        self.gui["bg_image"] = self.now_playing.bg_image
+
+        # TODO config options for different video players (?)
+        #   simple player (current) vs mycroft media player
+        # TODO deprecate VIDEO while in alpha (?) in favor of GUI (?)
+        if self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
+            self.gui["stream"] = self.get_stream(self.now_playing.uri,
+                                                 video=True)
+            pages = [video_player_qml, search_qml, playlist_qml]
+        elif self.now_playing.playback == CommonPlayPlaybackType.GUI:
+            # handled by a seperate bus event sent by plugin
+            return
+        # display "now playing" music page
+        # tries to keep in sync with audio service
+        else:
+            self.gui["media"]["status"] = "Stopped"
+            self.gui["stream"] = None  # stop any previous VIDEO playback
+            pages = [player_qml, search_qml, playlist_qml]
+
+        self._show_pages(pages)
 
     #  gui <-> audio service
     def handle_click_pause(self, message):
@@ -616,16 +690,26 @@ class OVOSCommonPlaybackInterface:
             self.gui["media"]["position"] = position
             # self.update_screen()
 
+    def handle_playback_ended(self, message):
+        search_qml = "Disambiguation.qml"
+        self.gui.release()
+        # show search results, release screen after 15 seconds
+        self.gui.show_pages([search_qml], 0, override_idle=15)
+        self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
+
+    # gui <-> playlists
     def handle_play_from_playlist(self, message):
         # TODO playlist handling (index pointer)
         media = message.data["playlistData"]
         self.set_now_playing(media)
         self.play()
+        self.update_screen()
 
     def handle_play_from_search(self, message):
         media = message.data["playlistData"]
         self.set_now_playing(media)
         self.play()
+        self.update_screen()
 
 
 if __name__ == "__main__":

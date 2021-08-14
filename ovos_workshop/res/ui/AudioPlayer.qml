@@ -43,8 +43,8 @@ Mycroft.Delegate {
     property var playerDuration: media.length
     property real playerPosition: 0
     property var playerState: media.status
-    property var nextAction: "gui.next"
-    property var previousAction: "gui.previous"
+    property var nextAction: "next"
+    property var previousAction: "previous"
 
     onIsVerticalChanged: {
         if(isVertical){
@@ -182,7 +182,7 @@ Mycroft.Delegate {
                                 onClicked: {
                                     if (playerState != "Playing"){
                                         console.log("in resume action")
-                                        triggerGuiEvent("gui.play", {"media": {
+                                        triggerGuiEvent("play", {"media": {
                                                                 "image": media.image,
                                                                 "track": media.track,
                                                                 "album": media.album,
@@ -191,7 +191,7 @@ Mycroft.Delegate {
                                                                 "position": playerPosition,
                                                                 "status": "Playing"}})
                                     } else {
-                                        triggerGuiEvent("gui.pause", {"media": {
+                                        triggerGuiEvent("pause", {"media": {
                                                                 "image": media.image,
                                                                 "title": media.title,
                                                                 "album": media.album,
@@ -250,7 +250,7 @@ Mycroft.Delegate {
             value: playerPosition
 
             onPressedChanged: {
-                triggerGuiEvent("gui.seek", {"seekValue": value})
+                triggerGuiEvent("seek", {"seekValue": value})
             }
 
             handle: Item {
