@@ -66,6 +66,9 @@ class MediaEntry:
 
 
 class Playlist(list):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.position = 0
 
     @property
     def entries(self):
@@ -107,3 +110,18 @@ class Playlist(list):
             if e == item:
                 return True
         return False
+
+    @property
+    def current_track(self):
+        if len(self) == 0:
+            return None
+        return self[self.position]
+
+    def next_track(self):
+        self.position += 1
+        if self.position > len(self):
+            self.position = 0
+
+    def prev_track(self):
+        self.position -= 1
+        self.position = max(0, self.position)

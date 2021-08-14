@@ -119,7 +119,7 @@ class OVOSCommonPlaybackInterface:
                  allow_extensions=True, audio_service=None, gui=None,
                  backwards_compatibility=True, media_fallback=True,
                  early_stop_conf=90, early_stop_grace_period=1.0,
-                 min_score=50):
+                 min_score=30):
         """
         Arguments:
             bus (MessageBus): mycroft messagebus connection
@@ -307,12 +307,13 @@ class OVOSCommonPlaybackInterface:
         return res[0]
 
     def play_media(self, track, disambiguation=None, playlist=None):
-        self._update_current_media(track)
+        self.set_now_playing(track)
         if disambiguation:
             self.disambiguation_playlist = Playlist(disambiguation)
         if playlist:
             self.playlist = Playlist(playlist)
         self.play()
+        self.update_screen()
 
     @staticmethod
     def _convert_to_new_style(results, media_type=CommonPlayMediaType.GENERIC):
@@ -347,21 +348,6 @@ class OVOSCommonPlaybackInterface:
         return new_style
 
     # status tracking
-    def _update_current_media(self, track):
-        """ Currently playing media """
-        if isinstance(track, dict):
-            track = MediaEntry.from_dict(track)
-        assert isinstance(track, MediaEntry)
-        self.now_playing = track
-
-    def _update_playlist(self, data):
-        """ List of queued media """
-        index = data.get('playlist_position') or -1
-        if data not in self.playlist:
-            self.playlist.add_entry(data, index)
-        else:
-            pass # TODO re-order track aleady in playlist ?
-
     def handle_cps_status_change(self, message):
         # message.data contains the media entry from search results and in
         # addition a "status" for that entry, this can be used to control
@@ -371,17 +357,17 @@ class OVOSCommonPlaybackInterface:
 
         if status == CommonPlayStatus.PLAYING:
             # skill is handling playback internally
-            self._update_current_media(message.data)
+            self.set_now_playing(message.data)
             self.playback_status = status
             self.active_backend = status
         elif status == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             # audio service is handling playback
-            self._update_current_media(message.data)
+            self.set_now_playing(message.data)
             self.playback_status = status
             self.active_backend = status
         elif status == CommonPlayStatus.PLAYING_GUI:
             # gui is handling playback
-            self._update_current_media(message.data)
+            self.set_now_playing(message.data)
             self.playback_status = status
             self.active_backend = status
 
@@ -389,15 +375,15 @@ class OVOSCommonPlaybackInterface:
             # alternative results # TODO its this 1 track or a list ?
             if message.data not in self.disambiguation_playlist:
                 self.disambiguation_playlist.add_entry(message.data)
-        elif status == CommonPlayStatus.QUEUED:
-            # skill is handling playback and this is in playlist
-            self._update_playlist(message.data)
-        elif status == CommonPlayStatus.QUEUED_GUI:
-            # gui is handling playback and this is in playlist
-            self._update_playlist(message.data)
-        elif status == CommonPlayStatus.QUEUED_AUDIOSERVICE:
+        elif status in [CommonPlayStatus.QUEUED,
+                        CommonPlayStatus.QUEUED_GUI,
+                        CommonPlayStatus.QUEUED_AUDIOSERVICE]:
             # audio service is handling playback and this is in playlist
-            self._update_playlist(message.data)
+            index = message.data.get('playlist_position') or -1
+            if message.data not in self.playlist:
+                self.playlist.add_entry(message.data, index)
+            else:
+                pass  # TODO re-order track aleady in playlist ?
 
         elif status == CommonPlayStatus.PAUSED:
             # media is not being played, but can be resumed anytime
@@ -418,7 +404,7 @@ class OVOSCommonPlaybackInterface:
     def update_status(self, status):
         self.bus.emit(Message('ovos.common_play.status.update', status))
 
-    # playback control
+    # stream handling
     @staticmethod
     def get_stream(uri, video=False):
         real_url = None
@@ -448,8 +434,23 @@ class OVOSCommonPlaybackInterface:
         self.gui["media"]["length"] = message.data["length"]
         self.gui["media"]["position"] = message.data["position"]
 
+    # playback control
+    def set_now_playing(self, track):
+        """ Currently playing media """
+        if isinstance(track, dict):
+            track = MediaEntry.from_dict(track)
+        assert isinstance(track, MediaEntry)
+        self.now_playing = track
+
     def play(self):
+        # fallback to playlists if there is nothing to play
+        if not self.now_playing and self.playlist.current_track:
+            self.now_playing = self.playlist.current_track
+        if not self.now_playing and self.disambiguation_playlist.current_track:
+            self.now_playing = self.disambiguation_playlist.current_track
+
         assert isinstance(self.now_playing, MediaEntry)
+
         self.active_skill = self.now_playing.skill_id
 
         self.stop()
@@ -458,7 +459,7 @@ class OVOSCommonPlaybackInterface:
             self.now_playing.status = CommonPlayStatus.PLAYING_AUDIOSERVICE
             real_url = self.get_stream(self.now_playing.uri)
             self.audio_service.play(real_url)
-            # TODO - live update from audio service
+            # ovos_vlc sends a live update from audio service
             # create_daemon(self._fake_seekbar)
 
         elif self.now_playing.playback == CommonPlayPlaybackType.SKILL:
@@ -484,30 +485,29 @@ class OVOSCommonPlaybackInterface:
         self.gui["stream"] = self.get_stream(self.now_playing.uri,
                                              video=True)
 
-        # TODO proper playlist support
-        self.playlist = Playlist([self.now_playing])
-
-        self.update_screen()
-
     def play_next(self):
-        # TODO playlist handling
-        if self.active_backend == CommonPlayStatus.PLAYING_GUI:
-            pass
-        elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
-            self.audio_service.next()
-        elif self.active_backend is not None:
-            self.bus.emit(
-                Message(f'ovos.common_play.{self.active_skill}.next'))
+        if len(self.playlist) > 1:
+            self.playlist.next_track()
+            self.set_now_playing(self.playlist.current_track)
+            self.play()
+        elif len(self.disambiguation_playlist) > 1:
+            self.disambiguation_playlist.next_track()
+            self.set_now_playing(self.disambiguation_playlist.current_track)
+            self.play()
+        else:
+            LOG.debug("requested next, but there aren't any more tracks")
 
     def play_prev(self):
-        # TODO playlist handling
-        if self.active_backend == CommonPlayStatus.PLAYING_GUI:
-            pass
-        elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
-            self.audio_service.prev()
-        elif self.active_backend is not None:
-            self.bus.emit(
-                Message(f'ovos.common_play.{self.active_skill}.prev'))
+        if len(self.playlist) > 1:
+            self.playlist.prev_track()
+            self.set_now_playing(self.playlist.current_track)
+            self.play()
+        elif len(self.disambiguation_playlist) > 1:
+            self.disambiguation_playlist.prev_track()
+            self.set_now_playing(self.disambiguation_playlist.current_track)
+            self.play()
+        else:
+            LOG.debug("requested previous, but already in 1st track")
 
     def pause(self):
         self.update_status({"status": CommonPlayStatus.PAUSED})
@@ -583,7 +583,8 @@ class OVOSCommonPlaybackInterface:
 
         search_results = [e.info for e in
                           sorted(self.disambiguation_playlist.entries,
-                                 key=lambda k: k.match_confidence)
+                                 key=lambda k: k.match_confidence,
+                                 reverse=True)
                           if e.match_confidence >= self.min_score]
         self.gui["searchModel"] = {
             "data": search_results
@@ -592,19 +593,6 @@ class OVOSCommonPlaybackInterface:
             "data": [e.info for e in self.playlist.entries]
         }
         self.gui.show_pages(pages, page, override_idle=True)
-
-    @staticmethod
-    def _res2playlist(res):
-        playlist_data = []
-        for r in res:
-            playlist_data.append({
-                "album": r.get('skill_id'),
-                "duration": r.get('length'),
-                "image": r.get('image'),
-                "source": r.get('skill_icon') or r.get('skill_logo'),
-                "track": r.get("title")
-            })
-        return playlist_data
 
     #  gui <-> audio service
     def handle_click_pause(self, message):
@@ -629,14 +617,14 @@ class OVOSCommonPlaybackInterface:
             # self.update_screen()
 
     def handle_play_from_playlist(self, message):
-        # TODO playlist handling
+        # TODO playlist handling (index pointer)
         media = message.data["playlistData"]
-        self._update_current_media(media)
+        self.set_now_playing(media)
         self.play()
 
     def handle_play_from_search(self, message):
         media = message.data["playlistData"]
-        self._update_current_media(media)
+        self.set_now_playing(media)
         self.play()
 
 
