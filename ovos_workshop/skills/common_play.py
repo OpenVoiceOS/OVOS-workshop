@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.frameworks.playback import CPSMatchType, CPSMatchConfidence
+from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayMatchConfidence
 from ovos_utils.messagebus import Message
 
 
@@ -17,7 +17,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
-        self.supported_media = [CPSMatchType.GENERIC, CPSMatchType.AUDIO]
+        self.supported_media = [CommonPlayMediaType.GENERIC, CommonPlayMediaType.AUDIO]
         self._current_query = None
         # NOTE: derived skills will likely want to override this list
 
@@ -51,7 +51,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
-        media_type = message.data.get("question_type", CPSMatchType.GENERIC)
+        media_type = message.data.get("question_type", CommonPlayMediaType.GENERIC)
 
         if media_type not in self.supported_media:
             return
@@ -91,18 +91,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         Arguments:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
-            media_type (CPSMatchType): requested CPSMatchType to search for
+            media_type (CommonPlayMediaType): requested CPSMatchType to search for
 
-        if a result from here is selected with CPSPlayback.SKILL then
+        if a result from here is selected with CommonPlayPlaybackType.SKILL then
         CPS_play will be called with result data as argument
 
         Returns:
             search_results (list): list of dictionaries with result entries
             {
-                "match_confidence": CPSMatchConfidence.HIGH,
+                "match_confidence": CommonPlayMatchConfidence.HIGH,
                 "question_type":  CPSMatchType.MUSIC,
                 "uri": "https://audioservice.or.gui.will.play.this",
-                "playback": CPSPlayback.GUI,
+                "playback": CommonPlayPlaybackType.GUI,
                 "image": "http://optional.audioservice.jpg",
                 "bg_image": "http://optional.audioservice.background.jpg"
             }
@@ -116,18 +116,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         Playback will be handled manually by the skill, eg, spotify or some
         other external service
 
-        NOTE: CPSPlayback.AUDIO and CPSPlayback.GUI are handled
+        NOTE: CommonPlayPlaybackType.AUDIO and CommonPlayPlaybackType.GUI are handled
               automatically by BetterCommonPlay, this is only called for
-              CPSPlayback.SKILL results
+              CommonPlayPlaybackType.SKILL results
 
         Arguments:
             data (dict): selected data previously returned in CPS_search
 
          {
-            "match_confidence": CPSMatchConfidence.HIGH,
-            "question_type":  CPSMatchType.MUSIC,
+            "match_confidence": CommonPlayMatchConfidence.HIGH,
+            "question_type":  CommonPlayMediaType.MUSIC,
             "uri": "https://audioservice.or.gui.will.play.this",
-            "playback": CPSPlayback.SKILL,
+            "playback": CommonPlayPlaybackType.SKILL,
             "image": "http://optional.audioservice.jpg",
             "bg_image": "http://optional.audioservice.background.jpg"
         }

@@ -1,2 +1,2 @@
-from ovos_workshop.frameworks.playback import CPSPlayback, CPSMatchConfidence, \
-    CPSTrackStatus, CPSMatchType, CommonPlayInterface, OVOSCommonPlaybackInterface
+from ovos_workshop.frameworks.playback import CommonPlayPlaybackType, CommonPlayMatchConfidence, \
+    CommonPlayStatus, CommonPlayMediaType, MycroftCommonPlayInterface, OVOSCommonPlaybackInterface
