@@ -1,7 +1,34 @@
 from abc import abstractmethod
-from ovos_workshop.skills.ovos import OVOSSkill
+from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
+from ovos_workshop.skills.decorators.playback import common_play_search
 from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayMatchConfidence
 from ovos_utils.messagebus import Message
+from inspect import signature
+
+
+def get_non_properties(obj):
+    """Get attibutes that are not properties from object.
+
+    Will return members of object class along with bases down to MycroftSkill.
+
+    Args:
+        obj: object to scan
+
+    Returns:
+        Set of attributes that are not a property.
+    """
+
+    def check_class(cls):
+        """Find all non-properties in a class."""
+        # Current class
+        d = cls.__dict__
+        np = [k for k in d if not isinstance(d[k], property)]
+        # Recurse through base classes excluding MycroftSkill and object
+        for b in [b for b in cls.__bases__ if b not in (object, MycroftSkill)]:
+            np += check_class(b)
+        return np
+
+    return set(check_class(obj.__class__))
 
 
 class OVOSCommonPlaybackSkill(OVOSSkill):
@@ -20,6 +47,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         # NOTE: derived skills will likely want to override this list
         self.supported_media = [CommonPlayMediaType.GENERIC,
                                 CommonPlayMediaType.AUDIO]
+        self._search_handlers = [self.CPS_search] # default search handler,
+                                # more can be added wth decorators
         self._current_query = None
 
     def bind(self, bus):
@@ -40,7 +69,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.add_event(f'ovos.common_play.{self.skill_id}.stop',
                            self.__handle_cps_stop)
 
-
+    def _register_decorated(self):
+        # register search handlers
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'is_cplay_search_handler'):
+                if method.is_cplay_search_handler:
+                    self._search_handlers.append(method)
+        super()._register_decorated()
 
     def play_media(self, media, disambiguation=None, playlist=None):
         disambiguation = disambiguation or [media]
@@ -66,34 +102,39 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         if media_type not in self.supported_media:
             return
 
-        # invoke the CPS handler to let the skill perform its search
-        # TODO replace method override with decorators (?)
-        # @ovos_common_play_handler
-        # def handle_search(...):
-
+        # invoke the media search handlesr to let the skill perform its search
         found = False
-        # might be a generator or a list
-        results = self.CPS_search(search_phrase, media_type) or []
-        if isinstance(results, list):
-            # inject skill id in individual results, will be needed later
-            # for proper playback handling
-            for idx, r in enumerate(results):
-                results[idx]["skill_id"] = self.skill_id
-            self.bus.emit(message.response({"phrase": search_phrase,
-                                            "skill_id": self.skill_id,
-                                            "results": results,
-                                            "searching": False}))
-            found = True
-        else: # generator, keeps returning results
-            for r in results:
+
+        for handler in self._search_handlers:
+            # @common_play_search
+            # def handle_search(...):
+            if len(signature(handler).parameters) == 1:
+                # no optional media_type argument
+                results = handler(search_phrase) or []
+            else:
+                results = handler(search_phrase, media_type) or []
+
+            # handler might return a generator or a list
+            if isinstance(results, list):
                 # inject skill id in individual results, will be needed later
                 # for proper playback handling
-                r["skill_id"] = self.skill_id
+                for idx, r in enumerate(results):
+                    results[idx]["skill_id"] = self.skill_id
                 self.bus.emit(message.response({"phrase": search_phrase,
                                                 "skill_id": self.skill_id,
-                                                "results": [r],
+                                                "results": results,
                                                 "searching": False}))
                 found = True
+            else: # generator, keeps returning results
+                for r in results:
+                    # inject skill id in individual results, will be needed later
+                    # for proper playback handling
+                    r["skill_id"] = self.skill_id
+                    self.bus.emit(message.response({"phrase": search_phrase,
+                                                    "skill_id": self.skill_id,
+                                                    "results": [r],
+                                                    "searching": False}))
+                    found = True
 
         if not found:
             # Signal we are done (can't handle it)
