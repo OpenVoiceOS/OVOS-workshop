@@ -616,9 +616,10 @@ class OVOSCommonPlaybackInterface:
                                   self.handle_click_previous)
         self.gui.register_handler('ovos.common_play.seek',
                                   self.handle_click_seek)
-        self.gui.register_handler(
-            'ovos.common_play.video.media.playback.ended',
-            self.handle_playback_ended)
+        # TODO something is wrong in qml, sent at wrong time
+       # self.gui.register_handler(
+       #     'ovos.common_play.video.media.playback.ended',
+       #     self.handle_playback_ended)
 
         self.gui.register_handler('ovos.common_play.playlist.play',
                                   self.handle_play_from_playlist)
