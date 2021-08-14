@@ -307,10 +307,7 @@ class OVOSCommonPlaybackInterface:
         timeout = message.data.get("timeout")
         LOG.debug(f"OVOSCommonPlay result:"
                   f" {message.data['skill_id']}")
-        if not self.waiting:
-            LOG.debug("  too late!! ignored in track selection process")
-            LOG.warning(f"{message.data['skill_id']} is not answering fast "
-                      "enough!")
+
 
         if message.data.get("searching"):
             # extend the timeout by N seconds
@@ -321,10 +318,17 @@ class OVOSCommonPlaybackInterface:
 
         elif search_phrase in self.query_replies:
             # Collect replies until the timeout
+            if not self.waiting and not len(self.query_replies[search_phrase]):
+                LOG.debug("  too late!! ignored in track selection process")
+                LOG.warning(
+                    f"{message.data['skill_id']} is not answering fast "
+                    "enough!")
+
             self.query_replies[search_phrase].append(message.data)
             for res in message.data.get("results", []):
                 if res not in self.disambiguation_playlist:
                     self.disambiguation_playlist.add_entry(res)
+
 
             # abort waiting if we gathered enough results
             if time.time() - self.search_start > self.query_timeouts[

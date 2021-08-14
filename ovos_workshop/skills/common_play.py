@@ -17,9 +17,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
-        self.supported_media = [CommonPlayMediaType.GENERIC, CommonPlayMediaType.AUDIO]
-        self._current_query = None
         # NOTE: derived skills will likely want to override this list
+        self.supported_media = [CommonPlayMediaType.GENERIC,
+                                CommonPlayMediaType.AUDIO]
+        self._current_query = None
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -32,9 +33,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         """
         if bus:
             super().bind(bus)
-            self.add_event('ovos.common_play.query', self.__handle_cps_query)
+            self.add_event('ovos.common_play.query',
+                           self.__handle_cps_query)
             self.add_event(f'ovos.common_play.{self.skill_id}.play',
                            self.__handle_cps_play)
+            self.add_event(f'ovos.common_play.{self.skill_id}.stop',
+                           self.__handle_cps_stop)
+
+
 
     def play_media(self, media, disambiguation=None, playlist=None):
         disambiguation = disambiguation or [media]
@@ -47,6 +53,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     def __handle_cps_play(self, message):
         self.CPS_play(message.data)
 
+    def __handle_cps_stop(self, message):
+        # for skills managing their own playback
+        self.stop()
+
     def __handle_cps_query(self, message):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
@@ -57,18 +67,35 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             return
 
         # invoke the CPS handler to let the skill perform its search
-        results = self.CPS_search(search_phrase, media_type)
+        # TODO replace method override with decorators (?)
+        # @ovos_common_play_handler
+        # def handle_search(...):
 
-        if results:
+        found = False
+        # might be a generator or a list
+        results = self.CPS_search(search_phrase, media_type) or []
+        if isinstance(results, list):
             # inject skill id in individual results, will be needed later
-            # for proper VIDEO playback handling
+            # for proper playback handling
             for idx, r in enumerate(results):
                 results[idx]["skill_id"] = self.skill_id
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "results": results,
                                             "searching": False}))
-        else:
+            found = True
+        else: # generator, keeps returning results
+            for r in results:
+                # inject skill id in individual results, will be needed later
+                # for proper playback handling
+                r["skill_id"] = self.skill_id
+                self.bus.emit(message.response({"phrase": search_phrase,
+                                                "skill_id": self.skill_id,
+                                                "results": [r],
+                                                "searching": False}))
+                found = True
+
+        if not found:
             # Signal we are done (can't handle it)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
@@ -119,6 +146,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         NOTE: CommonPlayPlaybackType.AUDIO and CommonPlayPlaybackType.VIDEO are handled
               automatically by BetterCommonPlay, this is only called for
               CommonPlayPlaybackType.SKILL results
+
+        NOTE2: Mycroft Common Play skills also use this and depend on it to
+               actually issue a call to the audio service, this is
+               equivalent to the CPS_play method in Mycroft Common Play skills
 
         Arguments:
             data (dict): selected data previously returned in CPS_search
