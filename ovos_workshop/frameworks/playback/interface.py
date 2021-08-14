@@ -398,10 +398,16 @@ class OVOSCommonPlaybackInterface:
             self.playback_status = status
             self.active_backend = status
         elif status == CommonPlayStatus.PLAYING_OVOS:
-            # gui is handling playback
+            # ovos common play is handling playback in GUI
             self.set_now_playing(message.data)
             self.playback_status = status
             self.active_backend = status
+        elif status == CommonPlayStatus.PLAYING_MYCROFTGUI:
+            # mycroft gui media player is handling playback
+            self.set_now_playing(message.data)
+            self.playback_status = status
+            self.active_backend = status
+
 
         elif status == CommonPlayStatus.DISAMBIGUATION:
             # alternative results # TODO its this 1 track or a list ?
