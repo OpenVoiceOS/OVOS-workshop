@@ -34,6 +34,7 @@ class MediaEntry:
         data["skill_icon"] = data.get("skill_icon") or data.get("skill_logo")
         data["status"]= data.get("status") or CommonPlayStatus.DISAMBIGUATION
         data["uri"] = data.get("stream") or data.get("uri") or data.get("url")
+        data["title"] = data.get("title") or data["uri"]
         return MediaEntry(**data)
 
     @property
