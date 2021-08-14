@@ -1,5 +1,7 @@
 from ovos_workshop.frameworks.playback.status import *
 from ovos_utils.json_helper import merge_dict
+from ovos_utils.log import LOG
+
 
 class MediaEntry:
     def __init__(self, title, uri, skill_id="ovos.common_play",
