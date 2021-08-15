@@ -45,6 +45,13 @@ Mycroft.Delegate {
     property var playerState: media.status
     property var nextAction: "next"
     property var previousAction: "previous"
+    property var postionFromMetadata: media.position
+
+    onPositionFromMetadataChanged: {
+        if(playerState === "Playing"){
+            playerPosition = media.position
+        }
+    }
 
     onIsVerticalChanged: {
         if(isVertical){
