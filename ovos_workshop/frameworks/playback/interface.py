@@ -1,7 +1,7 @@
 import random
 import random
 import time
-
+from ovos_utils.gui import is_gui_connected
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message, wait_for_reply
 from ovos_utils.skills.audioservice import AudioServiceInterface
@@ -489,6 +489,26 @@ class OVOSCommonPlaybackInterface:
             self.playlist.add_entry(self.now_playing)
             self.playlist.position = len(self.playlist) - 1
 
+    def _ensure_gui(self):
+        """ helper method to modify behavior based on having a GUI or not"""
+        if is_gui_connected(self.bus):
+            # check for config overrides, in case things were forced to behave
+            # like the mark2, TODO unify into single flag (?)
+
+            # video playback configured to use mycroft media player
+            if self.video_player == VideoPlayerType.MYCROFT and \
+                    self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
+                self.now_playing.playback = CommonPlayPlaybackType.MEDIA_VIDEO
+
+            # audio playback configured to use mycroft media player
+            if self.audio_player == AudioPlayerType.MYCROFT and \
+                    self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
+                self.now_playing.playback = CommonPlayPlaybackType.MEDIA_AUDIO
+        else:
+            # No gui, so lets force playback to use audio only
+            # audio playback configured to use mycroft media player
+            self.now_playing.playback = CommonPlayPlaybackType.AUDIO
+
     def play(self):
         # fallback to playlists if there is nothing to play
         if not self.now_playing:
@@ -502,25 +522,33 @@ class OVOSCommonPlaybackInterface:
 
         self.stop()
 
-        # video playback configured to use mycroft media player
-        if self.video_player == VideoPlayerType.MYCROFT and \
-            self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
-            self.now_playing.playback = CommonPlayPlaybackType.GUI
-        # audio playback configured to use mycroft media player
-        if self.audio_player == AudioPlayerType.MYCROFT and \
-                self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
-            self.now_playing.playback = CommonPlayPlaybackType.GUI
+        # be sure we have a GUI connected
+        self._ensure_gui()
 
-        if self.now_playing.playback == CommonPlayPlaybackType.GUI:
+        # TODO create a string Enum of supported backends, add an alias
+        #  to utterance arg name.
+        #  user utterance should be parsed, but that logic was
+        #  never finished and it just checks
+        #       if utterance(arg) in utterance(user play request)
+        #self.audio_service.play(uri, utterance=ENUM)
+
+        if self.now_playing.playback == CommonPlayPlaybackType.MEDIA_VIDEO:
             self.now_playing.status = CommonPlayStatus.PLAYING_MYCROFTGUI
             real_url = self.get_stream(self.now_playing.uri)
-            # TODO create a string Enum of supported backends, add an alias
-            #  to utterance arg name.
-            #  user utterance should be parsed, but that logic was
-            #  never finished and it just checks
-            #       if utterance(arg) in utterance(user play request)
             # send it to the mycroft gui media subsystem
-            self.audio_service.play(real_url, utterance="mycroft_mediaplayer")
+            self.audio_service.play((real_url, 'type/video', self.active_skill),
+                                    utterance="mycroft_mediaplayer")
+        elif self.now_playing.playback == CommonPlayPlaybackType.MEDIA_AUDIO:
+            self.now_playing.status = CommonPlayStatus.PLAYING_MYCROFTGUI
+            real_url = self.get_stream(self.now_playing.uri)
+            # send it to the mycroft gui media subsystem
+            self.audio_service.play((real_url, 'type/audio', self.active_skill),
+                                    utterance="mycroft_mediaplayer")
+        elif self.now_playing.playback == CommonPlayPlaybackType.MEDIA_WEB:
+            self.now_playing.status = CommonPlayStatus.PLAYING_MYCROFTGUI
+            # send it to the mycroft gui media subsystem
+            self.audio_service.play((url, 'web/url', self.active_skill),
+                                    utterance="mycroft_mediaplayer")
         elif self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
             self.now_playing.status = CommonPlayStatus.PLAYING_AUDIOSERVICE
             real_url = self.get_stream(self.now_playing.uri)
@@ -570,33 +598,41 @@ class OVOSCommonPlaybackInterface:
 
     def pause(self):
         self.update_status({"status": CommonPlayStatus.PAUSED})
-        if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
-            self.gui.pause_video()
-        elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
-            self.audio_service.pause()
-        elif self.active_backend is not None:
-            self.bus.emit(
-                Message(f'ovos.common_play.{self.active_skill}.pause'))
+        self.gui.pause_video()
+        self.audio_service.pause()
+        self.bus.emit(Message("gui.player.media.service.pause"))
+        self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.pause'))
 
     def resume(self):
+        if not self.active_backend:
+            # TODO we dont want everything to resume,
+            #   eg audio + gui playing at same time
+            # but we also do not know which one is being used!
+            # this only happens if skill reloaded and info is still in GUI,
+            # or possibly directly triggered by bus message. lets do our
+            # best guess, it will correct itself in next play query
+            self.active_backend = CommonPlayStatus.PLAYING_OVOS
+
         if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
             self.gui.resume_video()
         elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.resume()
+        elif self.active_backend == CommonPlayStatus.PLAYING_MYCROFTGUI:
+            # Mycroft Media framework
+            # https://github.com/MycroftAI/mycroft-gui/pull/97
+            self.bus.emit(Message('gui.player.media.service.resume'))
         elif self.active_backend is not None:
-            self.bus.emit(
-                Message(f'ovos.common_play.{self.active_skill}.resume'))
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.resume'))
+
         self.update_status({"status": self.active_backend})
 
     def stop(self):
-        # NOTE: these checks have been removed in case only the skills
-        # service is restarted, in that case the active_backend can not be used
-        #if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
         self.gui.stop_video()
-        #elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
         self.audio_service.stop()
-        #elif self.active_backend is not None:
         self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.stop'))
+        # Stop Mycroft Media framework
+        # https://github.com/MycroftAI/mycroft-gui/pull/97
+        self.bus.emit(Message("gui.player.media.service.stop"))
 
         self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
         stopped = self.active_backend is not None
@@ -667,7 +703,7 @@ class OVOSCommonPlaybackInterface:
             self.gui["stream"] = self.get_stream(self.now_playing.uri,
                                                  video=True)
             pages = [video_player_qml, search_qml, playlist_qml]
-        elif self.now_playing.playback == CommonPlayPlaybackType.GUI:
+        elif self.now_playing.playback == CommonPlayPlaybackType.MEDIA_VIDEO:
             # handled by a seperate bus event sent by plugin
             return
         # display "now playing" music page
