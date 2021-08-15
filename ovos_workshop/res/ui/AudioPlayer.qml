@@ -45,13 +45,16 @@ Mycroft.Delegate {
     property var playerState: media.status
     property var nextAction: "next"
     property var previousAction: "previous"
-    property var postionFromMetadata: media.position
+    property var seekAction: "seek"
+    property var pauseAction: "pause"
+    property var resumeAction: "resume"
+    property var positionFromMetadata: media.position
 
-    onPostionFromMetadataChanged: {
-        if(playerState === "Playing"){
-            playerPosition = media.position
-            console.log(media.position)
-        }
+    onPositionFromMetadataChanged: {
+        playerPosition = media.position
+        playerState = "Playing"
+        console.log(media.position)
+        console.log(playerPosition)
     }
 
     onIsVerticalChanged: {
@@ -73,11 +76,6 @@ Mycroft.Delegate {
     
     onPlayerStateChanged: {
         console.log(playerState)
-        if(playerState === "Playing"){
-            playerPosition = media.position
-        } else if(playerState === "Paused") {
-            playerPosition = media.position
-        }
     }
 
     ColumnLayout {
@@ -188,9 +186,9 @@ Mycroft.Delegate {
                                 Layout.fillHeight: true
                                 Layout.alignment: Qt.AlignVCenter
                                 onClicked: {
-                                    if (playerState != "Playing"){
+                                    if (playerState === "Paused"){
                                         console.log("in resume action")
-                                        triggerGuiEvent("play", {"media": {
+                                        triggerGuiEvent(resumeAction, {"media": {
                                                                 "image": media.image,
                                                                 "track": media.track,
                                                                 "album": media.album,
@@ -199,7 +197,8 @@ Mycroft.Delegate {
                                                                 "position": playerPosition,
                                                                 "status": "Playing"}})
                                     } else {
-                                        triggerGuiEvent("pause", {"media": {
+                                        console.log("in pause action")
+                                        triggerGuiEvent(pauseAction, {"media": {
                                                                 "image": media.image,
                                                                 "title": media.title,
                                                                 "album": media.album,
@@ -258,7 +257,7 @@ Mycroft.Delegate {
             value: playerPosition
 
             onPressedChanged: {
-                triggerGuiEvent("seek", {"seekValue": value})
+                triggerGuiEvent(seekAction, {"seekValue": value})
             }
 
             handle: Item {

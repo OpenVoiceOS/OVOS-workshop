@@ -1,7 +1,7 @@
 import random
 import random
 import time
-from ovos_utils.gui import is_gui_connected
+
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message, wait_for_reply
 from ovos_utils.skills.audioservice import AudioServiceInterface
@@ -9,6 +9,7 @@ from ovos_workshop.frameworks.playback.playlists import Playlist, MediaEntry
 from ovos_workshop.frameworks.playback.status import *
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
+from ovos_utils.gui import is_gui_connected, GUIInterface
 import enum
 
 
@@ -591,8 +592,9 @@ class OVOSCommonPlaybackInterface:
             LOG.debug("requested previous, but already in 1st track")
 
     def pause(self):
+        if self.gui.get("media"):
+            self.gui["media"]["status"] = "Paused"
         self.update_status({"status": CommonPlayStatus.PAUSED})
-        self.gui.pause_video()
         self.audio_service.pause()
         self.bus.emit(Message("gui.player.media.service.pause"))
         self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.pause'))
@@ -607,21 +609,20 @@ class OVOSCommonPlaybackInterface:
             # best guess, it will correct itself in next play query
             self.active_backend = CommonPlayStatus.PLAYING_OVOS
 
-        if self.active_backend == CommonPlayStatus.PLAYING_OVOS:
-            self.gui.resume_video()
-        elif self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
+        if self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.resume()
         elif self.active_backend == CommonPlayStatus.PLAYING_MYCROFTGUI:
             # Mycroft Media framework
             # https://github.com/MycroftAI/mycroft-gui/pull/97
             self.bus.emit(Message('gui.player.media.service.resume'))
-        elif self.active_backend is not None:
+        elif self.active_backend == CommonPlayStatus.PLAYING:
             self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.resume'))
 
         self.update_status({"status": self.active_backend})
 
     def stop(self):
-        self.gui.stop_video()
+        if self.gui.get("media"):
+            self.gui["media"]["status"] = "Stopped"
         self.audio_service.stop()
         self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.stop'))
         # Stop Mycroft Media framework
@@ -702,7 +703,8 @@ class OVOSCommonPlaybackInterface:
         # display "now playing" music page
         # tries to keep in sync with audio service
         else:
-            self.gui["media"]["status"] = "Stopped"
+            if self.gui.get("media"):
+                self.gui["media"]["status"] = "Stopped"
             self.gui["stream"] = None  # stop any previous VIDEO playback
             pages = [player_qml, search_qml, playlist_qml]
 
@@ -710,12 +712,14 @@ class OVOSCommonPlaybackInterface:
 
     #  gui <-> audio service
     def handle_click_pause(self, message):
-        self.audio_service.pause()
-        self.gui["media"]["status"] = "Paused"
+        if not self.active_backend:
+            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
+        self.pause()
 
     def handle_click_resume(self, message):
-        self.audio_service.resume()
-        self.gui["media"]["status"] = "Playing"
+        if not self.active_backend:
+            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
+        self.resume()
 
     def handle_click_next(self, message):
         self.play_next()
@@ -724,6 +728,8 @@ class OVOSCommonPlaybackInterface:
         self.play_prev()
 
     def handle_click_seek(self, message):
+        if not self.active_backend:
+            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
         position = message.data.get("seekValue", "")
         if position:
             self.audio_service.set_track_position(position / 1000)
@@ -731,6 +737,7 @@ class OVOSCommonPlaybackInterface:
 
     def handle_playback_ended(self, message):
         search_qml = "Disambiguation.qml"
+        self.audio_service.stop()
         self.gui.release()
         # show search results, release screen after 15 seconds
         self.gui.show_pages([search_qml], 0, override_idle=15)
