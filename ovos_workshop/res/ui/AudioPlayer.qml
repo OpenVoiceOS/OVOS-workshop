@@ -53,8 +53,6 @@ Mycroft.Delegate {
     onPositionFromMetadataChanged: {
         playerPosition = media.position
         playerState = "Playing"
-        console.log(media.position)
-        console.log(playerPosition)
     }
 
     onIsVerticalChanged: {

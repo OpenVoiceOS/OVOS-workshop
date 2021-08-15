@@ -1,13 +1,13 @@
-from ovos_workshop.frameworks.playback.status import *
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG
+from ovos_workshop.frameworks.playback.status import *
 
 
 class MediaEntry:
     def __init__(self, title, uri, skill_id="ovos.common_play",
                  image=None, match_confidence=0,
                  playback=CommonPlayPlaybackType.UNDEFINED,
-                 status = CommonPlayStatus.DISAMBIGUATION, phrase=None,
+                 status=CommonPlayStatus.DISAMBIGUATION, phrase=None,
                  position=0, length=None, bg_image=None, skill_icon=None,
                  **kwargs):
         self.match_confidence = match_confidence
@@ -16,7 +16,7 @@ class MediaEntry:
         self.skill_id = skill_id
         self.status = status
         self.playback = playback
-        self.image=image
+        self.image = image
         self.position = position
         self.phrase = phrase
         self.length = length  # None -> live stream
@@ -34,7 +34,7 @@ class MediaEntry:
                          data.get("track_length") or \
                          data.get("duration")  # or get_duration_from_url(url)
         data["skill_icon"] = data.get("skill_icon") or data.get("skill_logo")
-        data["status"]= data.get("status") or CommonPlayStatus.DISAMBIGUATION
+        data["status"] = data.get("status") or CommonPlayStatus.DISAMBIGUATION
         data["uri"] = data.get("stream") or data.get("uri") or data.get("url")
         data["title"] = data.get("title") or data["uri"]
         return MediaEntry(**data)
@@ -52,7 +52,7 @@ class MediaEntry:
 
     @property
     def as_dict(self):
-        return {k:v for k, v in self.__dict__.items()
+        return {k: v for k, v in self.__dict__.items()
                 if not k.startswith("_")}
 
     def __eq__(self, other):
@@ -82,6 +82,12 @@ class Playlist(list):
             if isinstance(e, MediaEntry):
                 entries.append(e)
         return entries
+
+    def sort_by_conf(self):
+        self.sort(
+            key=lambda k: k.match_confidence
+            if isinstance(k, MediaEntry) else k.get("match_confidence", 0),
+            reverse=True)
 
     def add_entry(self, entry, index=-1):
         assert isinstance(index, int)
