@@ -97,7 +97,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
-        media_type = message.data.get("question_type", CommonPlayMediaType.GENERIC)
+        media_type = message.data.get("question_type",
+                                      CommonPlayMediaType.GENERIC)
 
         if media_type not in self.supported_media:
             return

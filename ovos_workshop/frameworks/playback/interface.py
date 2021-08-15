@@ -459,11 +459,11 @@ class OVOSCommonPlaybackInterface:
 
     def handle_sync_seekbar(self, message):
         """ event sent by ovos audio backend plugins """
-        if not self.gui.get("media"):
-            self.gui["media"] = {"length": -1, "position": 0}
-        self.gui["media"]["length"] = message.data["length"]
-        self.gui["media"]["position"] = message.data["position"]
-        self.gui["media"]["status"] = "Playing"
+        media = self.gui.get("media") or {"length": -1, "position": 0}
+        media["length"]  = message.data["length"]
+        media["position"]  = message.data["position"]
+        media["status"]  = "Playing"
+        self.gui["media"] = media
 
     # playback control
     def set_now_playing(self, track):
@@ -600,6 +600,9 @@ class OVOSCommonPlaybackInterface:
         self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.pause'))
 
     def resume(self):
+        if self.gui.get("media"):
+            self.gui["media"]["status"] = "Playing"
+
         if not self.active_backend:
             # TODO we dont want everything to resume,
             #   eg audio + gui playing at same time
@@ -611,12 +614,12 @@ class OVOSCommonPlaybackInterface:
 
         if self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE:
             self.audio_service.resume()
-        elif self.active_backend == CommonPlayStatus.PLAYING_MYCROFTGUI:
+        elif self.active_backend == CommonPlayStatus.PLAYING:
+            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.resume'))
+        else:
             # Mycroft Media framework
             # https://github.com/MycroftAI/mycroft-gui/pull/97
             self.bus.emit(Message('gui.player.media.service.resume'))
-        elif self.active_backend == CommonPlayStatus.PLAYING:
-            self.bus.emit(Message(f'ovos.common_play.{self.active_skill}.resume'))
 
         self.update_status({"status": self.active_backend})
 
@@ -740,7 +743,7 @@ class OVOSCommonPlaybackInterface:
         self.audio_service.stop()
         self.gui.release()
         # show search results, release screen after 60 seconds
-        self.gui.show_pages([search_qml], 0, override_idle=60)
+        self.gui.show_page(search_qml, override_idle=60)
         self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
 
     # gui <-> playlists
