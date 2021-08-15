@@ -221,13 +221,13 @@ class OVOSCommonPlaybackInterface:
         self.gui.shutdown()
 
     # audio service plugin adapter
+    # TODO deprecate this, handle together with other queries
     def handle_adapter_video_request(self, message):
         search_qml = "Disambiguation.qml"
         media_player_qml = "MycroftVideoPlayer.qml"
         playlist_qml = "Playlist.qml"
-
         pages = [media_player_qml, search_qml, playlist_qml]
-        self.gui.show_pages(pages, override_idle=True)
+        self._show_pages(pages)
 
     def handle_adapter_audio_request(self, message):
         search_qml = "Disambiguation.qml"
@@ -294,13 +294,12 @@ class OVOSCommonPlaybackInterface:
         return res[0]
 
     def play_media(self, track, disambiguation=None, playlist=None):
-        self.set_now_playing(track)
         if disambiguation:
             self.disambiguation_playlist = Playlist(disambiguation)
         if playlist:
             self.playlist = Playlist(playlist)
+        self.set_now_playing(track)
         self.play()
-        self.update_screen()
 
     def handle_skill_response(self, message):
         search_phrase = message.data["phrase"]
@@ -457,26 +456,13 @@ class OVOSCommonPlaybackInterface:
                 real_url = get_youtube_video_stream(uri)
         return real_url or uri
 
-    def _fake_seekbar(self):
-        """ currently unused, send way too many bus messages
-        TODO: remove this code chunk, keeping for reference until
-        full ovos common play implementation is finished """
-        track_lenth = self.audio_service.get_track_length()
-        while not track_lenth:
-            track_lenth = self.audio_service.get_track_length()
-        self.gui["media"]["length"] = track_lenth
-        while self.audio_service.is_playing:
-            self.gui["media"][
-                "position"] = self.audio_service.get_track_position()
-            # self.update_screen()
-            time.sleep(1)
-
     def handle_sync_seekbar(self, message):
         """ event sent by ovos audio backend plugins """
         if not self.gui.get("media"):
-            self.gui["media"] = {"length": 0, "position": 0}
+            self.gui["media"] = {"length": -1, "position": 0}
         self.gui["media"]["length"] = message.data["length"]
         self.gui["media"]["position"] = message.data["position"]
+        self.gui["media"]["status"] = "Playing"
 
     # playback control
     def set_now_playing(self, track):
@@ -488,6 +474,9 @@ class OVOSCommonPlaybackInterface:
         if self.now_playing not in self.playlist:
             self.playlist.add_entry(self.now_playing)
             self.playlist.position = len(self.playlist) - 1
+
+
+        self.update_screen()
 
     def _ensure_gui(self):
         """ helper method to modify behavior based on having a GUI or not"""
@@ -554,8 +543,7 @@ class OVOSCommonPlaybackInterface:
             real_url = self.get_stream(self.now_playing.uri)
             # we explicitly want to use vlc for audio only output in this case
             self.audio_service.play(real_url, utterance="vlc")
-            # ovos_vlc sends a live update from audio service, not needed
-            # create_daemon(self._fake_seekbar)
+            self.gui["media"]["status"] = "Playing"
         elif self.now_playing.playback == CommonPlayPlaybackType.SKILL:
             self.now_playing.status = CommonPlayStatus.PLAYING
             if data.get("is_old_style"):
@@ -573,11 +561,15 @@ class OVOSCommonPlaybackInterface:
             raise ValueError("invalid playback request")
 
     def play_next(self):
-        if len(self.playlist) > 1:
+        n_tracks = len(self.playlist)
+        n_tracks2 = len(self.disambiguation_playlist)
+        # contains entries, and is not at end of playlist
+        if n_tracks > 1 and self.playlist.position != n_tracks - 1:
             self.playlist.next_track()
             self.set_now_playing(self.playlist.current_track)
             self.play()
-        elif len(self.disambiguation_playlist) > 1:
+        elif len(self.disambiguation_playlist) > 1 and \
+                self.disambiguation_playlist.position != n_tracks2 - 1:
             self.disambiguation_playlist.next_track()
             self.set_now_playing(self.disambiguation_playlist.current_track)
             self.play()
@@ -585,11 +577,13 @@ class OVOSCommonPlaybackInterface:
             LOG.debug("requested next, but there aren't any more tracks")
 
     def play_prev(self):
-        if len(self.playlist) > 1:
+        # contains entries, and is not at start of playlist
+        if len(self.playlist) > 1 and self.playlist.position != 0:
             self.playlist.prev_track()
             self.set_now_playing(self.playlist.current_track)
             self.play()
-        elif len(self.disambiguation_playlist) > 1:
+        elif len(self.disambiguation_playlist) > 1 and \
+                self.disambiguation_playlist.position != 0:
             self.disambiguation_playlist.prev_track()
             self.set_now_playing(self.disambiguation_playlist.current_track)
             self.play()
@@ -640,9 +634,9 @@ class OVOSCommonPlaybackInterface:
         self.active_skill = None
         return stopped
 
-    # ######### VIDEO integration ###############
+    # ######### GUI integration ###############
     def register_gui_handlers(self):
-        self.gui.register_handler('ovos.common_play.play',
+        self.gui.register_handler('ovos.common_play.resume',
                                   self.handle_click_resume)
         self.gui.register_handler('ovos.common_play.pause',
                                   self.handle_click_pause)
@@ -684,13 +678,12 @@ class OVOSCommonPlaybackInterface:
         playlist_qml = "Playlist.qml"
         video_player_qml = "VideoPlayer.qml"
 
-
         # remove previous pages TODO is this needed? why?
         pages = [player_qml, search_qml, playlist_qml,
-                 video_player_qml, audiomedia_player_qml]
+                 video_player_qml, audiomedia_player_qml, media_player_qml]
         self.gui.remove_pages(pages)
 
-        # gui data shared by audio/video
+        # send gui track data
         self.gui["media"] = self.now_playing.info
         self.gui["media"]["status"] = "Playing"
         self.gui["title"] = self.now_playing.title
@@ -735,7 +728,6 @@ class OVOSCommonPlaybackInterface:
         if position:
             self.audio_service.set_track_position(position / 1000)
             self.gui["media"]["position"] = position
-            # self.update_screen()
 
     def handle_playback_ended(self, message):
         search_qml = "Disambiguation.qml"
@@ -750,13 +742,11 @@ class OVOSCommonPlaybackInterface:
         media = message.data["playlistData"]
         self.set_now_playing(media)
         self.play()
-        self.update_screen()
 
     def handle_play_from_search(self, message):
         media = message.data["playlistData"]
         self.set_now_playing(media)
         self.play()
-        self.update_screen()
 
 
 if __name__ == "__main__":

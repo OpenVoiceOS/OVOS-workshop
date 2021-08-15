@@ -7,13 +7,13 @@ from ovos_utils.messagebus import get_mycroft_bus
 class CommonPlayPlaybackType(IntEnum):
     SKILL = 0  # skills handle playback whatever way they see fit,
                # eg spotify / mycroft common play
-    AUDIO = 2  # Results should be played audio only (audio service)
-    VIDEO = 3  # Video results, player configurable in skill,
+    VIDEO = 1  # Video results, player configurable in skill,
                # TODO by default GUI Media framework (?)
+    AUDIO = 2  # Results should be played audio only (audio service)
 
     # Results should be played with the Mycroft Media framework
     # https://github.com/MycroftAI/mycroft-gui/pull/97
-    MEDIA_VIDEO = 1
+    MEDIA_VIDEO = 3
     MEDIA_WEB = 4  # webview in browser
     MEDIA_AUDIO = 4  # play audio, but using GUI
 

@@ -121,13 +121,14 @@ class Playlist(list):
         if len(self) == 0:
             return None
         if self.position >= len(self):
-            LOG.error("Playlist pointer is in an invalid position!")
-            return None
+            LOG.error("Playlist pointer is in an invalid position! Going to "
+                      "start of playlist")
+            self.position = 0
         return self[self.position]
 
     def next_track(self):
         self.position += 1
-        if self.position > len(self):
+        if self.position >= len(self):
             self.position = 0
 
     def prev_track(self):
