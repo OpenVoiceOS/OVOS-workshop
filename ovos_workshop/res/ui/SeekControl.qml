@@ -19,6 +19,9 @@ Item {
     property var videoControl
     property string title
 
+    property var nextAction: "next"
+    property var previousAction: "previous"
+
     clip: true
     implicitWidth: parent.width
     implicitHeight: mainLayout.implicitHeight + Kirigami.Units.largeSpacing * 2
@@ -95,6 +98,84 @@ Item {
                     KeyNavigation.right: slider
                     Keys.onReturnPressed: {
                         video.playbackState === MediaPlayer.PlayingState ? video.pause() : video.play();
+                        hideTimer.restart();
+                    }
+                    onFocusChanged: {
+                        hideTimer.restart();
+                    }
+                }
+
+                Controls.RoundButton {
+                    id: buttonPrev
+                    Layout.preferredWidth: parent.width > 600 ? Kirigami.Units.iconSizes.large : Kirigami.Units.iconSizes.medium
+                    Layout.preferredHeight: Layout.preferredWidth
+                    highlighted: focus ? 1 : 0
+                    z: 1000
+
+                    background: Rectangle {
+                        radius: 200
+                        color: "#1a1a1a"
+                        border.width: 1.25
+                        border.color: "white"
+                    }
+
+                    contentItem: Item {
+                        Image {
+                            width: parent.width - Kirigami.Units.largeSpacing
+                            height: width
+                            anchors.centerIn: parent
+                            source: Qt.resolvedUrl("images/media-previous.svg")
+                        }
+                    }
+
+                    onClicked: {
+                        triggerGuiEvent(seekControl.previousAction, {})
+                        hideTimer.restart();
+                    }
+                    KeyNavigation.up: video
+                    KeyNavigation.left: backButton
+                    KeyNavigation.right: slider
+                    Keys.onReturnPressed: {
+                        triggerGuiEvent(seekControl.previousAction, {})
+                        hideTimer.restart();
+                    }
+                    onFocusChanged: {
+                        hideTimer.restart();
+                    }
+                }
+
+                Controls.RoundButton {
+                    id: buttonNext
+                    Layout.preferredWidth: parent.width > 600 ? Kirigami.Units.iconSizes.large : Kirigami.Units.iconSizes.medium
+                    Layout.preferredHeight: Layout.preferredWidth
+                    highlighted: focus ? 1 : 0
+                    z: 1000
+
+                    background: Rectangle {
+                        radius: 200
+                        color: "#1a1a1a"
+                        border.width: 1.25
+                        border.color: "white"
+                    }
+
+                    contentItem: Item {
+                        Image {
+                            width: parent.width - Kirigami.Units.largeSpacing
+                            height: width
+                            anchors.centerIn: parent
+                            source: Qt.resolvedUrl("images/media-next.svg")
+                        }
+                    }
+
+                    onClicked: {
+                        triggerGuiEvent(seekControl.nextAction, {})
+                        hideTimer.restart();
+                    }
+                    KeyNavigation.up: video
+                    KeyNavigation.left: backButton
+                    KeyNavigation.right: slider
+                    Keys.onReturnPressed: {
+                        triggerGuiEvent(seekControl.nextAction, {})
                         hideTimer.restart();
                     }
                     onFocusChanged: {
