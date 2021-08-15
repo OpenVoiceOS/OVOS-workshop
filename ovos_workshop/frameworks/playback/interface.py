@@ -739,8 +739,8 @@ class OVOSCommonPlaybackInterface:
         search_qml = "Disambiguation.qml"
         self.audio_service.stop()
         self.gui.release()
-        # show search results, release screen after 15 seconds
-        self.gui.show_pages([search_qml], 0, override_idle=15)
+        # show search results, release screen after 60 seconds
+        self.gui.show_pages([search_qml], 0, override_idle=60)
         self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
 
     # gui <-> playlists
