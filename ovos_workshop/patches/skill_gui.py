@@ -50,7 +50,7 @@ class SkillGUI(_SkillGUI):
     def _sync_data(self):
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
-        self.bus.emit(Message("gui.value.set", data))
+        self.skill.bus.emit(Message("gui.value.set", data))
 
     def __setitem__(self, key, value):
         """Implements set part of dict-like behaviour with named keys."""
