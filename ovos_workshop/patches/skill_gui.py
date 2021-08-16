@@ -49,7 +49,7 @@ class SkillGUI(_SkillGUI):
     # fix gui subdict sync TODO PR in mycroft-core
     def _sync_data(self):
         data = self.__session_data.copy()
-        data.update({'__from': self.skill_id})
+        data.update({'__from': self.skill.skill_id})
         self.bus.emit(Message("gui.value.set", data))
 
     def __setitem__(self, key, value):
