@@ -305,8 +305,8 @@ class OVOSCommonPlaybackInterface:
     def handle_skill_response(self, message):
         search_phrase = message.data["phrase"]
         timeout = message.data.get("timeout")
-        LOG.debug(f"OVOSCommonPlay result:"
-                  f" {message.data['skill_id']}")
+        #LOG.debug(f"OVOSCommonPlay result:"
+        #          f" {message.data['skill_id']}")
 
         if message.data.get("searching"):
             # extend the timeout by N seconds
@@ -505,6 +505,11 @@ class OVOSCommonPlaybackInterface:
                 self.now_playing = self.playlist.current_track
             if self.search_playlist.current_track:
                 self.now_playing = self.search_playlist.current_track
+            if self.now_playing:
+                self.update_screen() # update UI, it was called before play
+                # probably, but didnt have track info available
+            else:
+                pass  # TODO Error screen (?)
         assert isinstance(self.now_playing, MediaEntry)
 
         self.active_skill = self.now_playing.skill_id
