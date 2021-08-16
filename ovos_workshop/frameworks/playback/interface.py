@@ -567,6 +567,7 @@ class OVOSCommonPlaybackInterface:
                     self.now_playing.as_dict))
         elif self.now_playing.playback == CommonPlayPlaybackType.VIDEO:
             self.now_playing.status = CommonPlayStatus.PLAYING_OVOS
+            self.gui["media"]["status"] = "Playing" # start video playback
             LOG.debug("Requesting playback: CommonPlayPlaybackType.VIDEO")
         else:
             raise ValueError("invalid playback request")
