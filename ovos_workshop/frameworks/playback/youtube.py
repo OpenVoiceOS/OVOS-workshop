@@ -53,7 +53,8 @@ def get_youtube_video_stream(url, download=False):
         return url
     try:
         stream = pafy.new(url)
-    except:
+    except Exception as e:
+        LOG.exception(e)
         return None
     stream = stream.getbest()
     if not stream:
