@@ -481,9 +481,11 @@ class OVOSCommonPlaybackInterface:
             if not self.deezer:
                 LOG.error("need to login to deezer! set credentials in skill settings")
                 return None
-            real_url = get_deezer_audio_stream(uri)
+            real_url = get_deezer_audio_stream(uri, deezer=self.deezer)
             if not real_url:
                 LOG.error("deezer stream extraction failed!!!")
+            else:
+                LOG.debug(f"deezer cache: {real_url}")
         elif is_youtube(uri):
             if not video:
                 real_url = get_youtube_audio_stream(uri)
