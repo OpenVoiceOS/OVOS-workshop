@@ -11,6 +11,8 @@ from ovos_workshop.frameworks.playback.playlists import Playlist, MediaEntry
 from ovos_workshop.frameworks.playback.status import *
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream
+from ovos_workshop.frameworks.playback.deezer import is_deezer,\
+    get_deezer_audio_stream
 
 
 class VideoPlayerType(enum.Enum):
@@ -223,6 +225,10 @@ class OVOSCommonPlaybackInterface:
                     self.handle_adapter_audio_request)
         self.bus.on('playback.display.remove',
                     self.handle_playback_ended)
+        self.deezer = None
+
+    def bind_deezer(self, deezer):
+        self.deezer = deezer
 
     def shutdown(self):
         self.bus.remove("ovos.common_play.query.response",
@@ -469,10 +475,16 @@ class OVOSCommonPlaybackInterface:
         self.bus.emit(Message('ovos.common_play.status.update', status))
 
     # stream handling
-    @staticmethod
-    def get_stream(uri, video=False):
+    def get_stream(self, uri, video=False):
         real_url = None
-        if is_youtube(uri):
+        if is_deezer(uri):
+            if not self.deezer:
+                LOG.error("need to login to deezer! set credentials in skill settings")
+                return None
+            real_url = get_deezer_audio_stream(uri)
+            if not real_url:
+                LOG.error("deezer stream extraction failed!!!")
+        elif is_youtube(uri):
             if not video:
                 real_url = get_youtube_audio_stream(uri)
             if video or not real_url:
