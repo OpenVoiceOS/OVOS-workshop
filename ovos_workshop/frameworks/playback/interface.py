@@ -225,10 +225,6 @@ class OVOSCommonPlaybackInterface:
                     self.handle_adapter_audio_request)
         self.bus.on('playback.display.remove',
                     self.handle_playback_ended)
-        self.deezer = None
-
-    def bind_deezer(self, deezer):
-        self.deezer = deezer
 
     def shutdown(self):
         self.bus.remove("ovos.common_play.query.response",
@@ -478,10 +474,7 @@ class OVOSCommonPlaybackInterface:
     def get_stream(self, uri, video=False):
         real_url = None
         if is_deezer(uri):
-            if not self.deezer:
-                LOG.error("need to login to deezer! set credentials in skill settings")
-                return None
-            real_url = get_deezer_audio_stream(uri, deezer=self.deezer)
+            real_url = get_deezer_audio_stream(uri)
             if not real_url:
                 LOG.error("deezer stream extraction failed!!!")
             else:

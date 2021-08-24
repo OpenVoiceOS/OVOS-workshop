@@ -14,7 +14,7 @@ from os.path import join
 from os import makedirs
 
 
-def get_deezer_audio_stream(url, deezer, path=None):
+def get_deezer_audio_stream(url, deezer=None, path=None):
     path = path or join(gettempdir(), "deezer")
     makedirs(path, exist_ok=True)
     if deezeridu is None:
@@ -22,6 +22,7 @@ def get_deezer_audio_stream(url, deezer, path=None):
         LOG.info("pip install deezeridu")
         return None
     try:
+        deezer = deezer or deezeridu.Deezer()
         t = deezer.download(url, output_dir=path)
         return t.song_path
     except Exception as e:
