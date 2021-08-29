@@ -66,6 +66,27 @@ class SkillGUI(_SkillGUI):
             self._sync_data()
 
     # new gui templates
+    # PR https://github.com/MycroftAI/mycroft-core/pull/2862
+    def show_notification(self, content, action=None,
+                          noticetype="transient"):
+        """Display a Notification on homepage in the GUI.
+        Arguments:
+            content (str): Main text content of a notification, Limited
+            to two visual lines.
+            action (str): Callback to any event registered by the skill
+            to perform a certain action when notification is clicked.
+            noticetype (str):
+                transient: 'Default' displays a notification with a timeout.
+                sticky: displays a notification that sticks to the screen.
+        """
+        self.skill.bus.emit(Message("homescreen.notification.set",
+                                    data={
+                                        "sender": self.skill.skill_id,
+                                        "text": content,
+                                        "action": action,
+                                        "type": noticetype
+                                    }))
+
     # TODO PR in mycroft-core, taken from gez-mycroft wifi GUI test skill
     def show_confirmation_status(self, text="", override_idle=False,
                                  override_animations=False):
