@@ -197,8 +197,8 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
                 "image": video_data.get("logo") or self.default_image,
                 "author": self.name
             })
-            self.bus.emit(Message("ovos.common_play.play", {
-                "tracks": [video_data]
+            self.bus.emit(Message("ovos.common_play.collection.play", {
+                "playlistData": [video_data]
             }))
 
     # watch history database

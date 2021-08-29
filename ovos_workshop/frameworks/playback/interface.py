@@ -342,9 +342,8 @@ class OVOSCommonPlaybackInterface:
                 # filter video results if GUI not connected
                 if not can_use_gui(self.bus):
                     # force allowed stream types to be played audio only
-                    if res["media_type"] in self.cast2audio:
-                        #LOG.debug("unable to use GUI, forcing result to
-                        # play audio only")
+                    if res.get("media_type", "") in self.cast2audio:
+                        LOG.debug("unable to use GUI, forcing result to play audio only")
                         res["playback"] = CommonPlayPlaybackType.AUDIO
                         res["match_confidence"] -= 10
                         message.data["results"][idx] = res
@@ -717,6 +716,8 @@ class OVOSCommonPlaybackInterface:
                                   self.handle_play_from_playlist)
         self.gui.register_handler('ovos.common_play.search.play',
                                   self.handle_play_from_search)
+        self.gui.register_handler('ovos.common_play.collection.play',
+                                  self.handle_play_from_collection())
 
     def _show_pages(self, pages):
         self.gui["searchModel"] = {
@@ -790,6 +791,7 @@ class OVOSCommonPlaybackInterface:
             self.gui["media"]["position"] = position
 
     def handle_playback_ended(self, message):
+        LOG.debug("Playback ended")
         search_qml = "Disambiguation.qml"
         self.audio_service.stop()
         self.gui.release()
@@ -805,6 +807,12 @@ class OVOSCommonPlaybackInterface:
         self.play()
 
     def handle_play_from_search(self, message):
+        # TODO playlist handling (move index pointer to selected track)
+        media = message.data["playlistData"]
+        self.set_now_playing(media)
+        self.play()
+
+    def handle_play_from_collection(self, message):
         # TODO playlist handling (move index pointer to selected track)
         media = message.data["playlistData"]
         self.set_now_playing(media)
