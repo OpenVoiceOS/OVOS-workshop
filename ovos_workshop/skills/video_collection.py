@@ -72,9 +72,9 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
 
     def initialize_media_commons(self):
         # generic ovos events
-        self.gui.register_handler("ovos_utils.play_event",
+        self.gui.register_handler("ovos.common_play.collection.play",
                                   self.play_video_event)
-        self.gui.register_handler("ovos_utils.clear_history",
+        self.gui.register_handler("ovos.common_play.collection.clear_history",
                                   self.handle_clear_history)
 
         # skill specific events
@@ -189,16 +189,17 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
             # ensure all data fields present
             video_data = merge_dict(video_data, {
                 "match_confidence": 100,
-                "question_type": self.media_type,
+                "media_type": self.media_type,
                 "playback": self.playback_type,
-             #   "skill_icon": self.skill_icon,
-             #   "skill_logo": self.skill_logo,
+                "skill_icon": self.skill_icon,
+                "skill_logo": self.skill_logo,
                 "bg_image": video_data.get("logo") or self.default_bg,
                 "image": video_data.get("logo") or self.default_image,
                 "author": self.name
             })
             self.bus.emit(Message("ovos.common_play.collection.play", {
-                "playlistData": [video_data]
+                "playlistData": [video_data],
+                "collection": self.videos[:50]
             }))
 
     # watch history database
@@ -328,10 +329,10 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
                 continue
             cps_results.append(merge_dict(video, {
                 "match_confidence": min(100, score),
-                "question_type": self.media_type,
+                "media_type": self.media_type,
                 "playback": self.playback_type,
-           #     "skill_icon": self.skill_icon,
-           #     "skill_logo": self.skill_logo,
+                "skill_icon": self.skill_icon,
+                "skill_logo": self.skill_logo,
                 "bg_image": video.get("logo") or self.default_bg,
                 "image": video.get("logo") or self.default_image,
                 "author": self.name

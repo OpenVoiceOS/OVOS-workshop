@@ -175,7 +175,7 @@ ItemDelegate {
         listView.currentIndex = index
         busyIndicatorPop.open()
         if(model.identifier != "showmore") {
-            triggerGuiEvent("ovos_utils.play_event",
+            triggerGuiEvent("ovos.common_play.collection.play",
             {"modelData": {"title": model.title, "url": model.url,
             "lang": model.lang, "logo": model.logo, "tags": model.tags,
             "identifier": model.identifier, "skill_id": model.skill}})

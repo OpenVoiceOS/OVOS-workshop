@@ -717,7 +717,7 @@ class OVOSCommonPlaybackInterface:
         self.gui.register_handler('ovos.common_play.search.play',
                                   self.handle_play_from_search)
         self.gui.register_handler('ovos.common_play.collection.play',
-                                  self.handle_play_from_collection())
+                                  self.handle_play_from_collection)
 
     def _show_pages(self, pages):
         self.gui["searchModel"] = {
@@ -814,9 +814,10 @@ class OVOSCommonPlaybackInterface:
 
     def handle_play_from_collection(self, message):
         # TODO playlist handling (move index pointer to selected track)
-        media = message.data["playlistData"]
-        self.set_now_playing(media)
-        self.play()
+        playlist = message.data["playlistData"]
+        collection = message.data["collection"]
+        media = playlist[0]
+        self.play_media(media, playlist=playlist, disambiguation=collection)
 
 
 if __name__ == "__main__":
