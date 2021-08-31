@@ -9,10 +9,9 @@ from ovos_utils.messagebus import Message, wait_for_reply
 from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_workshop.frameworks.playback.playlists import Playlist, MediaEntry
 from ovos_workshop.frameworks.playback.status import *
-from ovos_workshop.frameworks.playback.youtube import is_youtube, \
-    get_youtube_audio_stream, get_youtube_video_stream
-from ovos_workshop.frameworks.playback.deezer import is_deezer,\
-    get_deezer_audio_stream
+from ovos_workshop.frameworks.playback.stream_handlers import is_youtube, \
+    get_youtube_audio_stream, get_youtube_video_stream, is_deezer,\
+    get_deezer_audio_stream, get_rss_first_stream, get_youtube_live_from_channel
 
 
 class VideoPlayerType(enum.Enum):
@@ -436,7 +435,6 @@ class OVOSCommonPlaybackInterface:
             self.playback_status = status
             self.active_backend = status
 
-
         elif status == CommonPlayStatus.DISAMBIGUATION:
             # alternative results # TODO its this 1 track or a list ?
             if message.data not in self.search_playlist:
@@ -473,19 +471,42 @@ class OVOSCommonPlaybackInterface:
     # stream handling
     def get_stream(self, uri, video=False):
         real_url = None
-        if is_deezer(uri):
+        if uri.startswith("rss//"):
+            uri = uri.replace("rss//", "")
+            real_url = get_rss_first_stream(uri)
+            if not real_url:
+                LOG.error("RSS feed stream extraction failed!!!")
+
+        if uri.startswith("deezer//"):
+            uri = uri.replace("deezer//", "")
             real_url = get_deezer_audio_stream(uri)
             if not real_url:
                 LOG.error("deezer stream extraction failed!!!")
             else:
                 LOG.debug(f"deezer cache: {real_url}")
-        elif is_youtube(uri):
+
+        if uri.startswith("bandcamp//"):
+            uri = uri.replace("bandcamp//", "")
+            LOG.error("NotImplemented!")
+            LOG.error("bandcamp stream extraction failed!!!")
+
+        if uri.startswith("youtube.channel.live//"):
+            uri = uri.replace("youtube.channel.live//", "")
+            uri = get_youtube_live_from_channel(uri)
+            if not uri:
+                LOG.error("youtube channel live stream extraction failed!!!")
+            else:
+                uri = "youtube//" + uri
+
+        if uri.startswith("youtube//") or is_youtube(uri):
+            uri = uri.replace("youtube//", "")
             if not video:
                 real_url = get_youtube_audio_stream(uri)
             if video or not real_url:
                 real_url = get_youtube_video_stream(uri)
             if not real_url:
                 LOG.error("youtube stream extraction failed!!!")
+
         return real_url or uri
 
     def handle_sync_seekbar(self, message):
@@ -769,12 +790,12 @@ class OVOSCommonPlaybackInterface:
     #  gui <-> audio service
     def handle_click_pause(self, message):
         if not self.active_backend:
-            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
+            self.active_backend = CommonPlayStatus.PLAYING_AUDIOSERVICE
         self.pause()
 
     def handle_click_resume(self, message):
         if not self.active_backend:
-            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
+            self.active_backend = CommonPlayStatus.PLAYING_AUDIOSERVICE
         self.resume()
 
     def handle_click_next(self, message):
@@ -785,7 +806,7 @@ class OVOSCommonPlaybackInterface:
 
     def handle_click_seek(self, message):
         if not self.active_backend:
-            self.active_backend == CommonPlayStatus.PLAYING_AUDIOSERVICE
+            self.active_backend = CommonPlayStatus.PLAYING_AUDIOSERVICE
         position = message.data.get("seekValue", "")
         if position:
             self.audio_service.set_track_position(position / 1000)

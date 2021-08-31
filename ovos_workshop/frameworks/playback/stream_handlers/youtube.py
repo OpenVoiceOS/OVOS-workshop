@@ -10,6 +10,17 @@ except ImportError:
     pafy = None
 
 
+def get_youtube_live_from_channel(url):
+    try:
+        from youtube_searcher import extract_videos
+        for e in extract_videos(url):
+            if not e["is_live"]:
+                continue
+            return e["url"]
+    except:
+        pass
+
+
 def get_youtube_audio_stream(url, download=False, convert=False):
     if pafy is None:
         LOG.error("can not extract audio stream, pafy is not available")
@@ -122,3 +133,13 @@ def get_title_from_url(url):
         data = get_youtube_metadata(url)
         return data.get("title")
     return url
+
+
+if __name__ == "__main__":
+    print(get_youtube_live_from_channel("https://www.youtube.com/channel/UCQfwfsi5VrQ8yKZ-UWmAEFg"))
+    print(get_youtube_live_from_channel(
+        "https://www.youtube.com/channel/UCknLrEdhRCp1aegoMqRaCZg"))
+    print(get_youtube_live_from_channel(
+        "https://www.youtube.com/user/RussiaToday"))
+    print(get_youtube_live_from_channel(
+        "https://www.youtube.com/user/Euronews"))

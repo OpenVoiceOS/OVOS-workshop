@@ -1,7 +1,3 @@
-import requests
-import subprocess
-from os.path import exists, join
-from tempfile import gettempdir
 from ovos_utils.log import LOG
 
 try:
@@ -30,9 +26,7 @@ def get_deezer_audio_stream(url, deezer=None, path=None):
         return None
 
 
-
 def is_deezer(url):
     if not url:
         return False
     return "deezer." in url
-
