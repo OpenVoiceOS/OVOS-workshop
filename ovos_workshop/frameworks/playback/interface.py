@@ -227,6 +227,7 @@ class OVOSCommonPlaybackInterface:
                     self.handle_playback_ended)
 
     def shutdown(self):
+        #self.stop()
         self.bus.remove("ovos.common_play.query.response",
                         self.handle_skill_response)
         self.bus.remove("ovos.common_play.status.update",
@@ -578,7 +579,7 @@ class OVOSCommonPlaybackInterface:
             LOG.debug(
                 "Requesting playback: CommonPlayPlaybackType.MEDIA_WEB")
             # send it to the mycroft gui media subsystem
-            self.audio_service.play((url, 'web/url', self.active_skill),
+            self.audio_service.play((self.now_playing.uri, 'web/url', self.active_skill),
                                     utterance="mycroft_mediaplayer")
         elif self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
             self.now_playing.status = CommonPlayStatus.PLAYING_AUDIOSERVICE
@@ -593,7 +594,7 @@ class OVOSCommonPlaybackInterface:
         elif self.now_playing.playback == CommonPlayPlaybackType.SKILL:
             self.now_playing.status = CommonPlayStatus.PLAYING
             LOG.debug("Requesting playback: CommonPlayPlaybackType.SKILL")
-            if data.get("is_old_style"):
+            if self.now_playing.data.get("is_old_style"):
                 LOG.debug("     - Mycroft common play result selected")
                 self.bus.emit(Message('play:start',
                                       {"skill_id": self.now_playing.skill_id,
@@ -814,6 +815,7 @@ class OVOSCommonPlaybackInterface:
 
     def handle_play_from_collection(self, message):
         # TODO playlist handling (move index pointer to selected track)
+        #self.gui.clear()
         playlist = message.data["playlistData"]
         collection = message.data["collection"]
         media = playlist[0]
