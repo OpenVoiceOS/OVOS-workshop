@@ -101,6 +101,23 @@ Mycroft.Delegate {
         audioService.playerContinue()
     }
 
+
+    function next(){
+        audioService.playerNext()
+    }
+
+    function previous(){
+        audioService.playPrevious()
+    }
+
+    function repeat(){
+        audioService.playerRepeat()
+    }
+
+    function shuffle(){
+        audioService.playerShuffle()
+    }
+
     function seek(val){
         audioService.playerSeek(val)
     }
@@ -432,6 +449,10 @@ Mycroft.Delegate {
                     anchors.right: prevButton.left
                     anchors.margins: Mycroft.Units.gridUnit * 0.5
 
+                    onClicked: {
+                        repeat()
+                    }
+
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
@@ -452,6 +473,10 @@ Mycroft.Delegate {
                     height: parent.height
                     anchors.right: playButton.left
                     anchors.margins: Mycroft.Units.gridUnit * 0.5
+
+                    onClicked: {
+                        previous()
+                    }
 
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
@@ -498,6 +523,10 @@ Mycroft.Delegate {
                     anchors.left: playButton.right
                     anchors.margins: Mycroft.Units.gridUnit * 0.5
 
+                    onClicked: {
+                        next()
+                    }
+
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
@@ -519,7 +548,7 @@ Mycroft.Delegate {
                     anchors.margins: Mycroft.Units.gridUnit * 0.5
 
                     onClicked: {
-                        restart()
+                        shuffle()
                     }
 
                     contentItem: Kirigami.Icon {
