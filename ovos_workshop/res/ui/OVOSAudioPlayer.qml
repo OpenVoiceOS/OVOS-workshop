@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
-import org.kde.kirigami 2.12 as Kirigami
+import org.kde.kirigami 2.11 as Kirigami
 import Mycroft 1.0 as Mycroft
 import QtQuick.Layouts 1.12
 import QtGraphicalEffects 1.0
@@ -101,13 +101,12 @@ Mycroft.Delegate {
         audioService.playerContinue()
     }
 
-
     function next(){
         audioService.playerNext()
     }
 
     function previous(){
-        audioService.playPrevious()
+        audioService.playerPrevious()
     }
 
     function repeat(){
@@ -457,7 +456,7 @@ Mycroft.Delegate {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
 
-                        source: "media-playlist-repeat"
+                        source: Qt.resolvedUrl("images/media-playlist-repeat.svg")
                         color: "white"
                     }
 
@@ -482,7 +481,7 @@ Mycroft.Delegate {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
 
-                        source: "media-skip-backward"
+                        source: Qt.resolvedUrl("images/media-skip-backward.svg")
                         color: "white"
                     }
 
@@ -506,7 +505,7 @@ Mycroft.Delegate {
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
-                        source: root.currentState === MediaPlayer.PlayingState ? "media-playback-pause" : "media-playback-start"
+                        source: root.currentState === MediaPlayer.PlayingState ? Qt.resolvedUrl("images/media-playback-pause.svg") : Qt.resolvedUrl("images/media-playback-start.svg")
                         color: "white"
                     }
 
@@ -530,7 +529,7 @@ Mycroft.Delegate {
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
-                        source: "media-skip-forward"
+                        source: Qt.resolvedUrl("images/media-skip-forward.svg")
                         color: "white"
                     }
 
@@ -554,7 +553,7 @@ Mycroft.Delegate {
                     contentItem: Kirigami.Icon {
                         anchors.fill: parent
                         anchors.margins: Mycroft.Units.gridUnit
-                        source: "media-playlist-shuffle"
+                        source: Qt.resolvedUrl("images/media-playlist-shuffle.svg")
                         color: "white"
                     }
 
