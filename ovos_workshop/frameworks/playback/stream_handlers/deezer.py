@@ -20,10 +20,10 @@ def get_deezer_audio_stream(url, deezer=None, path=None):
     try:
         deezer = deezer or deezeridu.Deezer()
         t = deezer.download(url, output_dir=path)
-        return t.song_path
+        return {"uri": t.song_path}
     except Exception as e:
         print(e)
-        return None
+        return {}
 
 
 def is_deezer(url):

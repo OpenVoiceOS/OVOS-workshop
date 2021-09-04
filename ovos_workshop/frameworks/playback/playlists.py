@@ -9,10 +9,12 @@ class MediaEntry:
                  playback=CommonPlayPlaybackType.UNDEFINED,
                  status=CommonPlayStatus.DISAMBIGUATION, phrase=None,
                  position=0, length=None, bg_image=None, skill_icon=None,
+                 artist=None,
                  **kwargs):
         self.match_confidence = match_confidence
         self.title = title
         self.uri = uri
+        self.artist = artist
         self.skill_id = skill_id
         self.status = status
         self.playback = playback
@@ -37,6 +39,7 @@ class MediaEntry:
         data["status"] = data.get("status") or CommonPlayStatus.DISAMBIGUATION
         data["uri"] = data.get("stream") or data.get("uri") or data.get("url")
         data["title"] = data.get("title") or data["uri"]
+        data["artist"] = data.get("artist") or data.get("author")
         return MediaEntry(**data)
 
     @property

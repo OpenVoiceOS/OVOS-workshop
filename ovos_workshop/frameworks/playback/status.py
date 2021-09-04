@@ -7,15 +7,8 @@ from ovos_utils.messagebus import get_mycroft_bus
 class CommonPlayPlaybackType(IntEnum):
     SKILL = 0  # skills handle playback whatever way they see fit,
                # eg spotify / mycroft common play
-    VIDEO = 1  # Video results, player configurable in skill,
-               # TODO by default GUI Media framework (?)
-    AUDIO = 2  # Results should be played audio only (audio service)
-
-    # Results should be played with the Mycroft Media framework
-    # https://github.com/MycroftAI/mycroft-gui/pull/97
-    MEDIA_VIDEO = 3
-    MEDIA_WEB = 4  # webview in browser
-    MEDIA_AUDIO = 4  # play audio, but using GUI
+    VIDEO = 1  # Video results
+    AUDIO = 2  # Results should be played audio only
 
     UNDEFINED = 100  # data not available,
                      # hopefully status will be updated soon..
@@ -36,8 +29,8 @@ class CommonPlayStatus(IntEnum):
     DISAMBIGUATION = 1  # not queued for playback, show in gui
     PLAYING = 20  # Skill is handling playback internally
     PLAYING_AUDIOSERVICE = 21  # Skill forwarded playback to audio service
-    PLAYING_OVOS = 22  # Skill forwarded playback to ovos common play
-    PLAYING_MYCROFTGUI = 23  # Skill forwarded playback to enclosure
+    PLAYING_VIDEO = 22  # Skill forwarded playback to ovos common play
+    PLAYING_AUDIO = 23  # Skill forwarded playback to enclosure
     QUEUED = 30  # Waiting playback to be handled inside skill
     QUEUED_AUDIOSERVICE = 31  # Waiting playback in audio service
     QUEUED_GUI = 32  # Waiting playback in gui

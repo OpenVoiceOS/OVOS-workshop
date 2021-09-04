@@ -26,22 +26,35 @@ def get_youtube_audio_stream(url, download=False, convert=False):
         LOG.error("can not extract audio stream, pafy is not available")
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
-        return url
+        return {}
     try:
         stream = pafy.new(url)
     except:
-        return None
+        return {}
+    meta = {
+        "url": url,
+        # "audio_stream": stream.getbestaudio().url,
+        # "stream": stream.getbest().url,
+        "title": stream.title,
+        "author": stream.author,
+        "image": stream.getbestthumb().split("?")[0],
+        #        "description": stream.description,
+        "length": stream.length * 1000,
+        "category": stream.category,
+        #        "upload_date": stream.published,
+        #        "tags": stream.keywords
+    }
     stream = stream.getbestaudio()
     if not stream:
-        return None
-
+        return {}
+    uri = stream.url
     if download:
         path = join(gettempdir(),
                     url.split("watch?v=")[-1] + "." + stream.extension)
 
         if not exists(path):
             stream.download(path)
-
+        uri = path
         if convert:
             mp3 = join(gettempdir(), url.split("watch?v=")[-1] + ".mp3")
             if not exists(mp3):
@@ -49,11 +62,14 @@ def get_youtube_audio_stream(url, download=False, convert=False):
                 command = ["ffmpeg", "-n", "-i", path, "-acodec",
                            "libmp3lame", "-ab", "128k", mp3]
                 subprocess.call(command)
-            return mp3
+            uri = mp3
 
-        return path
-
-    return stream.url
+    meta["uri"] = uri
+    # try to parse artist from title
+    if "-" in meta["title"]:
+        meta["artist"] = meta["title"].split("-")[0]
+        meta["title"] = "".join(meta["title"].split("-")[1:])
+    return meta
 
 
 def get_youtube_video_stream(url, download=False):
@@ -61,23 +77,43 @@ def get_youtube_video_stream(url, download=False):
         LOG.error("can not extract stream, pafy is not available")
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
-        return url
+        return {}
     try:
         stream = pafy.new(url)
     except Exception as e:
         LOG.exception(e)
-        return None
+        return {}
+
+    meta = {
+        "url": url,
+        #"audio_stream": stream.getbestaudio().url,
+        #"stream": stream.getbest().url,
+        "title": stream.title,
+        "author": stream.author,
+        "image": stream.getbestthumb().split("?")[0],
+        #        "description": stream.description,
+        "length": stream.length * 1000,
+        "category": stream.category,
+        #        "upload_date": stream.published,
+        #        "tags": stream.keywords
+    }
     stream = stream.getbest()
     if not stream:
-        return None
-
+        return {}
+    uri = stream.url
     if download:
         path = join(gettempdir(),
                     url.split("watch?v=")[-1] + "." + stream.extension)
         if not exists(path):
             stream.download(path)
-        return path
-    return stream.url
+        uri = path
+
+    meta["uri"] = uri
+    # try to parse artist from title
+    if "-" in meta["title"]:
+        meta["artist"] = meta["title"].split("-")[0]
+        meta["title"] = "".join(meta["title"].split("-")[1:])
+    return meta
 
 
 def is_youtube(url):
@@ -92,7 +128,7 @@ def get_youtube_metadata(url):
         LOG.error("can not extract audio stream, pafy is not available")
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
-        return url
+        return {"url": url}
     try:
         stream = pafy.new(url)
     except:

@@ -12,6 +12,8 @@ def get_rss_first_stream(feed_url):
             if 'audio' in link['type']:
                 # TODO return duration for proper display in UI
                 duration = link.get('length')
-                return link['href']
+                link["uri"] = link['href']
+                return link
     except Exception as e:
         pass
+    return {}
