@@ -101,13 +101,12 @@ Mycroft.Delegate {
         audioService.playerContinue()
     }
 
-
     function next(){
         audioService.playerNext()
     }
 
     function previous(){
-        audioService.playPrevious()
+        audioService.playerPrevious()
     }
 
     function repeat(){
