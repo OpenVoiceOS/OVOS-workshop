@@ -11,7 +11,8 @@ import QtMultimedia 5.12
 Mycroft.Delegate {
     id: root
     fillWidth: true
-    skillBackgroundColorOverlay: "black"
+    skillBackgroundSource: sessionData.bg_image
+    skillBackgroundColorOverlay: Qt.rgba(0, 0, 0, 0.85)
     leftPadding: 0
     topPadding: 0
     bottomPadding: 0
@@ -21,9 +22,9 @@ Mycroft.Delegate {
 
     property var source
     property string status: "stop"
-    property var thumbnail
-    property var title
-    property var author
+    property var thumbnail: sessionData.image
+    property var title: sessionData.title
+    property var author: sessionData.artist
     property var playerMeta
     property var cpsMeta
 
@@ -31,8 +32,8 @@ Mycroft.Delegate {
     property bool horizontalMode: width > height ? 1 : 0
 
     //Player Button Control Actions
-    property var nextAction: "mediaservice.gui.requested.next"
-    property var previousAction: "mediaservice.gui.requested.previous"
+    property var nextAction: "ovos.common_play.next"
+    property var previousAction: "ovos.common_play.previous"
     property var currentState: audioService.playbackState
 
     //Mediaplayer Related Properties To Be Set By Probe MediaPlayer
