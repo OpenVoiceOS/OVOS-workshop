@@ -1,7 +1,7 @@
 import random
 import time
 
-from ovos_utils.gui import can_use_gui, can_use_local_gui
+from ovos_utils.gui import is_gui_connected, is_gui_running
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message, wait_for_reply
 from ovos_utils.skills.audioservice import AudioServiceInterface
@@ -350,9 +350,10 @@ class OVOSCommonPlaybackInterface:
                     f"{message.data['skill_id']} is not answering fast "
                     "enough!")
 
+            has_gui = is_gui_running() or is_gui_connected(self.bus)
             for idx, res in enumerate(message.data.get("results", [])):
                 # filter video results if GUI not connected
-                if not can_use_gui(self.bus):
+                if not has_gui:
                     # force allowed stream types to be played audio only
                     if res.get("media_type", "") in self.cast2audio:
                         LOG.debug("unable to use GUI, forcing result to play audio only")
@@ -528,8 +529,8 @@ class OVOSCommonPlaybackInterface:
                 self.now_playing.__setattr__(k, v)
             else:
                 self.now_playing.data[k] = v
-
-        if not can_use_gui(self.bus):
+        has_gui = is_gui_running() or is_gui_connected(self.bus)
+        if not has_gui:
             # No gui, so lets force playback to use audio only
             # audio playback configured to use mycroft media player
             self.now_playing.playback = CommonPlayPlaybackType.AUDIO
@@ -576,7 +577,7 @@ class OVOSCommonPlaybackInterface:
         if self.now_playing.playback == CommonPlayPlaybackType.AUDIO:
             LOG.debug("Requesting playback: CommonPlayPlaybackType.AUDIO")
             real_url = meta["uri"]
-            if can_use_local_gui():
+            if is_gui_running():
                 # handle audio natively in mycroft-gui
                 self.bus.emit(Message("playback.display.audio.type"))
                 self.now_playing.status = CommonPlayStatus.PLAYING_AUDIO
@@ -741,7 +742,7 @@ class OVOSCommonPlaybackInterface:
         playlist_qml = "Playlist.qml"
         video_player_qml = "VideoPlayer.qml"
         # if we have a local GUI skip the audio backend completely
-        if can_use_local_gui():
+        if is_gui_running():
             player_qml = "OVOSAudioPlayer.qml"
 
         # send gui track data
@@ -811,8 +812,7 @@ class OVOSCommonPlaybackInterface:
     def handle_play_from_search(self, message):
         # TODO playlist handling (move index pointer to selected track)
         media = message.data["playlistData"]
-        self.set_now_playing(media)
-        self.play()
+        self.play_media(media)
 
     def handle_play_from_collection(self, message):
         # TODO playlist handling (move index pointer to selected track)
