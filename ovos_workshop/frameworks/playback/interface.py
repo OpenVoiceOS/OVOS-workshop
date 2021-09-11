@@ -208,11 +208,13 @@ class OVOSCommonPlaybackInterface:
                     self.handle_guiplayer_metadata_request)
         self.bus.on('gui.player.media.service.sync.status',
                     self.handle_guiplayer_status_update)
-        self.bus.on("gui.player.media.service.get.next", self.handle_click_next)
-        self.bus.on("gui.player.media.service.get.previous", self.handle_click_previous)
+        self.bus.on("gui.player.media.service.get.next",
+                    self.handle_click_next)
+        self.bus.on("gui.player.media.service.get.previous",
+                    self.handle_click_previous)
         # TODO shuffle/repeat
-        #self.bus.on("gui.player.media.service.get.repeat")
-        #self.bus.on("gui.player.media.service.get.shuffle")
+        # self.bus.on("gui.player.media.service.get.repeat")
+        # self.bus.on("gui.player.media.service.get.shuffle")
 
     def shutdown(self):
         # self.stop()
@@ -247,7 +249,7 @@ class OVOSCommonPlaybackInterface:
             self.update_status({"status": CommonPlayStatus.PAUSED})
         if current_state == 0:
             pass
-            #self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
+            # self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
 
     # audio ducking
     def handle_record_begin(self, message):
@@ -263,6 +265,10 @@ class OVOSCommonPlaybackInterface:
 
     # searching
     def search(self, phrase, media_type=CommonPlayMediaType.GENERIC):
+        self.gui.clear()
+        self.gui["footer_text"] = "Searching Media"
+        self.gui.show_page("BusyPage.qml", override_idle=True)
+
         self.search_playlist = Playlist()  # reset
         self.query_replies[phrase] = []
         self.query_timeouts[phrase] = self.min_timeout
@@ -334,7 +340,6 @@ class OVOSCommonPlaybackInterface:
         timeout = message.data.get("timeout")
         # LOG.debug(f"OVOSCommonPlay result:"
         #          f" {message.data['skill_id']}")
-
         if message.data.get("searching"):
             # extend the timeout by N seconds
             if timeout and self.allow_extensions and \
@@ -356,15 +361,21 @@ class OVOSCommonPlaybackInterface:
                 if not has_gui:
                     # force allowed stream types to be played audio only
                     if res.get("media_type", "") in self.cast2audio:
-                        LOG.debug("unable to use GUI, forcing result to play audio only")
+                        LOG.debug(
+                            "unable to use GUI, forcing result to play audio only")
                         res["playback"] = CommonPlayPlaybackType.AUDIO
                         res["match_confidence"] -= 10
                         message.data["results"][idx] = res
 
                 if res not in self.search_playlist:
                     self.search_playlist.add_entry(res)
+                    if self.waiting and res["match_confidence"] >= 35:
+                        self.gui["footer_text"] = f"skill - {message.data['skill_id']}\n" \
+                                                  f"match - {res['title']}\n" \
+                                                  f"confidence - {res['match_confidence']} "
 
             self.query_replies[search_phrase].append(message.data)
+
             # abort waiting if we gathered enough results
             # TODO ensure we have a decent confidence match, if all matches
             #  are < 50% conf extend timeout instead
@@ -373,6 +384,8 @@ class OVOSCommonPlaybackInterface:
                 if self.waiting:
                     self.waiting = False
                     LOG.debug("common play query timeout, parsing results")
+                    self.gui["footer_text"] = "search timeout - selecting " \
+                                              "best result"
                 return
         elif self.waiting:
             for res in message.data.get("results", []):
@@ -380,9 +393,12 @@ class OVOSCommonPlaybackInterface:
                     # got a really good match, dont search further
                     LOG.info("Receiving very high confidence match, stopping "
                              "search early")
+                    self.gui["footer_text"] = f"High confidence match! - " \
+                                              f"{res['title']}"
                     # allow other skills to "just miss"
                     if self.early_stop_grace_period:
-                        LOG.debug(f"  - grace period: {self.early_stop_grace_period} seconds")
+                        LOG.debug(
+                            f"  - grace period: {self.early_stop_grace_period} seconds")
                         time.sleep(self.early_stop_grace_period)
                     self.waiting = False
                     return
@@ -570,7 +586,7 @@ class OVOSCommonPlaybackInterface:
 
         self.active_skill = self.now_playing.skill_id
 
-        #self.stop()
+        # self.stop()
 
         meta = self._prepare_stream()
 
@@ -766,6 +782,7 @@ class OVOSCommonPlaybackInterface:
             pages = [player_qml, search_qml, playlist_qml]
             self.gui.remove_pages(["VideoPlayer.qml"])
 
+        self.gui.remove_page("BusyPage.qml")
         self._show_pages(pages)
 
     #  gui <-> audio service
