@@ -67,8 +67,19 @@ def get_youtube_audio_stream(url, download=False, convert=False):
     meta["uri"] = uri
     # try to parse artist from title
     if "-" in meta["title"]:
+        removes = ["(Official Video)", "(Official Music Video)",
+                   "(Lyrics)", "(Official)", "(Album Stream)"]
+        removes += [s.replace("(", "").replace(")", "") for s in removes] + \
+                   [s.replace("[", "").replace("]", "") for s in removes]
+        removes += [s.upper() for s in removes] + [s.lower() for s in removes]
+        removes.append("(HQ)")
+        for k in removes:
+            meta["title"] = meta["title"].replace(k, "")
+
         meta["artist"] = meta["title"].split("-")[0]
         meta["title"] = "".join(meta["title"].split("-")[1:])
+        meta["title"] = meta["title"].strip()
+        meta["artist"] = meta["artist"].strip()
     return meta
 
 

@@ -131,7 +131,8 @@ class OVOSCommonPlaybackInterface:
     def __init__(self, bus=None, min_timeout=1, max_timeout=5,
                  allow_extensions=True, audio_service=None, gui=None,
                  backwards_compatibility=True, media_fallback=True,
-                 early_stop_conf=90, early_stop_grace_period=1.0):
+                 early_stop_conf=90, early_stop_grace_period=1.0,
+                 autoplay=True):
         """
         Arguments:
             bus (MessageBus): mycroft messagebus connection
@@ -159,6 +160,7 @@ class OVOSCommonPlaybackInterface:
         self.audio_service = audio_service or AudioServiceInterface(self.bus)
         self.gui = gui or GUIInterface("ovos.common_play", bus=self.bus)
 
+        self.autoplay = autoplay
         self.min_timeout = min_timeout
         self.max_timeout = max_timeout
         self.allow_extensions = allow_extensions
@@ -687,6 +689,11 @@ class OVOSCommonPlaybackInterface:
             self.play()
         else:
             LOG.debug("requested next, but there aren't any more tracks")
+            self.gui.release()
+            # show search results, release screen after 60 seconds
+            search_qml = "Disambiguation.qml"
+            self.gui.show_page(search_qml, override_idle=60)
+            self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
 
     def play_prev(self):
         # contains entries, and is not at start of playlist
@@ -849,10 +856,14 @@ class OVOSCommonPlaybackInterface:
         LOG.debug("Playback ended")
         search_qml = "Disambiguation.qml"
         self.audio_service.stop()
+        if self.autoplay:
+            self.play_next()
+            return
         self.gui.release()
         # show search results, release screen after 60 seconds
         self.gui.show_page(search_qml, override_idle=60)
         self.update_status({"status": CommonPlayStatus.END_OF_MEDIA})
+
 
     # gui <-> playlists
     def handle_play_from_playlist(self, message):
