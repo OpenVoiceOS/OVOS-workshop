@@ -103,6 +103,9 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         if media_type not in self.supported_media:
             return
 
+        self.bus.emit(message.reply("ovos.common_play.skill.search_start",
+                                    {"skill_id": self.skill_id}))
+
         # invoke the media search handlesr to let the skill perform its search
         found = False
 
@@ -142,6 +145,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "searching": False}))
+        self.bus.emit(message.reply("ovos.common_play.skill.search_end",
+                                    {"skill_id": self.skill_id}))
 
     def CPS_extend_timeout(self, timeout=0.5):
         """ request more time for searching, limits are defined by

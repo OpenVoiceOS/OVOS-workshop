@@ -175,6 +175,7 @@ class OVOSCommonPlaybackInterface:
         self.waiting = False
         self.search_start = 0
         self._search_results = []
+        self.active_searching = []
 
         self.playback_status = CommonPlayStatus.END_OF_MEDIA
         self.active_backend = None  # re-uses CommonPlayStatus.PLAYING_XXX
@@ -194,6 +195,10 @@ class OVOSCommonPlaybackInterface:
                     self.handle_status_change)
         self.bus.on("ovos.common_play.playback_time",
                     self.handle_sync_seekbar)
+        self.bus.on("ovos.common_play.skill.search_start",
+                    self.handle_skill_search_start)
+        self.bus.on("ovos.common_play.skill.search_end",
+                    self.handle_skill_search_end)
         self.bus.on("mycroft.audio.queue_end",
                     self.handle_playback_ended)
 
@@ -238,8 +243,8 @@ class OVOSCommonPlaybackInterface:
         if self.now_playing:
             self.bus.emit(message.reply("gui.player.media.service.set.meta",
                                         {"title": self.now_playing.title,
-                                         "thumbnail": self.now_playing.image,
-                                         "author": self.now_playing.artist}))
+                                         "image": self.now_playing.image,
+                                         "artist": self.now_playing.artist}))
 
     def handle_guiplayer_status_update(self, message):
         current_state = message.data.get("state")
@@ -264,6 +269,28 @@ class OVOSCommonPlaybackInterface:
             self.resume()
 
     # searching
+    def handle_skill_search_start(self, message):
+        skill_id = message.data["skill_id"]
+        LOG.debug(f"{message.data['skill_id']} is searching")
+        if skill_id not in self.active_searching:
+            self.active_searching.append(skill_id)
+
+    def handle_skill_search_end(self, message):
+        skill_id = message.data["skill_id"]
+        LOG.debug(f"{message.data['skill_id']} finished search")
+        if skill_id in self.active_searching:
+            self.active_searching.remove(skill_id)
+
+        # if this was the last skill end waiting period
+        time.sleep(0.5)  # TODO this is hacky, but avoids a race condition in
+        # case some skill just decides to respond before the others even
+        # acknowledge search is starting, this gives more than enough time
+        # for self.active_seaching to be populated, a better approach should
+        # be employed but this works fine for now
+        if not self.active_searching:
+            LOG.info("Received search responses from all skills!")
+            self.waiting = False
+
     def search(self, phrase, media_type=CommonPlayMediaType.GENERIC):
         self.gui.clear()
         self.gui["footer_text"] = "Searching Media"
@@ -316,6 +343,7 @@ class OVOSCommonPlaybackInterface:
             LOG.debug(
                 "OVOSCommonPlay falling back to CommonPlayMediaType.GENERIC")
             return self.search(phrase, media_type=CommonPlayMediaType.GENERIC)
+        self.gui.remove_page("BusyPage.qml")
         return []
 
     def search_skill(self, skill_id, phrase,
@@ -327,6 +355,8 @@ class OVOSCommonPlaybackInterface:
         return res[0]
 
     def play_media(self, track, disambiguation=None, playlist=None):
+        if self.now_playing:
+            self.pause()  # make it more responsive
         if disambiguation:
             self.search_playlist = Playlist(disambiguation)
             self.search_playlist.sort_by_conf()
@@ -338,8 +368,9 @@ class OVOSCommonPlaybackInterface:
     def handle_skill_response(self, message):
         search_phrase = message.data["phrase"]
         timeout = message.data.get("timeout")
-        # LOG.debug(f"OVOSCommonPlay result:"
-        #          f" {message.data['skill_id']}")
+        skill_id = message.data['skill_id']
+        # LOG.debug(f"OVOSCommonPlay result: {skill_id}")
+
         if message.data.get("searching"):
             # extend the timeout by N seconds
             if timeout and self.allow_extensions and \
@@ -361,26 +392,26 @@ class OVOSCommonPlaybackInterface:
                 if not has_gui:
                     # force allowed stream types to be played audio only
                     if res.get("media_type", "") in self.cast2audio:
-                        LOG.debug(
-                            "unable to use GUI, forcing result to play audio only")
+                        LOG.debug("unable to use GUI, forcing result to play audio only")
                         res["playback"] = CommonPlayPlaybackType.AUDIO
                         res["match_confidence"] -= 10
                         message.data["results"][idx] = res
 
                 if res not in self.search_playlist:
                     self.search_playlist.add_entry(res)
-                    if self.waiting and res["match_confidence"] >= 35:
-                        self.gui["footer_text"] = f"skill - {message.data['skill_id']}\n" \
-                                                  f"match - {res['title']}\n" \
-                                                  f"confidence - {res['match_confidence']} "
+                    # update search UI
+                    if self.waiting and res["match_confidence"] >= 30:
+                        self.gui["footer_text"] = \
+                            f"skill - {skill_id}\n" \
+                            f"match - {res['title']}\n" \
+                            f"confidence - {res['match_confidence']} "
 
             self.query_replies[search_phrase].append(message.data)
 
             # abort waiting if we gathered enough results
             # TODO ensure we have a decent confidence match, if all matches
             #  are < 50% conf extend timeout instead
-            if time.time() - self.search_start > self.query_timeouts[
-                search_phrase]:
+            if time.time() - self.search_start > self.query_timeouts[search_phrase]:
                 if self.waiting:
                     self.waiting = False
                     LOG.debug("common play query timeout, parsing results")
@@ -569,6 +600,11 @@ class OVOSCommonPlaybackInterface:
             track = MediaEntry.from_dict(track)
         assert isinstance(track, MediaEntry)
         self.now_playing = track
+        # sync with gui media player on track change
+        self.bus.emit(Message("gui.player.media.service.set.meta",
+                              {"title": self.now_playing.title,
+                               "image": self.now_playing.image,
+                               "artist": self.now_playing.artist}))
         if self.now_playing not in self.playlist:
             self.playlist.add_entry(self.now_playing)
             self.playlist.position = len(self.playlist) - 1
@@ -782,7 +818,6 @@ class OVOSCommonPlaybackInterface:
             pages = [player_qml, search_qml, playlist_qml]
             self.gui.remove_pages(["VideoPlayer.qml"])
 
-        self.gui.remove_page("BusyPage.qml")
         self._show_pages(pages)
 
     #  gui <-> audio service
