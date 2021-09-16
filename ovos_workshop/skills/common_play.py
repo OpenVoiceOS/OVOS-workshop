@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
 from ovos_workshop.skills.decorators.playback import common_play_search
-from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayMatchConfidence
+from ovos_workshop.frameworks.playback import MediaType, MatchConfidence
 from ovos_utils.messagebus import Message
 from inspect import signature
 
@@ -45,8 +45,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         # NOTE: derived skills will likely want to override this list
-        self.supported_media = [CommonPlayMediaType.GENERIC,
-                                CommonPlayMediaType.AUDIO]
+        self.supported_media = [MediaType.GENERIC,
+                                MediaType.AUDIO]
         self._search_handlers = [self.CPS_search] # default search handler,
                                 # more can be added wth decorators
         self._current_query = None
@@ -98,7 +98,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
         media_type = message.data.get("question_type",
-                                      CommonPlayMediaType.GENERIC)
+                                      MediaType.GENERIC)
 
         if media_type not in self.supported_media:
             return
@@ -165,18 +165,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         Arguments:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
-            media_type (CommonPlayMediaType): requested CPSMatchType to search for
+            media_type (MediaType): requested CPSMatchType to search for
 
-        if a result from here is selected with CommonPlayPlaybackType.SKILL then
+        if a result from here is selected with PlaybackType.SKILL then
         CPS_play will be called with result data as argument
 
         Returns:
             search_results (list): list of dictionaries with result entries
             {
-                "match_confidence": CommonPlayMatchConfidence.HIGH,
+                "match_confidence": MatchConfidence.HIGH,
                 "question_type":  CPSMatchType.MUSIC,
                 "uri": "https://audioservice.or.gui.will.play.this",
-                "playback": CommonPlayPlaybackType.VIDEO,
+                "playback": PlaybackType.VIDEO,
                 "image": "http://optional.audioservice.jpg",
                 "bg_image": "http://optional.audioservice.background.jpg"
             }
@@ -190,9 +190,9 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         Playback will be handled manually by the skill, eg, spotify or some
         other external service
 
-        NOTE: CommonPlayPlaybackType.AUDIO and CommonPlayPlaybackType.VIDEO are handled
+        NOTE: PlaybackType.AUDIO and PlaybackType.VIDEO are handled
               automatically by BetterCommonPlay, this is only called for
-              CommonPlayPlaybackType.SKILL results
+              PlaybackType.SKILL results
 
         NOTE2: Mycroft Common Play skills also use this and depend on it to
                actually issue a call to the audio service, this is
@@ -202,10 +202,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             data (dict): selected data previously returned in CPS_search
 
          {
-            "match_confidence": CommonPlayMatchConfidence.HIGH,
-            "question_type":  CommonPlayMediaType.MUSIC,
+            "match_confidence": MatchConfidence.HIGH,
+            "question_type":  MediaType.MUSIC,
             "uri": "https://audioservice.or.gui.will.play.this",
-            "playback": CommonPlayPlaybackType.SKILL,
+            "playback": PlaybackType.SKILL,
             "image": "http://optional.audioservice.jpg",
             "bg_image": "http://optional.audioservice.background.jpg"
         }

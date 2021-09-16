@@ -26,7 +26,7 @@ import Mycroft 1.0 as Mycroft
 
 Mycroft.Delegate {
     id: root
-    skillBackgroundSource: media.bg_image
+    skillBackgroundSource: sessionData.bg_image
     property alias thumbnail: albumimg.source
     fillWidth: true
     property int imageWidth: Kirigami.Units.gridUnit * 10
@@ -39,19 +39,20 @@ Mycroft.Delegate {
     // Assumption current_Position is always in milleseconds and relative to track_length if track_length = 530000, position values range from 0 to 530000
 
     property var media: sessionData.media
+    property var trackTitle: sessionData.title
     property var compareModel
-    property var playerDuration: media.length
+    property var playerDuration: sessionData.length
     property real playerPosition: 0
-    property var playerState: media.status
+    property var playerState: sessionData.status
     property var nextAction: "next"
     property var previousAction: "previous"
     property var seekAction: "seek"
     property var pauseAction: "pause"
     property var resumeAction: "resume"
-    property var positionFromMetadata: media.position
+    property var positionFromMetadata: sessionData.position
 
     onPositionFromMetadataChanged: {
-        playerPosition = media.position
+        playerPosition = sessionData.position
         playerState = "Playing"
     }
 
@@ -71,10 +72,6 @@ Mycroft.Delegate {
         id: autoPlayRepeatGroup
         buttons: autoPlayRepeatGroupLayout.children
     }
-    
-    onPlayerStateChanged: {
-        console.log(playerState)
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -87,7 +84,7 @@ Mycroft.Delegate {
 
             Kirigami.Heading {
                 id: songtitle
-                text: media.title
+                text: trackTitle
                 level: 1
                 maximumLineCount: 1
                 width: parent.width
@@ -162,6 +159,7 @@ Mycroft.Delegate {
                                 KeyNavigation.right: playButton
                                 KeyNavigation.down: seekableslider
                                 onClicked: {
+                                    playerState = "Playing"
                                     triggerGuiEvent(previousAction, {})
                                 }
 
@@ -185,7 +183,7 @@ Mycroft.Delegate {
                                 Layout.alignment: Qt.AlignVCenter
                                 onClicked: {
                                     if (playerState === "Paused"){
-                                        console.log("in resume action")
+                                        playerState = "Playing"
                                         triggerGuiEvent(resumeAction, {"media": {
                                                                 "image": media.image,
                                                                 "track": media.track,
@@ -195,7 +193,7 @@ Mycroft.Delegate {
                                                                 "position": playerPosition,
                                                                 "status": "Playing"}})
                                     } else {
-                                        console.log("in pause action")
+                                        playerState = "Paused"
                                         triggerGuiEvent(pauseAction, {"media": {
                                                                 "image": media.image,
                                                                 "title": media.title,
@@ -222,6 +220,7 @@ Mycroft.Delegate {
                                 Layout.fillHeight: true
                                 Layout.alignment: Qt.AlignVCenter
                                 onClicked: {
+                                    playerState = "Playing"
                                     triggerGuiEvent(nextAction, {})
                                 }
 

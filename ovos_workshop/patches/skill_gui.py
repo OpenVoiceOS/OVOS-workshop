@@ -50,7 +50,7 @@ class SkillGUI(_SkillGUI):
     def _sync_data(self):
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
-        self.skill.bus.emit(Message("gui.value.set", data))
+        self.bus.emit(Message("gui.value.set", data))
 
     def __setitem__(self, key, value):
         """Implements set part of dict-like behaviour with named keys."""
@@ -79,13 +79,14 @@ class SkillGUI(_SkillGUI):
                 transient: 'Default' displays a notification with a timeout.
                 sticky: displays a notification that sticks to the screen.
         """
-        self.skill.bus.emit(Message("homescreen.notification.set",
-                                    data={
-                                        "sender": self.skill.skill_id,
-                                        "text": content,
-                                        "action": action,
-                                        "type": noticetype
-                                    }))
+        if self.skill:
+            self.skill.bus.emit(Message("homescreen.notification.set",
+                                        data={
+                                            "sender": self.skill.skill_id,
+                                            "text": content,
+                                            "action": action,
+                                            "type": noticetype
+                                        }))
 
     # TODO PR in mycroft-core, taken from gez-mycroft wifi GUI test skill
     def show_confirmation_status(self, text="", override_idle=False,
@@ -117,27 +118,27 @@ class SkillGUI(_SkillGUI):
         Register handler to update settings when
         updated via Web interface.
         """
-        skill_id = self.skill.skill_id
+        if self.skill:
+            skill_id = self.skill_id
 
-        settingmeta_path = join(self.skill.root_dir,
-                                "settingsmeta.json")
-        if isfile(settingmeta_path):
-            self.settings_gui_generator.populate(skill_id,
-                                                 settingmeta_path,
-                                                 self.skill.settings)
-            apply_handler = skill_id + ".settings.set"
-            update_handler = skill_id + ".settings.update"
-            remove_pagehandler = skill_id + ".settings.remove_page"
-            self.register_handler(apply_handler,
-                                  self._apply_settings)
-            self.register_handler(update_handler,
-                                  self._update_settings)
-            self.register_handler(remove_pagehandler,
-                                  self._remove_settings_display)
-
-        else:
-            raise FileNotFoundError("Unable to find setting file for: {}".
-                                    format(skill_id))
+            settingmeta_path = join(self.skill.root_dir,
+                                    "settingsmeta.json")
+            if isfile(settingmeta_path):
+                self.settings_gui_generator.populate(skill_id,
+                                                     settingmeta_path,
+                                                     self.skill.settings)
+                apply_handler = skill_id + ".settings.set"
+                update_handler = skill_id + ".settings.update"
+                remove_pagehandler = skill_id + ".settings.remove_page"
+                self.register_handler(apply_handler,
+                                      self._apply_settings)
+                self.register_handler(update_handler,
+                                      self._update_settings)
+                self.register_handler(remove_pagehandler,
+                                      self._remove_settings_display)
+                return
+        raise FileNotFoundError("Unable to find setting file for: {}".
+                                format(self.skill_id))
 
     def show_settings(self, override_idle=True,
                       override_animations=False):
@@ -154,7 +155,7 @@ class SkillGUI(_SkillGUI):
         """
         self.clear()
         self.__skills_config["sections"] = self.settings_gui_generator.fetch()
-        self.__skills_config["skill_id"] = self.skill.skill_id
+        self.__skills_config["skill_id"] = self.skill_id
         self["skillsConfig"] = self.__skills_config
         self.show_page("SYSTEM_SkillSettings.qml",
                        override_idle=override_idle)
@@ -165,8 +166,9 @@ class SkillGUI(_SkillGUI):
         Arguments:
         message: Messagebus message
         """
-        self.skill.settings[message.data["setting_key"]] = \
-            message.data["setting_value"]
+        if self.skill:
+            self.skill.settings[message.data["setting_key"]] = \
+                message.data["setting_value"]
 
     def _update_settings(self, message):
         """Update changed skill settings in GUI.
@@ -215,20 +217,20 @@ class SkillGUI(_SkillGUI):
         if index > len(page_names):
             raise ValueError('Default index is larger than page list length')
 
-        self.page = page_names[index]
-
         # First sync any data...
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
-        self.skill.bus.emit(Message("gui.value.set", data))
+        if self.skill:
+            self.skill.bus.emit(Message("gui.value.set", data))
 
         # Convert pages to full reference
         page_urls = []
+        page = None
         for name in page_names:
 
             if name.startswith("SYSTEM"):
                 page = resolve_resource_file(join('ui', name))
-            else:
+            elif self.skill:
                 page = self.skill.find_resource(name, 'ui')
 
             if not page:
@@ -242,13 +244,13 @@ class SkillGUI(_SkillGUI):
                     page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
-
-        self.skill.bus.emit(Message("gui.page.show",
-                                    {"page": page_urls,
-                                     "index": index,
-                                     "__from": self.skill.skill_id,
-                                     "__idle": override_idle,
-                                     "__animations": override_animations}))
+        if self.skill:
+            self.skill.bus.emit(Message("gui.page.show",
+                                        {"page": page_urls,
+                                         "index": index,
+                                         "__from": self.skill.skill_id,
+                                         "__idle": override_idle,
+                                         "__animations": override_animations}))
 
     def remove_pages(self, page_names):
         """Remove a list of pages in the GUI.
@@ -264,10 +266,11 @@ class SkillGUI(_SkillGUI):
 
         # Convert pages to full reference
         page_urls = []
+        page = None
         for name in page_names:
             if name.startswith("SYSTEM"):
                 page = resolve_resource_file(join('ui', name))
-            else:
+            elif self.skill:
                 page = self.skill.find_resource(name, 'ui')
 
             if not page:
@@ -279,8 +282,7 @@ class SkillGUI(_SkillGUI):
                 page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
-
-        self.skill.bus.emit(Message("gui.page.delete",
-                                    {"page": page_urls,
-                                     "__from": self.skill.skill_id}))
-
+        if self.skill:
+            self.skill.bus.emit(Message("gui.page.delete",
+                                        {"page": page_urls,
+                                         "__from": self.skill.skill_id}))

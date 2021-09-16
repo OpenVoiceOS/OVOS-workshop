@@ -1,6 +1,6 @@
 from functools import wraps
 from ovos_workshop.skills.layers import IntentLayers
-from ovos_workshop.frameworks.playback import CommonPlayMediaType
+from ovos_workshop.frameworks.playback import MediaType
 
 
 def common_play_search():

@@ -6,5 +6,5 @@ ensure_mycroft_import()
 # packaged separately and does not need any patching
 from mycroft.skills.common_play_skill import CommonPlaySkill, \
     CPSTrackStatus, CPSMatchLevel
-from ovos_workshop.frameworks.playback import CommonPlayMediaType as CPSMatchType
+from ovos_workshop.frameworks.playback import MediaType as CPSMatchType
 from ovos_workshop.patches.base_skill import MycroftSkill

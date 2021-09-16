@@ -54,7 +54,7 @@ Mycroft.Delegate {
 
         Kirigami.Heading {
             id: watchItemList
-            text: "Your Playlist"
+            text: "Now Playing"
             level: 2
         }
         

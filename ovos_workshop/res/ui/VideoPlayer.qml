@@ -12,7 +12,8 @@ Mycroft.Delegate {
     id: root
     property var media: sessionData.media
     property var videoSource: sessionData.stream
-    property var videoStatus: media.status
+    property var videoStatus: sessionData.status
+    property var videoTitle: sessionData.title
     property bool busyIndicate: false
 
     fillWidth: true
@@ -29,7 +30,6 @@ Mycroft.Delegate {
     
     Component.onCompleted: {
         syncStatusTimer.restart()
-        idleCheckTimer.restart()
     }
     
     Keys.onDownPressed: {
@@ -76,20 +76,9 @@ Mycroft.Delegate {
             }
         }
     }
-    
-    Timer {
-        id: delaytimer
-    }
 
     Timer {
-        id: idleCheckTimer
-        interval: 60000
-        repeat: true
-        onTriggered: {
-            if (video.playbackState != MediaPlayer.PlayingState || video.playbackState != MediaPlayer.PausedState) {
-                triggerGuiEvent("video.media.playback.ended", {})
-            }
-        }
+        id: delaytimer
     }
 
     function delay(delayTime, cb) {
@@ -150,7 +139,7 @@ Mycroft.Delegate {
             anchors.fill: parent
             focus: true
             autoLoad: true
-            autoPlay: false
+            autoPlay: true
             loops: 1
             source: videoSource
             
@@ -173,7 +162,7 @@ Mycroft.Delegate {
             onStatusChanged: {
                 console.log(status)
                 if(status == MediaPlayer.EndOfMedia) {
-                    triggerGuiEvent("video.media.playback.ended", {})
+                    triggerGuiEvent("video.ended", {})
                     busyIndicatorPop.enabled = false
                 }
                 if(status == MediaPlayer.Loading) {

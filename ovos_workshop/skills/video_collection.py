@@ -7,7 +7,7 @@ from ovos_utils.json_helper import merge_dict
 from json_database import JsonStorageXDG
 import random
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
-from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPlaybackType
+from ovos_workshop.frameworks.playback import MediaType, PlaybackType
 
 try:
     import pyvod
@@ -57,8 +57,8 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
             LOG.error("py_VOD not installed!")
             LOG.info("pip install py_VOD>=0.4.0")
             raise ImportError
-        self.playback_type = CommonPlayPlaybackType.VIDEO
-        self.media_type = CommonPlayMediaType.VIDEO
+        self.playback_type = PlaybackType.VIDEO
+        self.media_type = MediaType.VIDEO
         self.default_bg = "https://github.com/OpenVoiceOS/ovos_assets/raw/master/Logo/ovos-logo-512.png"
         self.default_image = resolve_ovos_resource_file("ui/images/moviesandfilms.png")
         db_path = join(dirname(__file__), "res", self.name + ".jsondb")
@@ -152,14 +152,14 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
 
         # filter trailers
         if self.settings["filter_trailers"] and \
-                CommonPlayMediaType.TRAILER not in self.supported_media:
+                MediaType.TRAILER not in self.supported_media:
             # TODO bundle .voc for "trailer"
             videos = [v for v in videos
                       if not self.voc_match(v["title"], "trailer")]
 
         # filter behind the scenes
         if self.settings["filter_behind_scenes"] and \
-                CommonPlayMediaType.BEHIND_THE_SCENES not in self.supported_media:
+                MediaType.BEHIND_THE_SCENES not in self.supported_media:
             # TODO bundle .voc for "behind_scenes"
             videos = [v for v in videos
                       if not self.voc_match(v["title"], "behind_scenes")]
@@ -223,7 +223,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
     # matching
     def match_media_type(self, phrase, media_type):
         base_score = 0
-        if media_type == CommonPlayMediaType.VIDEO:
+        if media_type == MediaType.VIDEO:
             base_score += 5
         if media_type != self.media_type:
             base_score -= 20
@@ -270,7 +270,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
                 clean_phrase in self.normalize_title(title).split(" "):
             score += 30
 
-        if media_type == CommonPlayMediaType.TRAILER:
+        if media_type == MediaType.TRAILER:
             if self.voc_match(title, "trailer"):
                 score += 20
             else:
@@ -282,7 +282,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
             # TODO bundle trailer.voc in ovos_utils
             score = 0
 
-        if media_type == CommonPlayMediaType.BEHIND_THE_SCENES:
+        if media_type == MediaType.BEHIND_THE_SCENES:
             if self.voc_match(title, "behind_scenes"):
                 score += 20
             else:
@@ -309,7 +309,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
     def CPS_search(self, phrase, media_type):
         base_score = self.match_media_type(phrase, media_type)
         # penalty for generic searches, they tend to overmatch
-        if media_type == CommonPlayMediaType.GENERIC:
+        if media_type == MediaType.GENERIC:
             base_score -= 20
         # match titles and sort
         # then match all the metadata up to self.settings["search_depth"]

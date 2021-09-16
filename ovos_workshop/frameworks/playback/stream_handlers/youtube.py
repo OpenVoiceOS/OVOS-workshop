@@ -27,10 +27,7 @@ def get_youtube_audio_stream(url, download=False, convert=False):
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
         return {}
-    try:
-        stream = pafy.new(url)
-    except:
-        return {}
+    stream = pafy.new(url)
     meta = {
         "url": url,
         # "audio_stream": stream.getbestaudio().url,
@@ -68,11 +65,11 @@ def get_youtube_audio_stream(url, download=False, convert=False):
     # try to parse artist from title
     if "-" in meta["title"]:
         removes = ["(Official Video)", "(Official Music Video)",
-                   "(Lyrics)", "(Official)", "(Album Stream)"]
+                   "(Lyrics)", "(Official)", "(Album Stream)", "(Legendado)"]
         removes += [s.replace("(", "").replace(")", "") for s in removes] + \
                    [s.replace("[", "").replace("]", "") for s in removes]
         removes += [s.upper() for s in removes] + [s.lower() for s in removes]
-        removes.append("(HQ)")
+        removes += ["(HQ)", "()", "[]", "- HQ -"]
         for k in removes:
             meta["title"] = meta["title"].replace(k, "")
 
@@ -89,11 +86,8 @@ def get_youtube_video_stream(url, download=False):
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
         return {}
-    try:
-        stream = pafy.new(url)
-    except Exception as e:
-        LOG.exception(e)
-        return {}
+
+    stream = pafy.new(url)
 
     meta = {
         "url": url,
@@ -140,10 +134,7 @@ def get_youtube_metadata(url):
         LOG.info("pip install youtube-dl")
         LOG.info("pip install pafy")
         return {"url": url}
-    try:
-        stream = pafy.new(url)
-    except:
-        return {}
+    stream = pafy.new(url)
     return {
         "url": url,
         #"audio_stream": stream.getbestaudio().url,
