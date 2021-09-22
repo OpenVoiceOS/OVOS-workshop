@@ -144,7 +144,9 @@ Mycroft.Delegate {
         }
 
         onMediaStatusChanged: {
-            console.log(status)
+            if (status == MediaPlayer.EndOfMedia) {
+                pause()
+            }
         }
 
         onMetaUpdated: {
