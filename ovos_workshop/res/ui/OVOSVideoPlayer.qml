@@ -62,10 +62,6 @@ Mycroft.Delegate {
         controlBarItem.forceActiveFocus()
     }
 
-    onFocusChanged: {
-        video.forceActiveFocus();
-    }
-
     onVideoSourceChanged: {
         root.play()
         delay(6000, function() {
