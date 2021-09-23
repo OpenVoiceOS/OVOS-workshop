@@ -28,6 +28,7 @@ import "." as Local
 
 Mycroft.Delegate {
     id: root
+    skillBackgroundSource: sessionData.bg_image
 
     readonly property var videoService: Mycroft.MediaService
 
@@ -35,8 +36,8 @@ Mycroft.Delegate {
     property var videoStatus
     property var videoRepeat
     property var videoThumb
-    property var videoTitle
-    property var videoAuthor
+    property var videoTitle: sessionData.title
+    property var videoAuthor: sessionData.artist
     property var playerMeta
     property var cpsMeta
     property bool busyIndicate: false

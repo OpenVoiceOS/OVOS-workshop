@@ -66,6 +66,7 @@ class VideoCollectionSkill(OVOSCommonPlaybackSkill):
         self.media_collection = pyvod.Collection(self.name,
                                            logo=self.default_image,
                                            db_path=db_path)
+        self.skill_icon = self.skill_logo = self.default_image
 
     def initialize(self):
         self.initialize_media_commons()

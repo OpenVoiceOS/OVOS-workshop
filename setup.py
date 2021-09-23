@@ -13,7 +13,7 @@ setup(
               'ovos_workshop.frameworks.playback.stream_handlers',
               'ovos_workshop.frameworks.questions',
               'ovos_workshop.frameworks.tv'],
-    install_requires=["ovos_utils"],
+    install_requires=["ovos_utils", "audio-metadata"],
     url='https://github.com/OpenVoiceOS/OVOS-workshop',
     license='apache-2.0',
     author='jarbasAi',

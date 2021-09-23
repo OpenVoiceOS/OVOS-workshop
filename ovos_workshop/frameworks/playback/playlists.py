@@ -4,7 +4,7 @@ from ovos_workshop.frameworks.playback.status import *
 from ovos_workshop.frameworks.playback.stream_handlers import is_youtube, \
     get_youtube_audio_stream, get_youtube_video_stream, \
     get_deezer_audio_stream, get_rss_first_stream, \
-    get_youtube_live_from_channel, find_mime
+    get_youtube_live_from_channel, find_mime, get_soundcloud_audio_stream
 
 
 # TODO subclass from dict (?)
@@ -50,6 +50,7 @@ class MediaEntry:
                          data.get("duration")  # or get_duration_from_url(url)
         data["skill_icon"] = data.get("skill_icon") or data.get("skill_logo")
         data["status"] = data.get("status") or TrackState.DISAMBIGUATION
+        data["playback"] = data.get("playback") or PlaybackType.UNDEFINED
         data["uri"] = data.get("stream") or data.get("uri") or data.get("url")
         data["title"] = data.get("title") or data["uri"]
         data["artist"] = data.get("artist") or data.get("author")
@@ -89,7 +90,13 @@ class MediaEntry:
             if not meta:
                 LOG.error("RSS feed stream extraction failed!!!")
 
-        if uri.startswith("deezer//"):
+        if uri.startswith("soundcloud//"):
+            uri = uri.replace("soundcloud//", "")
+            meta = get_soundcloud_audio_stream(uri)
+            if not meta:
+                LOG.error("souncloud stream extraction failed!!!")
+
+        elif uri.startswith("deezer//"):
             uri = uri.replace("deezer//", "")
             meta = get_deezer_audio_stream(uri)
             if not meta:
@@ -97,7 +104,7 @@ class MediaEntry:
             else:
                 LOG.debug(f"deezer cache: {meta['uri']}")
 
-        if uri.startswith("youtube.channel.live//"):
+        elif uri.startswith("youtube.channel.live//"):
             uri = uri.replace("youtube.channel.live//", "")
             uri = get_youtube_live_from_channel(uri)
             if not uri:

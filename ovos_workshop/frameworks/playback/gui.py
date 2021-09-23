@@ -26,7 +26,7 @@ class OVOSMediaPlayerGUI(GUIInterface):
 
     @property
     def search_spinner_page(self):
-        return "OVOSSearch.qml"
+        return "BusyPage.qml"
 
     @property
     def audio_player_page(self):
@@ -38,7 +38,7 @@ class OVOSMediaPlayerGUI(GUIInterface):
 
     @property
     def video_player_page(self):
-        return "VideoPlayer.qml"
+        return "OVOSVideoPlayer.qml"
 
     @property
     def search_page(self):
@@ -81,8 +81,7 @@ class OVOSMediaPlayerGUI(GUIInterface):
         self.clear()
         self["footer_text"] = "Querying Skills\n\n"
         self.show_page(self.search_spinner_page,
-                       override_idle=True,
-                       override_animations=True)
+                       override_idle=30)
 
     def show_player(self):
         to_remove = [self.search_spinner_page]

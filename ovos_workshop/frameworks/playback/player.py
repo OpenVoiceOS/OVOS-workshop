@@ -105,6 +105,7 @@ class OVOSMediaPlayer:
         self.register_bus_handlers()
 
     def register_bus_handlers(self):
+        # audio ducking TODO improve to wait for end of speech ?
         self.bus.on('recognizer_loop:record_begin', self.handle_duck_request)
         self.bus.on('recognizer_loop:record_end', self.handle_unduck_request)
 
@@ -119,10 +120,8 @@ class OVOSMediaPlayer:
                     self.handle_repeat_toggle_request)
         self.bus.on("gui.player.media.service.get.shuffle",
                     self.handle_shuffle_toggle_request)
-
-        # ovos video player qml
-        self.bus.on('ovos.common_play.video.ended',
-                    self.handle_playback_ended)
+        self.bus.on('gui.player.media.service.current.media.status',
+                    self.handle_player_media_update)
 
         # ovos common play bus api
         self.bus.on('ovos.common_play.player.state',
@@ -180,7 +179,6 @@ class OVOSMediaPlayer:
         if state == self.state:
             return
         self.state = state
-        # TODO remove "media" key
         if state == PlayerState.PLAYING:
             self.gui["status"] = "Playing"
         if state == PlayerState.PAUSED:
@@ -270,7 +268,11 @@ class OVOSMediaPlayer:
                 "state": TrackState.PLAYING_SKILL}))
         elif self.active_backend == PlaybackType.VIDEO:
             LOG.debug("Requesting playback: PlaybackType.VIDEO")
-            self.set_player_state(PlayerState.PLAYING)
+            # handle video natively in mycroft-gui
+            self.bus.emit(Message("gui.player.media.service.play", {
+                "track": self.now_playing.uri,
+                "mime": self.now_playing.mimetype,
+                "repeat": False}))
             self.bus.emit(Message("ovos.common_play.track.state", {
                 "state": TrackState.PLAYING_VIDEO}))
         else:
@@ -436,6 +438,7 @@ class OVOSMediaPlayer:
     # ovos common play bus api requests
     def handle_play_request(self, message):
         LOG.debug("Received external OVOS playback request")
+
         if message.data.get("tracks"):
             # backwards compat / old style
             playlist = disambiguation = message.data["tracks"]
@@ -480,6 +483,7 @@ class OVOSMediaPlayer:
 
     def handle_playlist_queue_request(self, message):
         for track in message.data["tracks"]:
+            print(track)
             self.playlist.add_entry(track)
 
     def handle_playlist_clear_request(self, message):

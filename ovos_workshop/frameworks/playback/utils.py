@@ -1,5 +1,44 @@
 from ovos_utils.gui import GUIInterface
 from ovos_utils.messagebus import get_mycroft_bus
+import audio_metadata
+from os.path import basename, join
+import tempfile
+from ovos_workshop.frameworks.playback.status import *
+
+
+def extract_metadata(uri):
+    meta = {"uri": uri,
+            "title": basename(uri),
+            "playback": PlaybackType.AUDIO,
+            "status": TrackState.DISAMBIGUATION}
+    m = audio_metadata.load(uri.replace("file://", ""))
+    if m.tags:
+        if m.tags.get("title"):
+            meta["title"] = m.tags.title[0]
+        if m.tags.get("album"):
+            meta["album"] = m.tags.album[0]
+
+        if m.tags.get("artist"):
+            meta["artist"] = m.tags.artist[0]
+        elif m.tags.get("composer"):
+            meta["artist"] = m.tags.composer[0]
+
+        if m.tags.get("date"):
+            meta["date"] = m.tags.date[0]
+        if m.tags.get("audiolength"):
+            meta["duration"] = m.tags.audiolength[0]
+        if m.tags.get("genre"):
+            meta["genre"] = m.tags.genre[0]
+
+    if m.pictures:
+        try:
+            img_path = f"{tempfile.gettempdir()}/{meta['title']}.jpg"
+            with open(img_path, "wb") as f:
+                f.write(m.pictures[0].data)
+            meta["image"]: img_path
+        except:
+            pass
+    return meta
 
 
 class CommonPlayTracker:

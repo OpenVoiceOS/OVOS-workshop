@@ -1,7 +1,4 @@
 import requests
-import subprocess
-from os.path import exists, join
-from tempfile import gettempdir
 from ovos_utils.log import LOG
 
 try:
@@ -21,7 +18,7 @@ def get_youtube_live_from_channel(url):
         pass
 
 
-def get_youtube_audio_stream(url, download=False, convert=False):
+def get_youtube_audio_stream(url):
     if pafy is None:
         LOG.error("can not extract audio stream, pafy is not available")
         LOG.info("pip install youtube-dl")
@@ -45,42 +42,30 @@ def get_youtube_audio_stream(url, download=False, convert=False):
     if not stream:
         return {}
     uri = stream.url
-    if download:
-        path = join(gettempdir(),
-                    url.split("watch?v=")[-1] + "." + stream.extension)
-
-        if not exists(path):
-            stream.download(path)
-        uri = path
-        if convert:
-            mp3 = join(gettempdir(), url.split("watch?v=")[-1] + ".mp3")
-            if not exists(mp3):
-                # convert file to mp3
-                command = ["ffmpeg", "-n", "-i", path, "-acodec",
-                           "libmp3lame", "-ab", "128k", mp3]
-                subprocess.call(command)
-            uri = mp3
 
     meta["uri"] = uri
-    # try to parse artist from title
-    if "-" in meta["title"]:
-        removes = ["(Official Video)", "(Official Music Video)",
-                   "(Lyrics)", "(Official)", "(Album Stream)", "(Legendado)"]
-        removes += [s.replace("(", "").replace(")", "") for s in removes] + \
-                   [s.replace("[", "").replace("]", "") for s in removes]
-        removes += [s.upper() for s in removes] + [s.lower() for s in removes]
-        removes += ["(HQ)", "()", "[]", "- HQ -"]
-        for k in removes:
-            meta["title"] = meta["title"].replace(k, "")
+    # try to extract_streams artist from title
+    delims= ["-", ":", "|"]
+    for d in delims:
+        if d in meta["title"]:
+            removes = ["(Official Video)", "(Official Music Video)",
+                       "(Lyrics)", "(Official)", "(Album Stream)", "(Legendado)"]
+            removes += [s.replace("(", "").replace(")", "") for s in removes] + \
+                       [s.replace("[", "").replace("]", "") for s in removes]
+            removes += [s.upper() for s in removes] + [s.lower() for s in removes]
+            removes += ["(HQ)", "()", "[]", "- HQ -"]
+            for k in removes:
+                meta["title"] = meta["title"].replace(k, "")
+            meta["artist"] = meta["title"].split(d)[0]
+            meta["title"] = "".join(meta["title"].split(d)[1:])
+            meta["title"] = meta["title"].strip() or "..."
+            meta["artist"] = meta["artist"].strip() or "..."
+            break
 
-        meta["artist"] = meta["title"].split("-")[0]
-        meta["title"] = "".join(meta["title"].split("-")[1:])
-        meta["title"] = meta["title"].strip()
-        meta["artist"] = meta["artist"].strip()
     return meta
 
 
-def get_youtube_video_stream(url, download=False):
+def get_youtube_video_stream(url):
     if pafy is None:
         LOG.error("can not extract stream, pafy is not available")
         LOG.info("pip install youtube-dl")
@@ -106,15 +91,9 @@ def get_youtube_video_stream(url, download=False):
     if not stream:
         return {}
     uri = stream.url
-    if download:
-        path = join(gettempdir(),
-                    url.split("watch?v=")[-1] + "." + stream.extension)
-        if not exists(path):
-            stream.download(path)
-        uri = path
 
     meta["uri"] = uri
-    # try to parse artist from title
+    # try to extract_streams artist from title
     if "-" in meta["title"]:
         meta["artist"] = meta["title"].split("-")[0]
         meta["title"] = "".join(meta["title"].split("-")[1:])
