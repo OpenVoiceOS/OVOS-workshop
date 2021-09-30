@@ -23,7 +23,7 @@ from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.skills.ovos import get_non_properties
-
+from ovos_utils.gui import GUIInterface
 # LF imports are only used in ask_selection, they are optional and provide
 # numeric input support, eg. "select the first option"
 try:
@@ -69,6 +69,7 @@ class OVOSAbstractApplication:
         self.events.set_bus(self.bus)
         self.intent_service.set_bus(self.bus)
         self.intent_service.set_id(self.skill_id)
+        self.gui = GUIInterface(self.skill_id, bus=self.bus)
         self.intent_layers = IntentLayers()
         self.intent_layers.bind(self)
         self._register_bus_handlers()
@@ -136,18 +137,9 @@ class OVOSAbstractApplication:
 
     @property
     def location(self):
-        """Get the JSON data struction holding location information."""
-        # TODO: Allow Enclosure to override this for devices that
-        # contain a GPS.
+        """Get the JSON data holding location information."""
+        # TODO: Allow to override this for devices that contain a GPS.
         return self.config_core.get('location')
-
-    @property
-    def location_pretty(self):
-        """Get a more 'human' version of the location as a string."""
-        loc = self.location
-        if type(loc) is dict and loc['city']:
-            return loc['city']['name']
-        return None
 
     @property
     def location_timezone(self):
