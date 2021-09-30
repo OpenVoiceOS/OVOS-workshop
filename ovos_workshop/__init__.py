@@ -21,9 +21,13 @@ from ovos_utils.sound import wait_while_speaking
 from ovos_workshop.skills.decorators import *
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
+from ovos_utils.skills.audioservice import AudioServiceInterface
+from ovos_utils.events import EventContainer
 from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.skills.ovos import get_non_properties
 from ovos_utils.gui import GUIInterface
+from ovos_utils.intents.intent_service_interface import munge_regex
+from ovos_utils.events import create_wrapper
 # LF imports are only used in ask_selection, they are optional and provide
 # numeric input support, eg. "select the first option"
 try:
@@ -44,15 +48,9 @@ except:
 
 
 class OVOSAbstractApplication:
-    def __init__(self, skill_id, bus=None, resources_dir=None, lang=None):
+    def __init__(self, skill_id, bus=None, resources_dir=None, lang=None,
+                 settings=None, gui=None):
         self.skill_id = skill_id
-        if bus:
-            self._dedicated_bus = True
-        else:
-            self._dedicated_bus = False
-            bus = get_mycroft_bus()
-        self.bus = bus
-        self.enclosure = EnclosureAPI(self.bus)
         self.res_dir = resources_dir  # TODO or some default xdg dir
         try:
             self.config_core = read_mycroft_config()
@@ -63,15 +61,35 @@ class OVOSAbstractApplication:
         self.voc_match_cache = {}
         self._threads = []
         self._original_converse = self.converse
-        self.settings = PrivateSettings(self.skill_id)
+        self._dedicated_bus = False
+
+        self.bus = None
+        self.enclosure = None
+        self.audio_service = None
+        if settings is None:
+            settings = PrivateSettings(self.skill_id)
+        self.settings = settings
         self.intent_service = IntentServiceInterface()
-        self.events = EventContainer(self.bus)
+        self.events = EventContainer()
+        self.intent_service.set_id(self.skill_id)
+        self.gui = gui or GUIInterface(self.skill_id)
+        self.intent_layers = IntentLayers()
+        if bus:
+            self.bind(bus)
+
+    def bind(self, bus=None):
+        if bus:
+            self._dedicated_bus = False
+        else:
+            self._dedicated_bus = True
+            bus = get_mycroft_bus()
+        self.bus = bus
+        self.gui.set_bus(self.bus)
         self.events.set_bus(self.bus)
         self.intent_service.set_bus(self.bus)
-        self.intent_service.set_id(self.skill_id)
-        self.gui = GUIInterface(self.skill_id, bus=self.bus)
-        self.intent_layers = IntentLayers()
         self.intent_layers.bind(self)
+        self.enclosure = EnclosureAPI(self.bus)
+        self.audio_service = AudioServiceInterface(self.bus)
         self._register_bus_handlers()
 
     def _register_bus_handlers(self):
@@ -104,8 +122,12 @@ class OVOSAbstractApplication:
             LOG.exception(e)
             LOG.error(f'Failed to stop skill: {self.skill_id}')
 
+    def default_shutdown(self):
+        pass
+
     def shutdown(self):
         self.stop()
+        self.default_shutdown()
         self.events.clear()
         self.bus.emit(
             Message('detach_skill',
@@ -128,9 +150,6 @@ class OVOSAbstractApplication:
         """Get the configured secondary languages, mycroft is not
         considered to be in these languages but i will load it's resource
         files. This provides initial support for multilingual input
-        NOTE: this should be public, but since if a skill uses this it wont
-        work in regular mycroft-core it was made private! Equivalent PRs in
-        mycroft-core have been rejected/abandoned
         """
         return [l for l in self.config_core.get('secondary_langs', [])
                 if l != self._core_lang]
@@ -153,13 +172,8 @@ class OVOSAbstractApplication:
         """ checks for all language variations and returns best path
         eg, if lang is set to pt-pt but only pt-br resources exist,
         those will be loaded instead of failing, or en-gb vs en-us and so on
-        NOTE: this should be public, but since if a skill uses this it wont
-        work in regular mycroft-core it was made private! Equivalent PRs in
-        mycroft-core have been rejected/abandoned
         """
         base_path = base_path or self.res_dir
-        # NOTE this should not be private, but for backwards compat with
-        # mycroft-core it is, dont want skills to call it directly
         lang = lang or self.lang
         lang_path = join(base_path, lang)
 
@@ -198,13 +212,13 @@ class OVOSAbstractApplication:
         """
         skill_data = {'name': get_handler_name(handler)}
 
-        def on_error(error, message):
+        def on_error(error, msg):
             """Speak and log the error."""
             if not isinstance(error, AbortEvent):
+                LOG.exception(error)
                 msg_data = {'skill': self.skill_id}
-                msg = get_dialog('skill.error', self.lang, msg_data)
-                self.speak(msg)
-                LOG.exception(msg)
+                utt = get_dialog('skill.error', self.lang, msg_data)
+                self.speak(utt)
                 # append exception information in message
                 skill_data['exception'] = repr(error)
                 if handler_info:
@@ -678,7 +692,7 @@ class OVOSAbstractApplication:
             if self._response is not False:
                 if self._response is None:
                     # aborted externally (if None)
-                    self.log.debug("get_response aborted")
+                    LOG.debug("get_response aborted")
                 converse.finished = True
                 converse.response = self._response  # external override
         self.converse = self._original_converse

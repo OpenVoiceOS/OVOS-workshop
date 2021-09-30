@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
 from ovos_workshop.skills.decorators.playback import common_play_search
-from ovos_workshop.frameworks.playback import MediaType, MatchConfidence
+from ovos_workshop.skills.decorators import killable_event
+from ovos_plugin_common_play.ocp import MediaType, MatchConfidence
 from ovos_utils.messagebus import Message
 from inspect import signature
 
@@ -75,6 +76,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             method = getattr(self, attr_name)
             if hasattr(method, 'is_cplay_search_handler'):
                 if method.is_cplay_search_handler:
+                    # TODO this wont accept methods with killable_event
+                    #  decorators
                     self._search_handlers.append(method)
         super()._register_decorated()
 
@@ -86,6 +89,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                "disambiguation": disambiguation,
                                "playlist": playlist}))
 
+    @killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_cps_play(self, message):
         self.CPS_play(message.data)
 
@@ -93,6 +97,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         # for skills managing their own playback
         self.stop()
 
+    @killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_cps_query(self, message):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]

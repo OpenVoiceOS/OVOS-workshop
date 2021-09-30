@@ -1,2 +1,2 @@
-from ovos_workshop.frameworks.playback import PlaybackType, MatchConfidence, \
-    TrackState, MediaType, OVOSCommonPlaybackInterface
+from ovos_plugin_common_play.ocp import PlaybackType, MatchConfidence, \
+    TrackState, MediaType

@@ -2,15 +2,13 @@ from setuptools import setup
 
 setup(
     name='ovos_workshop',
-    version='0.0.4a22',
+    version='0.0.5a1',
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
               'ovos_workshop.patches',
               'ovos_workshop.frameworks',
               'ovos_workshop.frameworks.canvas',
-              'ovos_workshop.frameworks.playback',
-              'ovos_workshop.frameworks.playback.stream_handlers',
               'ovos_workshop.frameworks.questions',
               'ovos_workshop.frameworks.tv'],
     install_requires=["ovos_utils", "audio-metadata"],

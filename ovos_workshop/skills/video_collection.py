@@ -7,7 +7,7 @@ from ovos_utils.json_helper import merge_dict
 from json_database import JsonStorageXDG
 import random
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
-from ovos_workshop.frameworks.playback import MediaType, PlaybackType
+from ovos_plugin_common_play.ocp import MediaType, PlaybackType
 
 try:
     import pyvod
