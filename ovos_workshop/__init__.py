@@ -939,6 +939,15 @@ class OVOSAbstractApplication:
 
         return self._register_adapt_intent(intent_parser, handler)
 
+    def clear_intents(self):
+        # remove bus handlers, otherwise if re-registered we get multiple
+        # handler executions
+        for intent_name, _ in self.intent_service:
+            event_name = f'{self.skill_id}:{intent_name}'
+            self.remove_event(event_name)
+
+        self.intent_service.detach_all()  # delete old intents before re-registering
+
     def register_intent_file(self, intent_file, handler):
         """Register an Intent file with the intent service.
 

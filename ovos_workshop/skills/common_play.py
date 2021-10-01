@@ -1,10 +1,10 @@
-from abc import abstractmethod
-from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
-from ovos_workshop.skills.decorators.playback import common_play_search
-from ovos_workshop.skills.decorators import killable_event
-from ovos_plugin_common_play.ocp import MediaType, MatchConfidence
-from ovos_utils.messagebus import Message
 from inspect import signature
+
+from ovos_workshop.skills.decorators import killable_event
+from ovos_workshop.skills.decorators.ocp import *
+from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
+from ovos_utils.log import LOG
+from ovos_utils.messagebus import Message
 
 
 def get_non_properties(obj):
@@ -33,14 +33,17 @@ def get_non_properties(obj):
 
 
 class OVOSCommonPlaybackSkill(OVOSSkill):
-    """ To integrate with the better common play infrastructure of Mycroft
-    skills should use this base class and override
-    `CPS_search` (for searching the skill for media to play ) and
-    `CPS_play` for launching the media if desired.
+    """ To integrate with the OpenVoiceOS Common Playback framework
+    skills should use this base class and the companion decorators
 
-    The class makes the skill available to queries from the
-    better-playback-control skill and no special vocab for starting playback
-    is needed.
+    @ocp_search
+    def ...
+
+    @ocp_play
+    def ...
+
+    The class makes the skill available to queries from OCP and no special
+    vocab for starting playback is needed.
     """
 
     def __init__(self, name=None, bus=None):
@@ -48,9 +51,9 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         # NOTE: derived skills will likely want to override this list
         self.supported_media = [MediaType.GENERIC,
                                 MediaType.AUDIO]
-        self._search_handlers = [self.CPS_search] # default search handler,
-                                # more can be added wth decorators
+        self._search_handlers = []  # added wth decorators
         self._current_query = None
+        self._playback_handler = None
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -64,22 +67,40 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         if bus:
             super().bind(bus)
             self.add_event('ovos.common_play.query',
-                           self.__handle_cps_query)
+                           self.__handle_ocp_query)
             self.add_event(f'ovos.common_play.{self.skill_id}.play',
-                           self.__handle_cps_play)
+                           self.__handle_ocp_play)
             self.add_event(f'ovos.common_play.{self.skill_id}.stop',
-                           self.__handle_cps_stop)
+                           self.__handle_ocp_stop)
 
     def _register_decorated(self):
         # register search handlers
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
-            if hasattr(method, 'is_cplay_search_handler'):
-                if method.is_cplay_search_handler:
+            if hasattr(method, 'is_ocp_search_handler'):
+                if method.is_ocp_search_handler:
                     # TODO this wont accept methods with killable_event
                     #  decorators
                     self._search_handlers.append(method)
+            if hasattr(method, 'is_ocp_playback_handler'):
+                if method.is_ocp_playback_handler:
+                    # TODO how to handle multiple ??
+                    if self._playback_handler:
+                        LOG.warning("multiple declarations of playback "
+                                    "handler, replacing previous handler")
+                    self._playback_handler = method
         super()._register_decorated()
+
+    def extend_timeout(self, timeout=0.5):
+        """ request more time for searching, limits are defined by
+        better-common-play framework, by default max total time is 5 seconds
+        per query """
+        if self._current_query:
+            self.bus.emit(Message("ovos.common_play.query.response",
+                                  {"phrase": self._current_query,
+                                   "skill_id": self.skill_id,
+                                   "timeout": timeout,
+                                   "searching": True}))
 
     def play_media(self, media, disambiguation=None, playlist=None):
         disambiguation = disambiguation or [media]
@@ -90,15 +111,19 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                "playlist": playlist}))
 
     @killable_event("ovos.common_play.stop", react_to_stop=True)
-    def __handle_cps_play(self, message):
-        self.CPS_play(message.data)
+    def __handle_ocp_play(self, message):
+        if self._playback_handler:
+            self._playback_handler(message)
+        else:
+            LOG.error(f"Playback requested but {self.skill_id} handler not "
+                      "implemented")
 
-    def __handle_cps_stop(self, message):
+    def __handle_ocp_stop(self, message):
         # for skills managing their own playback
         self.stop()
 
     @killable_event("ovos.common_play.stop", react_to_stop=True)
-    def __handle_cps_query(self, message):
+    def __handle_ocp_query(self, message):
         """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
@@ -115,7 +140,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         found = False
 
         for handler in self._search_handlers:
-            # @common_play_search
+            # @ocp_search
             # def handle_search(...):
             if len(signature(handler).parameters) == 1:
                 # no optional media_type argument
@@ -134,7 +159,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                                 "results": results,
                                                 "searching": False}))
                 found = True
-            else: # generator, keeps returning results
+            else:  # generator, keeps returning results
                 for r in results:
                     # inject skill id in individual results, will be needed later
                     # for proper playback handling
@@ -152,67 +177,3 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                             "searching": False}))
         self.bus.emit(message.reply("ovos.common_play.skill.search_end",
                                     {"skill_id": self.skill_id}))
-
-    def CPS_extend_timeout(self, timeout=0.5):
-        """ request more time for searching, limits are defined by
-        better-common-play framework, by default max total time is 5 seconds
-        per query """
-        if self._current_query:
-            self.bus.emit(Message("ovos.common_play.query.response",
-                                  {"phrase": self._current_query,
-                                   "skill_id": self.skill_id,
-                                   "timeout": timeout,
-                                   "searching": True}))
-
-    @abstractmethod
-    def CPS_search(self, phrase, media_type):
-        """Analyze phrase to see if it is a play-able phrase with this skill.
-
-        Arguments:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
-            media_type (MediaType): requested CPSMatchType to search for
-
-        if a result from here is selected with PlaybackType.SKILL then
-        CPS_play will be called with result data as argument
-
-        Returns:
-            search_results (list): list of dictionaries with result entries
-            {
-                "match_confidence": MatchConfidence.HIGH,
-                "question_type":  CPSMatchType.MUSIC,
-                "uri": "https://audioservice.or.gui.will.play.this",
-                "playback": PlaybackType.VIDEO,
-                "image": "http://optional.audioservice.jpg",
-                "bg_image": "http://optional.audioservice.background.jpg"
-            }
-        """
-        return []
-
-    @abstractmethod
-    def CPS_play(self, data):
-        """Skill was selected for playback
-
-        Playback will be handled manually by the skill, eg, spotify or some
-        other external service
-
-        NOTE: PlaybackType.AUDIO and PlaybackType.VIDEO are handled
-              automatically by BetterCommonPlay, this is only called for
-              PlaybackType.SKILL results
-
-        NOTE2: Mycroft Common Play skills also use this and depend on it to
-               actually issue a call to the audio service, this is
-               equivalent to the CPS_play method in Mycroft Common Play skills
-
-        Arguments:
-            data (dict): selected data previously returned in CPS_search
-
-         {
-            "match_confidence": MatchConfidence.HIGH,
-            "question_type":  MediaType.MUSIC,
-            "uri": "https://audioservice.or.gui.will.play.this",
-            "playback": PlaybackType.SKILL,
-            "image": "http://optional.audioservice.jpg",
-            "bg_image": "http://optional.audioservice.background.jpg"
-        }
-        """
-        pass

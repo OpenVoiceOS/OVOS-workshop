@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ovos_workshop',
-    version='0.0.5a1',
+    version='0.0.5a2',
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
@@ -11,7 +11,7 @@ setup(
               'ovos_workshop.frameworks.canvas',
               'ovos_workshop.frameworks.questions',
               'ovos_workshop.frameworks.tv'],
-    install_requires=["ovos_utils>=0.0.12a5"  # TODO bump ver on utils release
+    install_requires=["ovos_utils>=0.0.12a5" # TODO bump ver on utils release
                       ],
     url='https://github.com/OpenVoiceOS/OVOS-workshop',
     license='apache-2.0',
