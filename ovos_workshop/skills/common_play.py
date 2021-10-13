@@ -1,5 +1,5 @@
 from inspect import signature
-
+from threading import Event
 from ovos_workshop.skills.decorators import killable_event
 from ovos_workshop.skills.decorators.ocp import *
 from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
@@ -32,6 +32,7 @@ def get_non_properties(obj):
     return set(check_class(obj.__class__))
 
 
+
 class OVOSCommonPlaybackSkill(OVOSSkill):
     """ To integrate with the OpenVoiceOS Common Playback framework
     skills should use this base class and the companion decorators
@@ -54,6 +55,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self._search_handlers = []  # added wth decorators
         self._current_query = None
         self._playback_handler = None
+        self._stop_event = Event()
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -72,6 +74,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                            self.__handle_ocp_play)
             self.add_event(f'ovos.common_play.{self.skill_id}.stop',
                            self.__handle_ocp_stop)
+            self.add_event("ovos.common_play.search.stop",
+                           self.__handle_stop_search)
+            self.add_event("mycroft.stop",
+                           self.__handle_stop_search)
 
     def _register_decorated(self):
         # register search handlers
@@ -110,7 +116,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                "disambiguation": disambiguation,
                                "playlist": playlist}))
 
-    @killable_event("ovos.common_play.stop", react_to_stop=True)
+    #@killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_ocp_play(self, message):
         if self._playback_handler:
             self._playback_handler(message)
@@ -122,9 +128,13 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         # for skills managing their own playback
         self.stop()
 
-    @killable_event("ovos.common_play.stop", react_to_stop=True)
+    def __handle_stop_search(self, message):
+        self._stop_event.set()
+
+    #@killable_event("ovos.common_play.search.stop", react_to_stop=True)
     def __handle_ocp_query(self, message):
         """Query skill if it can start playback from given phrase."""
+        self._stop_event.clear()
         search_phrase = message.data["phrase"]
         self._current_query = search_phrase
         media_type = message.data.get("question_type",
@@ -140,6 +150,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         found = False
 
         for handler in self._search_handlers:
+            if self._stop_event.is_set():
+                break
             # @ocp_search
             # def handle_search(...):
             if len(signature(handler).parameters) == 1:
@@ -169,6 +181,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                                     "results": [r],
                                                     "searching": False}))
                     found = True
+                    if self._stop_event.is_set():
+                        break
 
         if not found:
             # Signal we are done (can't handle it)

@@ -91,6 +91,7 @@ class OVOSAbstractApplication:
         self.enclosure = EnclosureAPI(self.bus)
         self.audio_service = AudioServiceInterface(self.bus)
         self._register_bus_handlers()
+        self._register_decorated()
 
     def _register_bus_handlers(self):
         self.add_event('mycroft.stop', self.__handle_stop)
@@ -856,6 +857,7 @@ class OVOSAbstractApplication:
             # TODO support for multiple converse handlers (?)
             if hasattr(method, 'converse'):
                 self.converse = method
+        self.register_resting_screen()
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:
@@ -1137,3 +1139,42 @@ class OVOSAbstractApplication:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward('mycroft.skill.remove_cross_context',
                                   {'context': context}))
+
+    def register_resting_screen(self):
+        """Registers resting screen from the resting_screen_handler decorator.
+
+        This only allows one screen and if two is registered only one
+        will be used.
+        """
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'resting_handler'):
+                self.resting_name = method.resting_handler
+                LOG.info('Registering resting screen {} for {}.'.format(
+                              method, self.resting_name))
+
+                # Register for handling resting screen
+                msg_type = '{}.{}'.format(self.skill_id, 'idle')
+                self.add_event(msg_type, method)
+                # Register handler for resting screen collect message
+                self.add_event('mycroft.mark2.collect_idle',
+                               self._handle_collect_resting)
+
+                # Do a send at load to make sure the skill is registered
+                # if reloaded
+                self._handle_collect_resting()
+                break
+
+    def _handle_collect_resting(self, message=None):
+        """Handler for collect resting screen messages.
+
+        Sends info on how to trigger this skills resting page.
+        """
+        LOG.info('Registering resting screen')
+        msg = message or Message("")
+        message = msg.reply(
+            'mycroft.mark2.register_idle',
+            data={'name': self.resting_name, 'id': self.skill_id},
+            context={"skill_id": self.skill_id}
+        )
+        self.bus.emit(message)
