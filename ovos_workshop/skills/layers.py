@@ -87,4 +87,6 @@ class IntentLayers:
             self.update_layer(layer_name, intent_list)
 
     def is_active(self, layer_name):
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         return layer_name in self.active_layers
