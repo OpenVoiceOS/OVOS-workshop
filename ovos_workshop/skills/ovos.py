@@ -66,7 +66,8 @@ class OVOSSkill(MycroftSkill):
                 for layer_name, intent_files in \
                         getattr(method, 'intent_layers').items():
                     self.register_intent_layer(layer_name, intent_files)
-            # TODO support for multiple converse handler
+
+            # TODO support for multiple converse handlers (?)
             if hasattr(method, 'converse'):
                 self.converse = method
 
@@ -78,7 +79,7 @@ class OVOSSkill(MycroftSkill):
             elif isinstance(intent_file, Intent):
                 name = intent_file.name
             else:
-                name = f'{self.skill_id}:{intent_file}'
+                name = intent_file
             self.intent_layers.update_layer(layer_name, [name])
 
     # this method can probably use a better refactor, we are only changing one

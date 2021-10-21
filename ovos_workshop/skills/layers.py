@@ -14,7 +14,7 @@ class IntentLayers:
 
     @property
     def skill(self):
-        return self.skill
+        return self._skill
 
     @property
     def bus(self):
@@ -35,7 +35,8 @@ class IntentLayers:
             self.deactivate_layer(layer_name)
 
     def update_layer(self, layer_name, intent_list=None):
-        layer_name = f"{self.skill_id}:{layer_name}"
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         intent_list = intent_list or []
         if layer_name not in self._layers:
             self._layers[layer_name] = []
@@ -43,7 +44,8 @@ class IntentLayers:
         LOG.info(f"Adding {intent_list} to {layer_name}")
 
     def activate_layer(self, layer_name):
-        layer_name = f"{self.skill_id}:{layer_name}"
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
             LOG.info("activating layer named: " + layer_name)
             if layer_name not in self._active_layers:
@@ -51,10 +53,11 @@ class IntentLayers:
             for intent in self._layers[layer_name]:
                 self.skill.enable_intent(intent)
         else:
-            LOG.error("no layer named: " + layer_name)
+            LOG.debug("no layer named: " + layer_name)
 
     def deactivate_layer(self, layer_name):
-        layer_name = f"{self.skill_id}:{layer_name}"
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
             LOG.info("deactivating layer named: " + layer_name)
             if layer_name in self._active_layers:
@@ -62,19 +65,21 @@ class IntentLayers:
             for intent in self._layers[layer_name]:
                 self.skill.disable_intent(intent)
         else:
-            LOG.error("no layer named: " + layer_name)
+            LOG.debug("no layer named: " + layer_name)
 
     def remove_layer(self, layer_name):
-        layer_name = f"{self.skill_id}:{layer_name}"
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
             self.deactivate_layer(layer_name)
             LOG.info("removing layer named: " + layer_name)
             self._layers.pop(layer_name)
         else:
-            LOG.error("no layer named: " + layer_name)
+            LOG.debug("no layer named: " + layer_name)
 
     def replace_layer(self, layer_name, intent_list=None):
-        layer_name = f"{self.skill_id}:{layer_name}"
+        if not layer_name.startswith(f"{self.skill_id}:"):
+            layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
             LOG.info("replacing layer named: " + layer_name)
             self._layers[layer_name] = intent_list or []
