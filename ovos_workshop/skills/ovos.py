@@ -1,6 +1,6 @@
 import time
 from copy import deepcopy
-from os.path import join, dirname, isfile
+from os.path import join
 
 from ovos_utils import camel_case_split, get_handler_name
 # ensure mycroft can be imported
@@ -204,11 +204,8 @@ class OVOSSkill(MycroftSkill):
             """Store settings and indicate that the skill handler has completed
             """
             if self.settings != self._initial_settings:
-                try:  # ovos-core
-                    self.settings.store()
-                except:  # mycroft-core
-                    save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = dict(self.settings)
+                save_settings(self.settings_write_path, self.settings)
+                self._initial_settings = deepcopy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 message.context["skill_id"] = self.skill_id
@@ -340,7 +337,7 @@ class OVOSSkill(MycroftSkill):
 class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
     """ monkey patched mycroft fallback skill """
 
-    def register_decorated(self):
+    def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
 
         Looks for all functions that have been marked by a decorator
@@ -348,7 +345,7 @@ class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
         only decorators used.  Skip properties as calling getattr on them
         executes the code which may have unintended side-effects
         """
-        super().register_decorated()
+        super()._register_decorated()
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
             if hasattr(method, 'fallback_priority'):
