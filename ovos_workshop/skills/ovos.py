@@ -7,12 +7,14 @@ from ovos_utils import camel_case_split, get_handler_name
 from ovos_utils import ensure_mycroft_import
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message
+from ovos_utils.parse import match_one
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils import resolve_ovos_resource_file
 
 ensure_mycroft_import()
 from adapt.intent import Intent, IntentBuilder
 from mycroft import dialog
+from mycroft_bus_client.message import dig_for_message
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from mycroft.skills.settings import save_settings
 from mycroft.skills.mycroft_skill.mycroft_skill import get_non_properties
@@ -38,12 +40,87 @@ class OVOSSkill(MycroftSkill):
         self._original_converse = self.converse
         self.intent_layers = IntentLayers()
 
+    def _init_converse_intents(self):
+        # conversational intents, executed instead of self.converse
+        # only available if skill is active!
+
+        # support both padatious and padaos
+        # TODO pluginify intents
+        try:
+            from padatious import IntentContainer
+            intent_cache = join(self.file_system.path, "intent_cache")
+            self.intent_parser = IntentContainer(intent_cache)
+        except:
+            try:
+                from padaos import IntentContainer
+                self.intent_parser = IntentContainer()
+            except:
+                self.intent_parser = None
+        if "min_intent_conf" not in self.settings:
+            self.settings["min_intent_conf"] = 0.6
+        self.converse_intents = {}
+
+    def register_converse_intent(self, intent_file, handler):
+        """ converse padatious intents """
+        name = f'{self.skill_id}.converse:{intent_file}'
+        filename = self.find_resource(intent_file, 'locale') or \
+                   self.find_resource(intent_file, 'vocab') or \
+                   self.find_resource(intent_file, 'dialog')
+        if not filename:
+            raise FileNotFoundError(f'Unable to find "{intent_file}"')
+        with open(filename) as f:
+            samples = [l.strip() for l in f.read().split("\n") if l]
+        if self.intent_parser:
+            self.intent_parser.add_intent(name, samples)
+        self.converse_intents[name] = samples
+        self.add_event(name, handler)
+
+    def _train_converse_intents(self):
+        """ train internal padatious/padaos parser """
+        if self.intent_parser:
+            if hasattr(self.intent_parser, "train"):
+                self.intent_parser.train(single_thread=True)
+
+    def _handle_converse_intents(self, message=None):
+        """ called before converse method
+        this gives active skills a chance to parse their own intents and
+        consume the utterance, see conversational_intent decorator for usage
+        """
+        message = message or dig_for_message()
+        best_score = 0
+        for utt in message.data['utterances']:
+            if self.intent_parser:
+                match = self.intent_parser.calc_intent(utt)
+                if match and match.conf > best_score:
+                    best_match = match
+                    best_score = match.conf
+                    message = message.forward(best_match.name,
+                                              best_match.matches)
+            else:
+                # fuzzy match
+                for intent_name, samples in self.converse_intents.items():
+                    _, score = match_one(utt, samples)
+                    if score > best_score:
+                        best_score = score
+                        message = message.forward(intent_name)
+
+        if not message or best_score < self.settings["min_intent_conf"]:
+            return False
+
+        # send intent event
+        self.bus.emit(message)
+        return True
+
+    def converse(self, message=None):
+        return self._handle_converse_intents(message)
+
     def bind(self, bus):
         super().bind(bus)
         if bus:
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
+            self._init_converse_intents()
 
     def voc_match(self, *args, **kwargs):
         try:
@@ -70,6 +147,10 @@ class OVOSSkill(MycroftSkill):
             # TODO support for multiple converse handlers (?)
             if hasattr(method, 'converse'):
                 self.converse = method
+
+            if hasattr(method, 'converse_intents'):
+                for intent_file in getattr(method, 'converse_intents'):
+                    self.register_converse_intent(intent_file, method)
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:
@@ -123,8 +204,11 @@ class OVOSSkill(MycroftSkill):
             """Store settings and indicate that the skill handler has completed
             """
             if self.settings != self._initial_settings:
-                save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = deepcopy(self.settings)
+                try:  # ovos-core
+                    self.settings.store()
+                except:  # mycroft-core
+                    save_settings(self.settings_write_path, self.settings)
+                self._initial_settings = dict(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 message.context["skill_id"] = self.skill_id
@@ -256,7 +340,7 @@ class OVOSSkill(MycroftSkill):
 class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
     """ monkey patched mycroft fallback skill """
 
-    def _register_decorated(self):
+    def register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
 
         Looks for all functions that have been marked by a decorator
@@ -264,7 +348,7 @@ class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
         only decorators used.  Skip properties as calling getattr on them
         executes the code which may have unintended side-effects
         """
-        super()._register_decorated()
+        super().register_decorated()
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
             if hasattr(method, 'fallback_priority'):
