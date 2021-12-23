@@ -1,20 +1,19 @@
 import time
-from copy import deepcopy
-from os.path import join, dirname, isfile
+from os.path import join
 
 from ovos_utils import camel_case_split, get_handler_name
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
+from ovos_utils import resolve_ovos_resource_file
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message
 from ovos_utils.skills.settings import PrivateSettings
-from ovos_utils import resolve_ovos_resource_file
 
 ensure_mycroft_import()
 from adapt.intent import Intent, IntentBuilder
 from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
-from mycroft.skills.settings import save_settings
+
 from mycroft.skills.mycroft_skill.mycroft_skill import get_non_properties
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.skills.decorators.killable import killable_event, \
@@ -123,8 +122,12 @@ class OVOSSkill(MycroftSkill):
             """Store settings and indicate that the skill handler has completed
             """
             if self.settings != self._initial_settings:
-                save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = deepcopy(self.settings)
+                try:  # ovos-core
+                    self.settings.store()
+                except:  # mycroft-core
+                    from mycroft.skills.settings import save_settings
+                    save_settings(self.settings_write_path, self.settings)
+                self._initial_settings = dict(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 message.context["skill_id"] = self.skill_id
@@ -146,7 +149,7 @@ class OVOSSkill(MycroftSkill):
         if not res:
             # override to look for bundled pages
             res = resolve_ovos_resource_file(join('text', lang, res_name)) or \
-                   resolve_ovos_resource_file(res_name)
+                  resolve_ovos_resource_file(res_name)
         return res
 
     # abort get_response gracefully
