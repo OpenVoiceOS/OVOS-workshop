@@ -1,10 +1,9 @@
 from inspect import signature
 from threading import Event
-
-from ovos_utils.log import LOG
-from ovos_utils.messagebus import Message
 from ovos_workshop.skills.decorators.ocp import *
 from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
+from mycroft_bus_client import Message
+from ovos_utils.log import LOG
 
 
 def get_non_properties(obj):
@@ -32,7 +31,6 @@ def get_non_properties(obj):
     return set(check_class(obj.__class__))
 
 
-
 class OVOSCommonPlaybackSkill(OVOSSkill):
     """ To integrate with the OpenVoiceOS Common Playback framework
     skills should use this base class and the companion decorators
@@ -53,10 +51,12 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.supported_media = [MediaType.GENERIC,
                                 MediaType.AUDIO]
         self._search_handlers = []  # added via decorators
-        self._featured_handlers = {}  # added via decorators
+        self._featured_handlers = []  # added via decorators
         self._current_query = None
         self._playback_handler = None
         self._stop_event = Event()
+        # TODO replace with new default
+        self.skill_icon = "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -71,7 +71,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             super().bind(bus)
             self.add_event('ovos.common_play.query',
                            self.__handle_ocp_query)
-            self.add_event('ovos.common_play.featured_tracks',
+            self.add_event('ovos.common_play.featured_tracks.play',
                            self.__handle_ocp_featured)
             self.add_event('ovos.common_play.skills.get',
                            self.__handle_ocp_skills_get)
@@ -86,8 +86,11 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def __handle_ocp_skills_get(self, message):
         self.bus.emit(
-            message.reply('ovos.common_play.skills.announce',
-                          {"skill_id": self.skill_id}))
+            message.reply('ovos.common_play.announce',
+                          {"skill_id": self.skill_id,
+                           "skill_name": self.name,
+                           "thumbnail": self.skill_icon,
+                           "featured_tracks": len(self._featured_handlers) >= 1}))
 
     def _register_decorated(self):
         # register search handlers
@@ -99,13 +102,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     #  decorators
                     self._search_handlers.append(method)
             if hasattr(method, 'is_ocp_featured_handler'):
-                if method.is_ocp_search_handler:
+                if method.is_ocp_featured_handler:
                     # TODO this wont accept methods with killable_event
                     #  decorators
-                    for media in method.ocp_media_types:
-                        if media not in self._featured_handlers:
-                            self._featured_handlers[media] = []
-                        self._featured_handlers[media].append(method)
+                    self._featured_handlers.append(method)
             if hasattr(method, 'is_ocp_playback_handler'):
                 if method.is_ocp_playback_handler:
                     # TODO how to handle multiple ??
@@ -115,6 +115,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     self._playback_handler = method
         super()._register_decorated()
 
+        # volunteer info to OCP
+        self.bus.emit(
+            Message('ovos.common_play.announce',
+                    {"skill_id": self.skill_id,
+                     "skill_name": self.name,
+                     "thumbnail": self.skill_icon,
+                     "featured_tracks": len(self._featured_handlers) >= 1}))
+
     def extend_timeout(self, timeout=0.5):
         """ request more time for searching, limits are defined by
         better-common-play framework, by default max total time is 5 seconds
@@ -123,6 +131,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.bus.emit(Message("ovos.common_play.query.response",
                                   {"phrase": self._current_query,
                                    "skill_id": self.skill_id,
+                                   "skill_name": self.name,
+                                   "thumbnail": self.skill_icon,
                                    "timeout": timeout,
                                    "searching": True}))
 
@@ -162,7 +172,9 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             return
 
         self.bus.emit(message.reply("ovos.common_play.skill.search_start",
-                                    {"skill_id": self.skill_id}))
+                                    {"skill_id": self.skill_id,
+                                     "skill_name": self.name,
+                                     "thumbnail": self.skill_icon, }))
 
         # invoke the media search handlesr to let the skill perform its search
         found = False
@@ -185,6 +197,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     results[idx]["skill_id"] = self.skill_id
                 self.bus.emit(message.response({"phrase": search_phrase,
                                                 "skill_id": self.skill_id,
+                                                "skill_name": self.name,
+                                                "thumbnail": self.skill_icon,
                                                 "results": results,
                                                 "searching": False}))
                 found = True
@@ -195,6 +209,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     r["skill_id"] = self.skill_id
                     self.bus.emit(message.response({"phrase": search_phrase,
                                                     "skill_id": self.skill_id,
+                                                    "skill_name": self.name,
+                                                    "thumbnail": self.skill_icon,
                                                     "results": [r],
                                                     "searching": False}))
                     found = True
@@ -205,43 +221,38 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             # Signal we are done (can't handle it)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
+                                            "skill_name": self.name,
+                                            "thumbnail": self.skill_icon,
                                             "searching": False}))
         self.bus.emit(message.reply("ovos.common_play.skill.search_end",
                                     {"skill_id": self.skill_id}))
 
     def __handle_ocp_featured(self, message):
-
-        media_type = message.data.get("media_type", MediaType.GENERIC)
-
-        if media_type not in self._featured_handlers:
+        skill_id = message.data["skill_id"]
+        if skill_id != self.skill_id:
             return
 
-        for handler in self._featured_handlers[media_type]:
+        results = []
+        for handler in self._featured_handlers:
+            try:
+                results += list(handler())  # handler might return a generator or a list
+            except Exception as e:
+                LOG.error(e)
 
-            # @ocp_featured_media(MediaType.MOVIE)
-            # def handle_featured_tracks_request(...):
-            results = handler()
-
-            # handler might return a generator or a list
-            if isinstance(results, list):
-                # inject skill id in individual results
-                for idx, r in enumerate(results):
-                    results[idx]["skill_id"] = self.skill_id
-                self.bus.emit(message.response({"skill_id": self.skill_id,
-                                                "results": results}))
-
-            else:  # generator, keeps returning results
-                for r in results:
-                    # inject skill id in individual results
-                    r["skill_id"] = self.skill_id
-                    self.bus.emit(message.response({"skill_id": self.skill_id,
-                                                    "results": [r]}))
-                    found = True
-                    if self._stop_event.is_set():
-                        break
+        if not results:
+            self.speak_dialog("no.media.available")
+        else:
+            # inject skill id in individual results
+            for idx, r in enumerate(results):
+                results[idx]["skill_id"] = self.skill_id
+            self.bus.emit(Message("ovos.common_play.skill.play",
+                                  {"skill_id": self.skill_id,
+                                   "skill_name": self.name,
+                                   "thumbnail": self.skill_icon,
+                                   "playlist": results}))
 
     def default_shutdown(self):
         self.bus.emit(
             Message('ovos.common_play.skills.detach',
-                          {"skill_id": self.skill_id}))
+                    {"skill_id": self.skill_id}))
         super().default_shutdown()
