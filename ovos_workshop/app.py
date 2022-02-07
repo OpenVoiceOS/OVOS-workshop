@@ -34,17 +34,12 @@ try:
     from lingua_franca.format import pronounce_number
     from lingua_franca.parse import extract_number
 except:
-    try:
-        from lingua_nostra.format import pronounce_number
-        from lingua_nostra.parse import extract_number
-
-    except:
-        def pronounce_number(n, *args, **kwargs):
-            return str(n)
+    def pronounce_number(n, *args, **kwargs):
+        return str(n)
 
 
-        def extract_number(*args, **kwargs):
-            return None
+    def extract_number(*args, **kwargs):
+        return None
 
 
 class OVOSAbstractApplication:
