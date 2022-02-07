@@ -90,6 +90,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                           {"skill_id": self.skill_id,
                            "skill_name": self.name,
                            "thumbnail": self.skill_icon,
+                           "media_type": self.supported_media,
                            "featured_tracks": len(self._featured_handlers) >= 1}))
 
     def _register_decorated(self):
