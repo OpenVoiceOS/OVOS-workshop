@@ -53,8 +53,13 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
         self._current_query = None
-        self._playback_handler = None
+        self.__playback_handler = None
+        self.__pause_handler = None
+        self.__next_handler = None
+        self.__prev_handler = None
+        self.__resume_handler = None
         self._stop_event = Event()
+        self._playing = Event()
         # TODO replace with new default
         self.skill_icon = "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
 
@@ -77,6 +82,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                            self.__handle_ocp_skills_get)
             self.add_event(f'ovos.common_play.{self.skill_id}.play',
                            self.__handle_ocp_play)
+            self.add_event(f'ovos.common_play.{self.skill_id}.pause',
+                           self.__handle_ocp_pause)
+            self.add_event(f'ovos.common_play.{self.skill_id}.resume',
+                           self.__handle_ocp_resume)
+            self.add_event(f'ovos.common_play.{self.skill_id}.next',
+                           self.__handle_ocp_next)
+            self.add_event(f'ovos.common_play.{self.skill_id}.previous',
+                           self.__handle_ocp_prev)
             self.add_event(f'ovos.common_play.{self.skill_id}.stop',
                            self.__handle_ocp_stop)
             self.add_event("ovos.common_play.search.stop",
@@ -110,10 +123,38 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             if hasattr(method, 'is_ocp_playback_handler'):
                 if method.is_ocp_playback_handler:
                     # TODO how to handle multiple ??
-                    if self._playback_handler:
+                    if self.__playback_handler:
                         LOG.warning("multiple declarations of playback "
                                     "handler, replacing previous handler")
-                    self._playback_handler = method
+                    self.__playback_handler = method
+            if hasattr(method, 'is_ocp_pause_handler'):
+                if method.is_ocp_pause_handler:
+                    # TODO how to handle multiple ??
+                    if self.__pause_handler:
+                        LOG.warning("multiple declarations of pause "
+                                    "handler, replacing previous handler")
+                    self.__pause_handler = method
+            if hasattr(method, 'is_ocp_next_handler'):
+                if method.is_ocp_next_handler:
+                    # TODO how to handle multiple ??
+                    if self.__next_handler:
+                        LOG.warning("multiple declarations of play next "
+                                    "handler, replacing previous handler")
+                    self.__next_handler = method
+            if hasattr(method, 'is_ocp_prev_handler'):
+                if method.is_ocp_prev_handler:
+                    # TODO how to handle multiple ??
+                    if self.__prev_handler:
+                        LOG.warning("multiple declarations of play previous "
+                                    "handler, replacing previous handler")
+                    self.__prev_handler = method
+            if hasattr(method, 'is_ocp_resume_handler'):
+                if method.is_ocp_resume_handler:
+                    # TODO how to handle multiple ??
+                    if self.__resume_handler:
+                        LOG.warning("multiple declarations of resume playback"
+                                    "handler, replacing previous handler")
+                    self.__resume_handler = method
         super()._register_decorated()
 
         # volunteer info to OCP
@@ -122,6 +163,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     {"skill_id": self.skill_id,
                      "skill_name": self.name,
                      "thumbnail": self.skill_icon,
+                     "media_types": self.supported_media,
                      "featured_tracks": len(self._featured_handlers) >= 1}))
 
     def extend_timeout(self, timeout=0.5):
@@ -147,15 +189,55 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     # @killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_ocp_play(self, message):
-        if self._playback_handler:
-            self._playback_handler(message)
+        if self.__playback_handler:
+            self._playing.set()
+            self.__playback_handler(message)
+            self.bus.emit(Message("ovos.common_play.player.state",
+                                  {"state": PlayerState.PLAYING}))
         else:
             LOG.error(f"Playback requested but {self.skill_id} handler not "
+                      "implemented")
+
+    def __handle_ocp_pause(self, message):
+        if self.__pause_handler:
+            if self.__pause_handler(message):
+                self.bus.emit(Message("ovos.common_play.player.state",
+                                      {"state": PlayerState.PAUSED}))
+        else:
+            LOG.error(f"Pause requested but {self.skill_id} handler not "
+                      "implemented")
+
+    def __handle_ocp_resume(self, message):
+        if self.__resume_handler:
+            if self.__resume_handler(message):
+                self.bus.emit(Message("ovos.common_play.player.state",
+                                      {"state": PlayerState.PLAYING}))
+        else:
+            LOG.error(f"Resume requested but {self.skill_id} handler not "
+                      "implemented")
+
+    def __handle_ocp_next(self, message):
+        if self.__next_handler:
+            self.__next_handler(message)
+        else:
+            LOG.error(f"Play Next requested but {self.skill_id} handler not "
+                      "implemented")
+
+    def __handle_ocp_prev(self, message):
+        if self.__prev_handler:
+            self.__prev_handler(message)
+        else:
+            LOG.error(f"Play Next requested but {self.skill_id} handler not "
                       "implemented")
 
     def __handle_ocp_stop(self, message):
         # for skills managing their own playback
         self.stop()
+        if self._playing.is_set():
+            self.bus.emit(Message("ovos.common_play.player.state",
+                                  {"state": PlayerState.STOPPED}))
+            self.gui.release()
+            self._playing.clear()
 
     def __handle_stop_search(self, message):
         self._stop_event.set()
