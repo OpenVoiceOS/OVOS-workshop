@@ -190,10 +190,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     # @killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_ocp_play(self, message):
         if self.__playback_handler:
-            self._playing.set()
             self.__playback_handler(message)
             self.bus.emit(Message("ovos.common_play.player.state",
                                   {"state": PlayerState.PLAYING}))
+            self._playing.set()
         else:
             LOG.error(f"Playback requested but {self.skill_id} handler not "
                       "implemented")
@@ -232,11 +232,11 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def __handle_ocp_stop(self, message):
         # for skills managing their own playback
-        self.stop()
         if self._playing.is_set():
+            self.stop()
+            self.gui.release()
             self.bus.emit(Message("ovos.common_play.player.state",
                                   {"state": PlayerState.STOPPED}))
-            self.gui.release()
             self._playing.clear()
 
     def __handle_stop_search(self, message):
