@@ -1,6 +1,5 @@
 ovos_utils>=0.0.12a5
-youtube-dl
-ovos_plugin_common_play~=0.0.1a9
+ovos_plugin_common_play~=0.0.1a11
 
 # optional but improves fuzzy matching and silences logs
 rapidfuzz

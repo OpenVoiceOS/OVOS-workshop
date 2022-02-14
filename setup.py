@@ -8,7 +8,7 @@ setup(
               'ovos_workshop.skills.decorators',
               'ovos_workshop.patches'],
     install_requires=["ovos_utils>=0.0.12a5",
-                      "ovos_plugin_common_play~=0.0.1a9"],
+                      "ovos_plugin_common_play~=0.0.1a11"],
     url='https://github.com/OpenVoiceOS/OVOS-workshop',
     license='apache-2.0',
     author='jarbasAi',
