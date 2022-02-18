@@ -1,8 +1,17 @@
 from setuptools import setup
 
+
+def _get_version():
+    with open('ovos_workshop/versioning/ows_versions.py') as versions:
+        for line in versions:
+            if line.startswith('CURRENT_OWS_VERSION'):
+                # CURRENT_OSM_VERSION = "0.0.10a9" --> "0.0.10a9"
+                return line.replace('"','').strip('\n').split('= ')[1]
+
+
 setup(
     name='ovos_workshop',
-    version='0.0.5a9',
+    version=_get_version(),
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
