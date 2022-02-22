@@ -23,11 +23,10 @@ Arduino LED array (such as on the Mark I), or any other type of display.  This
 base class is meant to be agnostic to the type of display, with the
 implementation details defined within the skill that uses this as a base class.
 """
-from datetime import datetime, timedelta
-
-from ovos_utils.messagebus import Message
-from ovos_workshop.patches.base_skill import MycroftSkill
 from ovos_utils.log import LOG
+from ovos_utils.messagebus import Message
+
+from ovos_workshop.patches.base_skill import MycroftSkill
 
 
 class IdleDisplaySkill(MycroftSkill):
@@ -36,60 +35,73 @@ class IdleDisplaySkill(MycroftSkill):
     An idle display is what shows on a device's screen when it is not in use
     by other skills.  For example, Mycroft's Home Screen Skill.
     """
-    def initialize(self):
-        """Tasks to complete during skill load but after bus initialization."""
-        LOG.info("In initialize IdleDisplaySkill class")
+
+    def __init__(self, *args, **kwargs):
+        super(IdleDisplaySkill, self).__init__(*args, **kwargs)
         self._homescreen_entry = None
-        self._define_message_bus_handlers()
-        self._build_homscreen_entry()
+
+    def bind(self, bus):
+        """Tasks to complete during skill load but after bus initialization."""
+        if bus:
+            super().bind(bus)
+            self._define_message_bus_handlers()
+            self._build_homescreen_entry()
+
+    def handle_idle(self):
+        """Override this method to display the idle screen."""
+        raise NotImplementedError(
+            "Subclass must override the handle_idle method"
+        )
 
     def _define_message_bus_handlers(self):
         """Defines the bus events handled in this skill and their handlers."""
-        LOG.info("In _define_message_bus_handlers")
-        self.bus.on("mycroft.ready", self.handle_mycroft_ready)
-        self.bus.on("homescreen.manager.activate.display", self._display_homescreen_requested)
-        self.bus.on("homescreen.manager.reload.list", self._reload_homescreen_entry)
-        self.bus.on("mycroft.skills.shutdown", self._remove_homescreen_on_shutdown)
+        self.add_event("mycroft.ready", self._handle_mycroft_ready)
+        self.add_event("homescreen.manager.activate.display", self._display_homescreen_requested)
+        self.add_event("homescreen.manager.reload.list", self._reload_homescreen_entry)
+        self.add_event("mycroft.skills.shutdown", self._remove_homescreen_on_shutdown)
 
-    def handle_mycroft_ready(self, _):
+    def _handle_mycroft_ready(self, message):
         """Shows idle screen when device is ready for use."""
-        LOG.info("In Handle Mycroft Ready In IdleDisplaySkill Class")
         self._show_idle_screen()
-        self.bus.emit(Message("skill.idle.displayed"))
+        self.bus.emit(message.reply("skill.idle.displayed"))
+        LOG.debug("Homescreen ready")
 
     def _show_idle_screen(self):
-        """Override this method to display the idle screen."""
-        LOG.info("In Show Idle Screen Call")
-        raise NotImplementedError(
-            "Subclass must override the _show_idle_screen method"
-        )
+        """Method for compat with mycroft-core mark2/qa branch equivalent class
+        Skills made for mk2 will override this private method instead of the public handle_idle
+        """
+        self.handle_idle()
 
-    def _build_homscreen_entry(self):
+    def _build_homescreen_entry(self, message=None):
         # get the super class this inherits from
         super_class_name = "IdleDisplaySkill"
         super_class_object = self.__class__.__name__
-        self._homescreen_entry = {"class": super_class_name, "name": super_class_object , "id": self.skill_id}
-        self._add_available_homescreen()
+        self._homescreen_entry = {"class": super_class_name,
+                                  "name": super_class_object,
+                                  "id": self.skill_id}
+        self._add_available_homescreen(message)
 
-    def _add_available_homescreen(self):
-        LOG.info("Emitting Add Homescreen")
-        self.bus.emit(Message("homescreen.manager.add", self._homescreen_entry))
+    def _add_available_homescreen(self, message=None):
+        message = message or Message("homescreen.manager.reload.list")
+        LOG.debug(f"Registering Homescreen {self._homescreen_entry}")
+        msg = message.forward("homescreen.manager.add", self._homescreen_entry)
+        self.bus.emit(msg)
 
-    def _remove_homescreen(self):
-        LOG.info("Emitting Remove Homescreen")
-        self.bus.emit(Message("homescreen.manager.remove", self._homescreen_entry))
+    def _remove_homescreen(self, message):
+        LOG.debug(f"Requesting removal of {self._homescreen_entry}")
+        msg = message.forward("homescreen.manager.remove", self._homescreen_entry)
+        self.bus.emit(msg)
 
-    def _reload_homescreen_entry(self, _):
-        self._build_homscreen_entry()
+    def _reload_homescreen_entry(self, message):
+        self._build_homescreen_entry(message)
 
-    def _remove_homescreen_on_shutdown(self, _):
-        shutdown_for_id = _.data["id"]
+    def _remove_homescreen_on_shutdown(self, message):
+        shutdown_for_id = message.data["id"]
         if shutdown_for_id == self.skill_id:
-            LOG.info("Emitting Shutdown Homescreen")
-            self._remove_homescreen()
+            self._remove_homescreen(message)
 
-    def _display_homescreen_requested(self, _):
-        request_for_id = _.data["homescreen_id"]
+    def _display_homescreen_requested(self, message):
+        request_for_id = message.data["homescreen_id"]
         if request_for_id == self.skill_id:
             self._show_idle_screen()
-            self.bus.emit(Message("skill.idle.displayed"))
+            self.bus.emit(message.reply("skill.idle.displayed"))
