@@ -17,9 +17,7 @@ license_overrides = {
     'psutil': 'BSD3'
 }
 # explicitly allow these packages that would fail otherwise
-whitelist = [
-    'idna'  # BSD-like
-]
+whitelist = []
 
 # validation flags
 allow_nonfree = False
