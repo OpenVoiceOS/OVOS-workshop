@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+## [V0.0.5a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5a12) (2022-02-25)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/d9261b124f73a3e4d50c6edfcd9c2243b2bc3cf6...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/d9261b124f73a3e4d50c6edfcd9c2243b2bc3cf6...V0.0.5a12)
 
 **Implemented enhancements:**
 
