@@ -1,5 +1,5 @@
-ovos_utils>=0.0.12a5
-ovos_plugin_common_play~=0.0.1a11
+ovos_utils>=0.0.12
+ovos_plugin_common_play
 
 # optional but improves fuzzy matching and silences logs
 rapidfuzz
