@@ -14,7 +14,6 @@ from mycroft.skills.fallback_skill import FallbackSkill as _FallbackSkill
 from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
     load_regex
 from mycroft.dialog import load_dialogs
-from ovos_workshop.patches.skill_gui import SkillGUI
 
 
 def get_non_properties(obj):
@@ -45,10 +44,6 @@ def get_non_properties(obj):
 class MycroftSkill(_MycroftSkill):
     monkey_patched = True
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.gui = SkillGUI(self)  # pull/2683
-
     # https://github.com/MycroftAI/mycroft-core/pull/1468
     def _deactivate_skill(self, message):
         skill_id = message.data.get("skill_id")
@@ -63,12 +58,6 @@ class MycroftSkill(_MycroftSkill):
 
     # https://github.com/MycroftAI/mycroft-core/pull/1468
     def bind(self, bus):
-        if bus and not isinstance(self.gui, SkillGUI):
-            # needs to be available before call to self.bind, if a skill is
-            # initialized with the bus argument it will miss the monkey-patch
-            # AFAIK this never happens in mycroft-core but i want the patch
-            # to work in non standard use cases
-            self.gui = SkillGUI(self)  # pull/2683
         super().bind(bus)
         if bus:
             ConverseTracker.connect_bus(self.bus)  # pull/1468
