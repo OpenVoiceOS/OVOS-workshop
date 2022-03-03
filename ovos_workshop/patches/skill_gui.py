@@ -22,7 +22,6 @@ from mycroft.enclosure.gui import SkillGUI as _SkillGUI
 from mycroft.util import resolve_resource_file
 from mycroft.messagebus.message import Message
 from ovos_utils import resolve_ovos_resource_file
-from ovos_utils.gui import _GUIDict
 
 
 class SkillGUI(_SkillGUI):
@@ -36,19 +35,6 @@ class SkillGUI(_SkillGUI):
     Then in the Weather.qml you'd access the temp via code such as:
         text: sessionData.time
     """
-    # fix gui subdict sync TODO PR in mycroft-core
-    def _sync_data(self):
-        data = self.__session_data.copy()
-        data.update({'__from': self.skill.skill_id})
-        self.bus.emit(Message("gui.value.set", data))
-
-    def __setitem__(self, key, value):
-        """Implements set part of dict-like behaviour with named keys."""
-        # cast to helper dict subclass that syncs data from subkeys
-        if isinstance(value, dict) and not isinstance(value, _GUIDict):
-            value = _GUIDict(self, **value)
-        super().__setitem__(key, value)
-
     # new gui templates
     # TODO PR in mycroft-core, taken from gez-mycroft wifi GUI test skill
     def show_confirmation_status(self, text="", override_idle=False,
