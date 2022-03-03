@@ -1,10 +1,8 @@
 import time
-from os.path import join
 
 from ovos_utils import camel_case_split, get_handler_name
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
-from ovos_utils import resolve_ovos_resource_file
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message
 from ovos_utils.skills.settings import PrivateSettings
@@ -141,16 +139,6 @@ class OVOSSkill(MycroftSkill):
         self.bus.emit(Message(self.skill_id + ".stop",
                               context={"skill_id": self.skill_id}))
         super().__handle_stop(_)
-
-    def _find_resource(self, res_name, lang, res_dirname=None):
-        """Finds a resource by name, lang and dir
-        """
-        res = super()._find_resource(res_name, lang, res_dirname)
-        if not res:
-            # override to look for bundled pages
-            res = resolve_ovos_resource_file(join('text', lang, res_name)) or \
-                  resolve_ovos_resource_file(res_name)
-        return res
 
     # abort get_response gracefully
     def _wait_response(self, is_cancel, validator, on_fail, num_retries):
