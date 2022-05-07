@@ -8,7 +8,7 @@ from ovos_utils.messagebus import Message
 from ovos_utils.skills.settings import PrivateSettings
 
 ensure_mycroft_import()
-from adapt.intent import Intent, IntentBuilder
+
 from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 
@@ -17,6 +17,13 @@ from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
+
+
+try:
+    from adapt.intent import IntentBuilder, Intent
+except ImportError:
+    # adapt is optional, OVOSAbstractApplication might not use intents
+    IntentBuilder = Intent = None
 
 
 class OVOSSkill(MycroftSkill):
@@ -70,10 +77,10 @@ class OVOSSkill(MycroftSkill):
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:
-            if isinstance(intent_file, IntentBuilder):
+            if IntentBuilder is not None and isinstance(intent_file, IntentBuilder):
                 intent = intent_file.build()
                 name = intent.name
-            elif isinstance(intent_file, Intent):
+            elif Intent is not None and isinstance(intent_file, Intent):
                 name = intent_file.name
             else:
                 name = intent_file

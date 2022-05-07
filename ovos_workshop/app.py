@@ -19,12 +19,13 @@ from ovos_utils.parse import match_one
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import wait_while_speaking
 from ovos_workshop.skills.decorators import *
+
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.events import EventContainer
 from ovos_workshop.skills.layers import IntentLayers
-from ovos_workshop.skills.ovos import get_non_properties
+from ovos_workshop.skills.ovos import Intent, IntentBuilder, get_non_properties
 from ovos_utils.gui import GUIInterface
 from ovos_utils.intents.intent_service_interface import munge_regex
 from ovos_utils.events import create_wrapper
