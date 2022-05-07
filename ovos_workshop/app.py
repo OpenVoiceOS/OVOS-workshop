@@ -41,11 +41,6 @@ except:
 
     def extract_number(*args, **kwargs):
         return None
-try:
-    from adapt.intent import IntentBuilder, Intent
-except ImportError:
-    # adapt is optional, OVOSAbstractApplication might not use intents
-    IntentBuilder = Intent = None
 
 
 class OVOSAbstractApplication:
