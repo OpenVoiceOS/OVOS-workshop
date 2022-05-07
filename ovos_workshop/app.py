@@ -2,7 +2,7 @@ from itertools import chain
 from os import listdir
 from os.path import isdir, exists
 
-from adapt.intent import IntentBuilder, Intent
+
 from mycroft_bus_client.message import dig_for_message
 from ovos_utils import get_handler_name
 from ovos_utils.configuration import read_mycroft_config
@@ -40,6 +40,11 @@ except:
 
     def extract_number(*args, **kwargs):
         return None
+try:
+    from adapt.intent import IntentBuilder, Intent
+except ImportError:
+    # adapt is optional, OVOSAbstractApplication might not use intents
+    IntentBuilder = Intent = None
 
 
 class OVOSAbstractApplication:
@@ -856,10 +861,10 @@ class OVOSAbstractApplication:
 
     def register_intent_layer(self, layer_name, intent_list):
         for intent_file in intent_list:
-            if isinstance(intent_file, IntentBuilder):
+            if IntentBuilder is not None and isinstance(intent_file, IntentBuilder):
                 intent = intent_file.build()
                 name = intent.name
-            elif isinstance(intent_file, Intent):
+            elif Intent is not None and isinstance(intent_file, Intent):
                 name = intent_file.name
             else:
                 name = f'{self.skill_id}:{intent_file}'
@@ -926,12 +931,12 @@ class OVOSAbstractApplication:
                            file to parse utterance for the handler.
             handler (func): function to register with intent
         """
-        if isinstance(intent_parser, IntentBuilder):
+        if IntentBuilder is not None and isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
         if (isinstance(intent_parser, str) and
                 intent_parser.endswith('.intent')):
             return self.register_intent_file(intent_parser, handler)
-        elif not isinstance(intent_parser, Intent):
+        elif not Intent or not isinstance(intent_parser, Intent):
             raise ValueError('"' + str(intent_parser) + '" is not an Intent')
 
         return self._register_adapt_intent(intent_parser, handler)
