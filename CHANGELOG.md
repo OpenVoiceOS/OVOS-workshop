@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.6...HEAD)
+
+**Fixed bugs:**
+
+- Fix/optional adapt [\#19](https://github.com/OpenVoiceOS/OVOS-workshop/pull/19) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.6) (2022-03-03)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.6a1...V0.0.6)
+
 ## [V0.0.6a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.6a1) (2022-03-03)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.5...V0.0.6a1)
