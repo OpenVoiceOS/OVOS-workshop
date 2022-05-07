@@ -2,33 +2,33 @@ from itertools import chain
 from os import listdir
 from os.path import isdir, exists
 
-
 from mycroft_bus_client.message import dig_for_message
 from ovos_utils import get_handler_name
 from ovos_utils.configuration import read_mycroft_config
 from ovos_utils.dialog import join_list, load_dialogs, get_dialog
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import *
+from ovos_utils.events import EventContainer
+from ovos_utils.events import create_wrapper
 from ovos_utils.file_utils import *
 from ovos_utils.file_utils import resolve_resource_file
+from ovos_utils.gui import GUIInterface
 from ovos_utils.intents.intent_service_interface import \
     IntentServiceInterface, munge_intent_parser
+from ovos_utils.intents.intent_service_interface import munge_regex
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_mycroft_bus
 from ovos_utils.parse import match_one
+from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import wait_while_speaking
-from ovos_workshop.skills.decorators import *
 
+from ovos_workshop.skills.base import Intent, IntentBuilder, get_non_properties
+from ovos_workshop.skills.decorators import *
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
-from ovos_utils.skills.audioservice import AudioServiceInterface
-from ovos_utils.events import EventContainer
 from ovos_workshop.skills.layers import IntentLayers
-from ovos_workshop.skills.ovos import Intent, IntentBuilder, get_non_properties
-from ovos_utils.gui import GUIInterface
-from ovos_utils.intents.intent_service_interface import munge_regex
-from ovos_utils.events import create_wrapper
+
 # LF imports are only used in ask_selection, they are optional and provide
 # numeric input support, eg. "select the first option"
 try:
@@ -1147,7 +1147,7 @@ class OVOSAbstractApplication:
             if hasattr(method, 'resting_handler'):
                 self.resting_name = method.resting_handler
                 LOG.info('Registering resting screen {} for {}.'.format(
-                              method, self.resting_name))
+                    method, self.resting_name))
 
                 # Register for handling resting screen
                 msg_type = '{}.{}'.format(self.skill_id, 'idle')

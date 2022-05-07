@@ -11,19 +11,11 @@ ensure_mycroft_import()
 
 from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
-
-from mycroft.skills.mycroft_skill.mycroft_skill import get_non_properties
+from ovos_workshop.skills.base import get_non_properties, Intent, IntentBuilder
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
-
-
-try:
-    from adapt.intent import IntentBuilder, Intent
-except ImportError:
-    # adapt is optional, OVOSAbstractApplication might not use intents
-    IntentBuilder = Intent = None
 
 
 class OVOSSkill(MycroftSkill):
