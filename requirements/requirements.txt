@@ -1,4 +1,4 @@
-ovos_utils>=0.0.12
+ovos_utils~=0.0, >=0.0.21a4
 ovos_plugin_common_play
 
 # optional but improves fuzzy matching and silences logs

@@ -11,7 +11,8 @@ ensure_mycroft_import()
 
 from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
-from ovos_workshop.helpers import get_non_properties, Intent, IntentBuilder
+from ovos_utils.skills import get_non_properties
+from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion

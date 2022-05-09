@@ -23,7 +23,8 @@ from ovos_utils.skills.audioservice import AudioServiceInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import wait_while_speaking
 
-from ovos_workshop.helpers import Intent, IntentBuilder, get_non_properties
+from ovos_utils.skills import get_non_properties
+from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
 from ovos_workshop.skills.decorators import *
 from ovos_workshop.skills.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion

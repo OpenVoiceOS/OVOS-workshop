@@ -14,7 +14,7 @@ from mycroft.skills.fallback_skill import FallbackSkill as _FallbackSkill
 from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
     load_regex
 from mycroft.dialog import load_dialogs
-from ovos_workshop.helpers import get_non_properties
+from ovos_utils.skills import get_non_properties
 
 
 class MycroftSkill(_MycroftSkill):
