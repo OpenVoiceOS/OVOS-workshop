@@ -123,6 +123,17 @@ except ImportError:
                           self.at_least_one, self.optional)
 
 
+class AdaptIntent(IntentBuilder):
+    """Wrapper for IntentBuilder setting a blank name.
+
+    Args:
+        name (str): Optional name of intent
+    """
+
+    def __init__(self, name=''):
+        super().__init__(name)
+
+
 def get_non_properties(obj):
     """Get attibutes that are not properties from object.
 
