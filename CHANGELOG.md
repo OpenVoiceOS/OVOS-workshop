@@ -1,5 +1,9 @@
 # Changelog
 
+## [V0.0.7a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a5) (2022-05-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a4...V0.0.7a5)
+
 ## [V0.0.7a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a4) (2022-05-07)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a3...V0.0.7a4)
