@@ -135,7 +135,7 @@ class AdaptIntent(IntentBuilder):
 
 
 def get_non_properties(obj):
-    """Get attibutes that are not properties from object.
+    """Get attributes that are not properties from object.
 
     Will return members of object class along with bases down to MycroftSkill.
 

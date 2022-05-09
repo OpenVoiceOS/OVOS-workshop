@@ -14,31 +14,7 @@ from mycroft.skills.fallback_skill import FallbackSkill as _FallbackSkill
 from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
     load_regex
 from mycroft.dialog import load_dialogs
-
-
-def get_non_properties(obj):
-    """Get attibutes that are not properties from object.
-
-    Will return members of object class along with bases down to MycroftSkill.
-
-    Arguments:
-        obj:    object to scan
-
-    Returns:
-        Set of attributes that are not a property.
-    """
-
-    def check_class(cls):
-        """Find all non-properties in a class."""
-        # Current class
-        d = cls.__dict__
-        np = [k for k in d if not isinstance(d[k], property)]
-        # Recurse through base classes excluding MycroftSkill and object
-        for b in [b for b in cls.__bases__ if b not in (object, MycroftSkill)]:
-            np += check_class(b)
-        return np
-
-    return set(check_class(obj.__class__))
+from ovos_workshop.helpers import get_non_properties
 
 
 class MycroftSkill(_MycroftSkill):
