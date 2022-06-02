@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a7...HEAD)
+
+**Fixed bugs:**
+
+- Fix/decouple from mycroft [\#21](https://github.com/OpenVoiceOS/OVOS-workshop/pull/21) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.7a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a7) (2022-05-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a6...V0.0.7a7)
+
 ## [V0.0.7a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a6) (2022-05-09)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a5...V0.0.7a6)
