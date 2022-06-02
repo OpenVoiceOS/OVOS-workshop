@@ -1,6 +1,6 @@
 from inspect import signature
 from threading import Event
-from ovos_workshop.skills.decorators.ocp import *
+from ovos_workshop.decorators.ocp import *
 from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
 from mycroft_bus_client import Message
 from ovos_utils.log import LOG

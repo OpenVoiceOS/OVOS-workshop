@@ -1,5 +1,5 @@
 from ovos_workshop.app import OVOSAbstractApplication
-from ovos_workshop.skills.decorators import *
-from ovos_workshop.skills.decorators.killable import killable_event, \
+from ovos_workshop.decorators import *
+from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
