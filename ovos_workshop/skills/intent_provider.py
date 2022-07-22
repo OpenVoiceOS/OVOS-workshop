@@ -1,10 +1,9 @@
 from threading import Event
 from time import time as get_time, sleep
 from ovos_utils.log import LOG
-from ovos_utils.configuration import update_mycroft_config
 from ovos_utils.messagebus import Message
 from ovos_workshop.skills.ovos import OVOSFallbackSkill
-from ovos_utils.configuration import read_mycroft_config
+from ovos_config.config import read_mycroft_config, update_mycroft_config
 
 
 class BaseIntentEngine:

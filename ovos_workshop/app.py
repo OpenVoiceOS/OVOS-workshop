@@ -3,8 +3,8 @@ from os import listdir
 from os.path import isdir, exists
 
 from mycroft_bus_client.message import dig_for_message
+from ovos_config.config import read_mycroft_config
 from ovos_utils import get_handler_name
-from ovos_utils.configuration import read_mycroft_config
 from ovos_utils.dialog import join_list, load_dialogs, get_dialog
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import *
