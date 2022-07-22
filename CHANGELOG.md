@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a9...HEAD)
+
+**Merged pull requests:**
+
+- Update dependencies and config references [\#22](https://github.com/OpenVoiceOS/OVOS-workshop/pull/22) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.7a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a9) (2022-06-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a8...V0.0.7a9)
+
 ## [V0.0.7a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a8) (2022-06-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a7...V0.0.7a8)
