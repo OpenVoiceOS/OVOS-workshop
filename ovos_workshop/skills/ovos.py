@@ -4,7 +4,7 @@ from ovos_utils import camel_case_split, get_handler_name
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
 from ovos_utils.log import LOG
-from ovos_utils.messagebus import Message
+from ovos_utils.messagebus import Message, dig_for_message, get_message_lang
 from ovos_utils.skills.settings import PrivateSettings
 
 ensure_mycroft_import()
@@ -13,11 +13,11 @@ from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from ovos_utils.skills import get_non_properties
 from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
+from ovos_utils.sound import play_audio
 from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
-from ovos_utils.messagebus import dig_for_message, get_message_lang
 
 
 class OVOSSkill(MycroftSkill):
@@ -42,6 +42,19 @@ class OVOSSkill(MycroftSkill):
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
+
+    def play_audio(self, filename):
+        try:
+            from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+            if OVOS_VERSION_MAJOR >= 1 or \
+                    OVOS_VERSION_MINOR > 0 or \
+                    OVOS_VERSION_BUILD >= 4:
+                self.bus.emit(Message("mycroft.audio.queue",
+                                      {"filename": filename}))
+        except:
+            pass
+        LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
+        play_audio(filename).wait()
 
     # lang support
     @property
