@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a9...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a10...HEAD)
+
+**Implemented enhancements:**
+
+- feat/play\_audio [\#23](https://github.com/OpenVoiceOS/OVOS-workshop/pull/23) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.7a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a10) (2022-07-22)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a9...V0.0.7a10)
 
 **Merged pull requests:**
 
