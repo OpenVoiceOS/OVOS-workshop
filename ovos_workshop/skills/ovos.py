@@ -53,7 +53,7 @@ class OVOSSkill(MycroftSkill):
                                       {"filename": filename}))
         except:
             pass
-        LOG.warning("self.play_audio requires ovos-core >= 0.0.4a44, falling back to local skill playback")
+        LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
         play_audio(filename).wait()
 
     # lang support
