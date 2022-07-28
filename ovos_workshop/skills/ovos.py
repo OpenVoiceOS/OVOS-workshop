@@ -45,8 +45,10 @@ class OVOSSkill(MycroftSkill):
 
     def play_audio(self, filename):
         try:
-            from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR
-            if OVOS_VERSION_MINOR > 0 or OVOS_VERSION_BUILD >= 4:
+            from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+            if OVOS_VERSION_MAJOR >= 1 or \
+                    OVOS_VERSION_MINOR > 0 or \
+                    OVOS_VERSION_BUILD >= 4:
                 self.bus.emit(Message("mycroft.audio.queue",
                                       {"filename": filename}))
         except:
