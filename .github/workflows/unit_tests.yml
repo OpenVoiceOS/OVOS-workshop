@@ -53,6 +53,7 @@ jobs:
           pip install .
       - name: Install test dependencies
         run: |
+          pip install ovos-core>=0.0.4a44
           pip install git+https://github.com/OpenVoiceOS/skill-abort-test
           pip install pytest pytest-timeout pytest-cov
       - name: Run unittests
