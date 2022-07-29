@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a10...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a11...HEAD)
+
+**Merged pull requests:**
+
+- add initial tests for killable\_events [\#24](https://github.com/OpenVoiceOS/OVOS-workshop/pull/24) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.7a11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a11) (2022-07-28)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a10...V0.0.7a11)
 
 **Implemented enhancements:**
 
