@@ -55,6 +55,7 @@ setup(
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
+              'ovos_workshop.decorators',
               'ovos_workshop.patches'],
     install_requires=required("requirements/requirements.txt"),
     package_data={'': package_files('ovos_workshop')},

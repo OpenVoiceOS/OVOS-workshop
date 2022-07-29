@@ -62,7 +62,7 @@ def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
                 if callback is not None:
                     if len(signature(callback).parameters) == 1:
                         # class method, needs self
-                        callback(args[0])
+                        callback(skill)
                     else:
                         callback()
 
@@ -70,7 +70,7 @@ def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
             skill._threads.append(t)
             skill.bus.once(msg, abort)
             if react_to_stop:
-                skill.bus.once(args[0].skill_id + ".stop", abort)
+                skill.bus.once(skill.skill_id + ".stop", abort)
             t.start()
             return t
 
