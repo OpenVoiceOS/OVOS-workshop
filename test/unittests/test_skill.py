@@ -19,12 +19,15 @@ class TestSkill(unittest.TestCase):
         self.bus.emitted_msgs = []
 
         def get_msg(msg):
-            self.bus.emitted_msgs.append(json.loads(msg))
+            msg = json.loads(msg)
+            self.bus.emitted_msgs.append(msg)
 
         self.bus.on("message", get_msg)
 
         self.skill = SkillLoader(self.bus, f"{dirname(__file__)}/ovos_tskill_abort")
         self.skill.skill_id = "abort.test"
+        self.bus.emitted_msgs = []
+
         self.skill.load()
 
     def test_skill_id(self):
@@ -35,6 +38,8 @@ class TestSkill(unittest.TestCase):
         if is_ovos:
             # if running in ovos-core every message will have the skill_id in context
             for msg in self.bus.emitted_msgs:
+                if msg["type"] == 'mycroft.skills.loaded': # emitted by SkillLoader, not by skill
+                    continue
                 self.assertEqual(msg["context"]["skill_id"], "abort.test")
 
     def test_intent_register(self):
