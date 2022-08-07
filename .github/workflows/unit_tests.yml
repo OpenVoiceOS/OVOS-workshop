@@ -64,7 +64,7 @@ jobs:
           #       (for an example, see OVOS Skill Manager's workflow)
       - name: Replace ovos-core with mycroft-core
         run: |
-          pip uninstall ovos-core
+          pip uninstall ovos-core -y
           pip install git+https://github.com/MycroftAI/mycroft-core
       - name: Run mycroft unittests
         run: |
