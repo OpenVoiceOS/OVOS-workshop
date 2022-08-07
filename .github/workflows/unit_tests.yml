@@ -48,17 +48,27 @@ jobs:
           sudo apt-get update
           sudo apt install python3-dev
           python -m pip install build wheel
-      - name: Install core repo
+      - name: Install ovos workshop
         run: |
           pip install .
       - name: Install test dependencies
         run: |
-          pip install ovos-core>=0.0.4a44
-          pip install git+https://github.com/OpenVoiceOS/skill-abort-test
+          sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
+          pip install ovos-core[skills_lgpl]>=0.0.4a44
           pip install pytest pytest-timeout pytest-cov
       - name: Run unittests
         run: |
           pytest --cov=ovos_workshop --cov-report xml test/unittests
+          # NOTE: additional pytest invocations should also add the --cov-append flag
+          #       or they will overwrite previous invocations' coverage reports
+          #       (for an example, see OVOS Skill Manager's workflow)
+      - name: Replace ovos-core with mycroft-core
+        run: |
+          pip uninstall ovos-core
+          pip install git+https://github.com/MycroftAI/mycroft-core
+      - name: Run mycroft unittests
+        run: |
+          pytest --cov-append --cov=ovos_workshop --cov-report xml test/unittests
           # NOTE: additional pytest invocations should also add the --cov-append flag
           #       or they will overwrite previous invocations' coverage reports
           #       (for an example, see OVOS Skill Manager's workflow)

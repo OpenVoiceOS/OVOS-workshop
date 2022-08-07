@@ -3,7 +3,14 @@ import unittest
 from ovos_workshop.skills.ovos import OVOSSkill
 from mycroft.skills import MycroftSkill
 from ovos_utils.messagebus import FakeBus
-from ovos_tskill_abort import TestAbortSkill
+from os.path import dirname
+from mycroft.skills.skill_loader import SkillLoader
+
+try:
+    from mycroft.version import OVOS_VERSION_STR
+    is_ovos = True
+except ImportError:
+    is_ovos = False
 
 
 class TestSkill(unittest.TestCase):
@@ -16,8 +23,9 @@ class TestSkill(unittest.TestCase):
 
         self.bus.on("message", get_msg)
 
-        self.skill = TestAbortSkill()
-        self.skill._startup(self.bus, "abort.test")
+        self.skill = SkillLoader(self.bus, f"{dirname(__file__)}/ovos_tskill_abort")
+        self.skill.skill_id = "abort.test"
+        self.skill.load()
 
     def test_skill_id(self):
         self.assertTrue(isinstance(self.skill, OVOSSkill))
@@ -38,7 +46,7 @@ class TestSkill(unittest.TestCase):
                 self.assertTrue(msg["data"]["name"] in padatious_intents)
 
     def test_registered_events(self):
-        registered_events = [e[0] for e in self.skill.events]
+        registered_events = [e[0] for e in self.skill.instance.events]
 
         # intent events
         intent_triggers = [f"{self.skill.skill_id}:test.intent",
@@ -53,16 +61,20 @@ class TestSkill(unittest.TestCase):
                          "mycroft.skill.disable_intent",
                          "mycroft.skill.set_cross_context",
                          "mycroft.skill.remove_cross_context",
-                         "intent.service.skills.deactivated",
-                         "intent.service.skills.activated",
                          "mycroft.skills.settings.changed"]
         for event in default_skill:
             self.assertTrue(event in registered_events)
 
         # base skill class events exclusive to ovos-core
-        default_ovos = ["skill.converse.ping",
-                        "skill.converse.request",
-                        f"{self.skill.skill_id}.activate",
-                        f"{self.skill.skill_id}.deactivate"]
-        for event in default_ovos:
-            self.assertTrue(event in registered_events)
+        if is_ovos:
+            default_ovos = ["skill.converse.ping",
+                            "skill.converse.request",
+                            "intent.service.skills.activated",
+                            "intent.service.skills.deactivated",
+                            f"{self.skill.skill_id}.activate",
+                            f"{self.skill.skill_id}.deactivate"]
+            for event in default_ovos:
+                self.assertTrue(event in registered_events)
+
+    def tearDown(self) -> None:
+        self.skill.unload()
