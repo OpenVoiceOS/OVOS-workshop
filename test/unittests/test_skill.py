@@ -32,15 +32,15 @@ class TestSkill(unittest.TestCase):
         self.assertTrue(isinstance(self.skill.instance, MycroftSkill))
 
         self.assertEqual(self.skill.skill_id, "abort.test")
-        # if running in ovos-core every message will have the skill_id in context
-        for msg in self.bus.emitted_msgs:
-            self.assertEqual(msg["context"]["skill_id"], "abort.test")
+        if is_ovos:
+            # if running in ovos-core every message will have the skill_id in context
+            for msg in self.bus.emitted_msgs:
+                self.assertEqual(msg["context"]["skill_id"], "abort.test")
 
     def test_intent_register(self):
         padatious_intents = ["abort.test:test.intent",
                              "abort.test:test2.intent",
-                             "abort.test:test3.intent"
-                             ]
+                             "abort.test:test3.intent"]
         for msg in self.bus.emitted_msgs:
             if msg["type"] == "padatious:register_intent":
                 self.assertTrue(msg["data"]["name"] in padatious_intents)
