@@ -28,8 +28,8 @@ class TestSkill(unittest.TestCase):
         self.skill.load()
 
     def test_skill_id(self):
-        self.assertTrue(isinstance(self.skill, OVOSSkill))
-        self.assertTrue(isinstance(self.skill, MycroftSkill))
+        self.assertTrue(isinstance(self.skill.instance, OVOSSkill))
+        self.assertTrue(isinstance(self.skill.instance, MycroftSkill))
 
         self.assertEqual(self.skill.skill_id, "abort.test")
         # if running in ovos-core every message will have the skill_id in context
