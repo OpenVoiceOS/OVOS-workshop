@@ -5,7 +5,22 @@ from ovos_plugin_common_play.ocp.status import *
 
 
 def ocp_search():
-    """Decorator for adding a method as an common play search handler."""
+    """
+    Decorator for adding a method as a common play search handler.
+    Decorated methods should either yield or return a list of dict results:
+    {
+      "media_type": <MediaType>,
+      "playback": <PlaybackType>,
+      "image": <(optional) str image/cover art URI>,
+      "skill_icon": <(optional) str skill icon URI>,
+      "bg_image": <(optional) str background image URI>,
+      "uri": <str media URI>,
+      "title": <str media title>,
+      "artist": <str media artist/author>,
+      "length": <(optional) int media length in milliseconds>,
+      "match_confidence": <int 0-100 confidence this result matches request>
+    }
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
