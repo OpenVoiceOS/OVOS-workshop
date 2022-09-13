@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7...HEAD)
+
+**Merged pull requests:**
+
+- document results structure in ocp\_search [\#26](https://github.com/OpenVoiceOS/OVOS-workshop/pull/26) ([NeonDaniel](https://github.com/NeonDaniel))
+- feat/mycroft\_integration\_tests [\#25](https://github.com/OpenVoiceOS/OVOS-workshop/pull/25) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [V0.0.7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7) (2022-07-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a12...V0.0.7)
+
 ## [V0.0.7a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a12) (2022-07-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7a11...V0.0.7a12)
