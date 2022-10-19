@@ -58,6 +58,9 @@ setup(
               'ovos_workshop.decorators',
               'ovos_workshop.patches'],
     install_requires=required("requirements/requirements.txt"),
+    extras_require={
+            'ocp': required('requirements/ocp.txt')
+        },
     package_data={'': package_files('ovos_workshop')},
     url='https://github.com/OpenVoiceOS/OVOS-workshop',
     license='apache-2.0',
