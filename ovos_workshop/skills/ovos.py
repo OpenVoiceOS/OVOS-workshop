@@ -9,7 +9,6 @@ from ovos_utils.skills.settings import PrivateSettings
 
 ensure_mycroft_import()
 
-from mycroft import dialog
 from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from ovos_utils.skills import get_non_properties
 from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
@@ -19,6 +18,7 @@ from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
+from ovos_utils.dialog import get_dialog
 
 
 class OVOSSkill(MycroftSkill):
@@ -235,7 +235,7 @@ class OVOSSkill(MycroftSkill):
         # Convert "MyFancySkill" to "My Fancy Skill" for speaking
         handler_name = camel_case_split(self.name)
         msg_data = {'skill': handler_name}
-        speech = dialog.get('skill.error', self.lang, msg_data)
+        speech = get_dialog('skill.error', self.lang, msg_data)
         if speak_errors:
             self.speak(speech)
         LOG.exception(error)
