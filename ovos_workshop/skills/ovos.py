@@ -30,6 +30,8 @@ class OVOSSkill(MycroftSkill):
     """
 
     def __init__(self, *args, **kwargs):
+        # loaded lang file resources
+        self._lang_resources = {}
         super(OVOSSkill, self).__init__(*args, **kwargs)
         self.private_settings = None
         self._threads = []
@@ -75,6 +77,7 @@ class OVOSSkill(MycroftSkill):
         """Get the configured default language."""
         if hasattr(self, "_core_lang"):
             return self._core_lang
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
         return self.config_core.get("lang", "en-us").lower()
 
     @property
@@ -84,6 +87,7 @@ class OVOSSkill(MycroftSkill):
         files. This provides initial support for multilingual input"""
         if hasattr(self, "_secondary_langs"):
             return self._secondary_langs
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
         return [l.lower() for l in self.config_core.get('secondary_langs', [])
                 if l != self.core_lang]
 
@@ -94,6 +98,7 @@ class OVOSSkill(MycroftSkill):
         """
         if hasattr(self, "_native_langs"):
             return self._native_langs
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
         return [self.core_lang] + self.secondary_langs
 
     @property
@@ -106,6 +111,7 @@ class OVOSSkill(MycroftSkill):
         """
         if hasattr(self, "_alphanumeric_skill_id"):
             return self._alphanumeric_skill_id
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
         return ''.join(c if c.isalnum() else '_'
                        for c in str(self.skill_id))
 
@@ -117,6 +123,7 @@ class OVOSSkill(MycroftSkill):
         """
         if hasattr(self, "_resources"):
             return self._resources
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
         return self.load_lang(self.root_dir, self.lang)
 
     def load_lang(self, root_directory=None, lang=None):
@@ -126,8 +133,12 @@ class OVOSSkill(MycroftSkill):
         """
         if hasattr(self, "_load_lang"):
             return self._load_lang(root_directory, lang)
-        raise RuntimeError("this functionality is only available in "
-                           "ovos-core and the mark2")
+        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
+        lang = lang or self.lang
+        root_directory = root_directory or self.root_dir
+        if lang not in self._lang_resources:
+            self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
+        return self._lang_resources[lang]
 
     #
     def voc_match(self, *args, **kwargs):
