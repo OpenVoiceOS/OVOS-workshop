@@ -18,6 +18,7 @@ from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
 from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
+from ovos_workshop.resource_files import SkillResources
 
 
 class OVOSSkill(MycroftSkill):
