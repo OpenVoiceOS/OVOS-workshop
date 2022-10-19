@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a1...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a2...HEAD)
+
+**Implemented enhancements:**
+
+- improve send\_stop\_signal [\#29](https://github.com/OpenVoiceOS/OVOS-workshop/pull/29) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.8a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.8a2) (2022-10-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a1...V0.0.8a2)
 
 **Merged pull requests:**
 
