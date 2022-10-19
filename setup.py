@@ -48,7 +48,6 @@ def required(requirements_file):
                 if pkg.strip() and not pkg.startswith("#")]
 
 
-
 setup(
     name='ovos_workshop',
     version=get_version(),
@@ -59,8 +58,8 @@ setup(
               'ovos_workshop.patches'],
     install_requires=required("requirements/requirements.txt"),
     extras_require={
-            'ocp': required('requirements/ocp.txt')
-        },
+        'ocp': required('requirements/ocp.txt')
+    },
     package_data={'': package_files('ovos_workshop')},
     url='https://github.com/OpenVoiceOS/OVOS-workshop',
     license='apache-2.0',
