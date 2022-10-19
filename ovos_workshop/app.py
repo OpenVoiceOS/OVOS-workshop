@@ -29,6 +29,7 @@ from ovos_workshop.decorators import *
 from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
+from ovos_workshop.resource_files import SkillResources, find_resource
 
 # LF imports are only used in ask_selection, they are optional and provide
 # numeric input support, eg. "select the first option"
@@ -48,13 +49,14 @@ class OVOSAbstractApplication:
     def __init__(self, skill_id, bus=None, resources_dir=None, lang=None,
                  settings=None, gui=None):
         self.skill_id = skill_id
+        self._lang_resources = {}
         self.res_dir = resources_dir  # TODO or some default xdg dir
         try:
             self.config_core = read_mycroft_config()
         except:
             self.config_core = {}
         self._core_lang = lang or self.config_core.get("lang", "en-us")
-        self.dialog_renderers = {}
+
         self.voc_match_cache = {}
         self._threads = []
         self._original_converse = self.converse
@@ -151,6 +153,34 @@ class OVOSAbstractApplication:
         """
         return [l for l in self.config_core.get('secondary_langs', [])
                 if l != self._core_lang]
+
+    @property
+    def native_langs(self):
+        """Languages natively supported by core
+        ie, resource files available and explicitly supported
+        """
+        valid = set([l.lower() for l in self.secondary_langs
+                     if '-' in l and l != self._core_lang] + [self._core_lang])
+        return list(valid)
+
+    @property
+    def alphanumeric_skill_id(self):
+        """skill id converted to only alphanumeric characters
+         Non alpha-numeric characters are converted to "_"
+
+        Returns:
+            (str) String of letters
+        """
+        return ''.join(c if c.isalnum() else '_'
+                       for c in str(self.skill_id))
+
+    @property
+    def resources(self):
+        """Instantiates a ResourceFileLocator instance when needed.
+        a new instance is always created to ensure self.lang
+        reflects the active language and not the default core language
+        """
+        return self.load_lang(self.res_dir, self.lang)
 
     @property
     def location(self):
@@ -259,6 +289,17 @@ class OVOSAbstractApplication:
         return self.events.remove(name)
 
     # resource file loading
+    def load_lang(self, root_directory=None, lang=None):
+        """Instantiates a ResourceFileLocator instance when needed.
+        a new instance is always created to ensure lang
+        reflects the active language and not the default core language
+        """
+        lang = lang or self.lang
+        root_directory = root_directory or self.res_dir
+        if lang not in self._lang_resources:
+            self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
+        return self._lang_resources[lang]
+
     def load_data_files(self, root_directory=None):
         """Called by the skill loader to load intents, dialogs, etc.
 
@@ -270,46 +311,12 @@ class OVOSAbstractApplication:
         self.load_vocab_files(root_directory)
         self.load_regex_files(root_directory)
 
-    def _load_dialog_files(self, root_directory, lang):
-        # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
-        # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = self.get_language_dir(
-            join(root_directory, 'dialog'), lang)
-        locale_dir = self.get_language_dir(
-            join(root_directory, 'locale'), lang)
-        if exists(dialog_dir):
-            self.dialog_renderers[lang] = load_dialogs(dialog_dir)
-        elif exists(locale_dir):
-            self.dialog_renderers[lang] = load_dialogs(locale_dir)
-        else:
-            LOG.debug(f'No dialog loaded for {lang}')
-
     def load_dialog_files(self, root_directory):
-        langs = [self._core_lang] + self.secondary_langs
-        for lang in langs:
-            self._load_dialog_files(root_directory, lang)
-
-    def _load_vocab_files(self, root_directory, lang):
-        keywords = []
-        vocab_dir = self.get_language_dir(join(root_directory, 'vocab'), lang)
-        locale_dir = self.get_language_dir(join(root_directory, 'locale'),
-                                           lang)
-        if exists(vocab_dir):
-            keywords = load_vocabulary(vocab_dir, self.skill_id)
-        elif exists(locale_dir):
-            keywords = load_vocabulary(locale_dir, self.skill_id)
-        else:
-            LOG.debug(f'No vocab loaded for {lang}')
-
-        # For each found intent register the default along with any aliases
-        for vocab_type in keywords:
-            for line in keywords[vocab_type]:
-                entity = line[0]
-                aliases = line[1:]
-                self.intent_service.register_adapt_keyword(vocab_type,
-                                                           entity,
-                                                           aliases,
-                                                           lang)
+        root_directory = root_directory or self.res_dir
+        for lang in self.native_langs:
+            resources = self.load_lang(root_directory, lang)
+            if resources.types.dialog.base_directory is None:
+                LOG.debug(f'No dialog loaded for {lang}')
 
     def load_vocab_files(self, root_directory):
         """ Load vocab files found under root_directory.
@@ -317,28 +324,22 @@ class OVOSAbstractApplication:
         Args:
             root_directory (str): root folder to use when loading files
         """
-        langs = [self._core_lang] + self.secondary_langs
-        for lang in langs:
-            self._load_vocab_files(root_directory, lang)
-
-    def _load_regex_files(self, root_directory, lang):
-        """ Load regex files found under the skill directory.
-
-        Args:
-            root_directory (str): root folder to use when loading files
-        """
-        regexes = []
-        regex_dir = self.get_language_dir(join(root_directory, 'regex'), lang)
-        locale_dir = self.get_language_dir(join(root_directory, 'locale'),
-                                           lang)
-
-        if exists(regex_dir):
-            regexes = load_regex(regex_dir, self.skill_id)
-        elif exists(locale_dir):
-            regexes = load_regex(locale_dir, self.skill_id)
-
-        for regex in regexes:
-            self.intent_service.register_adapt_regex(regex, lang)
+        root_directory = root_directory or self.res_dir
+        for lang in self.native_langs:
+            resources = self.load_lang(root_directory, lang)
+            if resources.types.vocabulary.base_directory is None:
+                LOG.debug(f'No vocab loaded for {lang}')
+            else:
+                skill_vocabulary = resources.load_skill_vocabulary(
+                    self.alphanumeric_skill_id
+                )
+                # For each found intent register the default along with any aliases
+                for vocab_type in skill_vocabulary:
+                    for line in skill_vocabulary[vocab_type]:
+                        entity = line[0]
+                        aliases = line[1:]
+                        self.intent_service.register_adapt_keyword(
+                            vocab_type, entity, aliases, lang)
 
     def load_regex_files(self, root_directory):
         """ Load regex files found under the skill directory.
@@ -346,9 +347,13 @@ class OVOSAbstractApplication:
         Args:
             root_directory (str): root folder to use when loading files
         """
-        langs = [self._core_lang] + self.secondary_langs
-        for lang in langs:
-            self._load_regex_files(root_directory, lang)
+        root_directory = root_directory or self.res_dir
+        for lang in self.native_langs:
+            resources = self.load_lang(root_directory, lang)
+            if resources.types.regex.base_directory is not None:
+                regexes = resources.load_skill_regex(self.alphanumeric_skill_id)
+                for regex in regexes:
+                    self.intent_service.register_adapt_regex(regex, lang)
 
     # resource file helpers
     def find_resource(self, res_name, res_dirname=None, lang=None):
@@ -382,35 +387,11 @@ class OVOSAbstractApplication:
             string: The full path to the resource file or None if not found
         """
         lang = lang or self.lang
-        if res_dirname:
-            # Try the old translated directory (dialog/vocab/regex)
-            lang_path = self.get_language_dir(
-                join(self.res_dir, res_dirname), lang)
-            path = join(lang_path, res_name)
-            if exists(path):
-                return path
-
-            # Try old-style non-translated resource
-            path = join(self.res_dir, res_dirname, res_name)
-            if exists(path):
-                return path
-
-        # New scheme:  search for res_name under the 'locale' folder
-        root_path = self.get_language_dir(join(self.res_dir, 'locale'), lang)
-        for path, _, files in walk(root_path):
-            if res_name in files:
-                return join(path, res_name)
-
-        # override to look for bundled pages
-        res = resolve_ovos_resource_file(join('text', lang, res_name)) or \
-              resolve_ovos_resource_file(res_name)
-        if not res:
-            # Not found
-            LOG.warning(
-                f"{self.skill_id} resource '{res_name}' for lang '{lang}' not "
-                f"found"
-            )
-        return res
+        x = find_resource(res_name, self.res_dir, res_dirname, lang)
+        if x:
+            return str(x)
+        LOG.error(f"OVOSApplication {self.skill_id} resource '{res_name}' for lang "
+                       f"'{lang}' not found")
 
     def voc_match(self, utt, voc_filename, lang=None, exact=False):
         """Determine if the given utterance contains the vocabulary provided.
@@ -482,14 +463,7 @@ class OVOSAbstractApplication:
     # speech
     @property
     def dialog_renderer(self):
-        if self.lang in self.dialog_renderers:
-            return self.dialog_renderers[self.lang]
-        # Try to load the renderer
-        self._load_dialog_files(self.res_dir, self.lang)
-        if self.lang in self.dialog_renderers:
-            return self.dialog_renderers[self.lang]
-        # Fall back to main language
-        return self.dialog_renderers.get(self._core_lang)
+        return self.resources.dialog_renderer
 
     def speak(self, utterance, expect_response=False, wait=True, meta=None):
         """Speak a sentence.
