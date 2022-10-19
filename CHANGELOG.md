@@ -2,7 +2,16 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a1...HEAD)
+
+**Merged pull requests:**
+
+- move OCP to optional requirements [\#28](https://github.com/OpenVoiceOS/OVOS-workshop/pull/28) ([JarbasAl](https://github.com/JarbasAl))
+- license + vulnerability tests [\#27](https://github.com/OpenVoiceOS/OVOS-workshop/pull/27) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.8a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.8a1) (2022-09-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.7...V0.0.8a1)
 
 **Merged pull requests:**
 
