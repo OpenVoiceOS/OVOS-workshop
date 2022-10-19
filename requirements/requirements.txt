@@ -1,4 +1,4 @@
-ovos_utils~=0.0, >=0.0.23
+ovos-utils~=0.0, >=0.0.26a1
 ovos_config~=0.0,>=0.0.4
 
 # optional but improves fuzzy matching and silences logs
