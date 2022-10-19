@@ -173,16 +173,25 @@ class OVOSSkill(MycroftSkill):
         # stop event execution
         if stop_event:
             self.bus.emit(msg.forward(stop_event))
+
         # stop TTS
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
+
         # Tell ovos-core to stop recording (not in mycroft-core)
         self.bus.emit(msg.forward('recognizer_loop:record_stop'))
-        # STT might continue recording and screw up the next get_response
-        self.bus.emit(msg.forward('mycroft.mic.mute'))
+
+        # special non-ovos handling
+        try:
+            from mycroft.version import OVOS_VERSION_STR
+        except ImportError:
+            # NOTE: mycroft does not have an event to stop recording
+            # this attempts to force a stop by sending silence to end STT step
+            self.bus.emit(Message('mycroft.mic.mute'))
+            time.sleep(1.5)  # the silence from muting should make STT stop recording
+            self.bus.emit(Message('mycroft.mic.unmute'))
+
         time.sleep(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
-        time.sleep(1.5)  # the silence from muting should make STT stop recording
-        self.bus.emit(msg.forward('mycroft.mic.unmute'))
 
     # these methods are copied from ovos-core for compat with mycroft-core
     def _on_event_start(self, message, handler_info, skill_data):
