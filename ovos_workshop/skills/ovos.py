@@ -9,7 +9,6 @@ from ovos_utils.skills.settings import PrivateSettings
 
 ensure_mycroft_import()
 
-from mycroft.skills.mycroft_skill.event_container import create_wrapper
 from ovos_utils.skills import get_non_properties
 from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
 from ovos_utils.sound import play_audio
@@ -19,6 +18,7 @@ from ovos_workshop.decorators.killable import killable_event, \
 from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 from ovos_utils.dialog import get_dialog
+from ovos_utils.messagebus import create_wrapper
 
 
 class OVOSSkill(MycroftSkill):
