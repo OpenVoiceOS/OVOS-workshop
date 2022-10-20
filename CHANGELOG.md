@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8...HEAD)
+
+**Fixed bugs:**
+
+- Fix circular imports [\#32](https://github.com/OpenVoiceOS/OVOS-workshop/pull/32) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.8) (2022-10-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a6...V0.0.8)
+
 ## [V0.0.8a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.8a6) (2022-10-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.8a5...V0.0.8a6)
