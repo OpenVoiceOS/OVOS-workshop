@@ -9,7 +9,7 @@ from ovos_utils.log import LOG
 from ovos_utils import ensure_mycroft_import
 ensure_mycroft_import()
 
-from mycroft.skills.mycroft_skill import MycroftSkill as _MycroftSkill
+from mycroft.skills.mycroft_skill.mycroft_skill import MycroftSkill as _MycroftSkill
 from mycroft.skills.fallback_skill import FallbackSkill as _FallbackSkill
 from mycroft.skills.skill_data import read_vocab_file, load_vocabulary, \
     load_regex

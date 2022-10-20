@@ -28,7 +28,7 @@ from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
 from ovos_workshop.decorators import *
 from ovos_workshop.decorators.killable import killable_event, \
     AbortEvent, AbortQuestion
-from ovos_workshop.skills.layers import IntentLayers
+from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources, find_resource
 
 # LF imports are only used in ask_selection, they are optional and provide
