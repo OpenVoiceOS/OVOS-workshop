@@ -21,9 +21,6 @@ SessionGuiType = Union[str, Tuple[str, SessionGuiDataType]]
 SessionGuisType = Union[SessionGuiType, Sequence[SessionGuiType]]
 
 
-
-
-
 class DeDinkumFier:
     def __init__(self, skill_folder):
         self.path = skill_folder
@@ -54,7 +51,7 @@ class DeDinkumFier:
             if "import" in l and not import_start:
                 import_start = idx
             if "from mycroft.skills import" in l:
-                l = l.replace(" MycroftSkill", "").replace(",,", ",").\
+                l = l.replace(" MycroftSkill", "").replace(",,", ","). \
                     replace(" GuiClear", "").replace(",,", ",").replace("import,", "import")
                 if l.strip().endswith(" import"):
                     l = ""
@@ -219,12 +216,7 @@ class UnDinkumSkill(OVOSSkill):
         return self.end_session(gui_clear=GuiClear.AT_END)
 
     def play_sound_uri(self, uri: str):
-        try:  # ovos-core only
-            from mycroft.version import OVOS_VERSION_STR
-            self.bus.emit(Message("mycroft.audio.queue", data={"filename": uri}))
-        except ImportError:  # vanilla mycroft-core
-            play_audio(uri).wait()
-            return
+        self.play_audio(uri)  # OVOSSKill class method
 
     def update_gui_values(
             self, page: str, data: Dict[str, Any], overwrite: bool = True
