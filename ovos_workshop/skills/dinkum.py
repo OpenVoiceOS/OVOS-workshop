@@ -163,22 +163,12 @@ class UnDinkumSkill(OVOSSkill):
                 self.enable_intent(intent)
 
             if new_state == "inactive":
-                self.log.debug("send msg: deactivate %s" % (self.skill_id,))
-                self.bus.emit(
-                    Message("deactivate_skill_request", {"skill_id": self.skill_id})
-                )
+                if hasattr(self, "deactivate"):
+                    # ovos-core only, not mycroft-core
+                    self.deactivate()
 
             if new_state == "active":
-                self.log.debug("send msg: activate %s" % (self.skill_id,))
-                self.bus.emit(
-                    Message(
-                        "active_skill_request",
-                        {
-                            "skill_id": self.skill_id,
-                            "skill_cat": self.skill_control.category,
-                        },
-                    )
-                )
+                self.make_active()
 
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
