@@ -1,6 +1,6 @@
+import re
 import time
-from copy import copy
-from ovos_utils import camel_case_split, get_handler_name
+
 # ensure mycroft can be imported
 from ovos_utils import ensure_mycroft_import
 from ovos_utils.log import LOG
@@ -112,20 +112,13 @@ class OVOSSkill(MycroftSkill):
                     OVOS_VERSION_BUILD >= 4:
                 self.bus.emit(Message("mycroft.audio.queue",
                                       {"filename": filename}))
+                return
         except:
             pass
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
         play_audio(filename).wait()
 
     # lang support
-    @property
-    def lang(self):
-        """Get the current active language."""
-        lang = self.core_lang
-        message = dig_for_message()
-        if message:
-            lang = get_message_lang(message)
-        return lang.lower()
 
     # new public api, these are private methods in ovos-core
     # preference is given to ovos-core code to account for updates
@@ -206,6 +199,22 @@ class OVOSSkill(MycroftSkill):
         except FileNotFoundError:
             return False
 
+    def remove_voc(self, utt, voc_filename, lang=None):
+        """ removes any entry in .voc file from the utterance """
+        lang = lang or self.lang
+        cache_key = lang + voc_filename
+
+        if cache_key not in self.voc_match_cache:
+            self.voc_match(utt, voc_filename, lang)
+
+        if utt:
+            # Check for matches against complete words
+            for i in self.voc_match_cache.get(cache_key) or []:
+                # Substitute only whole words matching the token
+                utt = re.sub(r'\b' + i + r"\b", "", utt)
+
+        return utt
+
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
 
@@ -263,86 +272,17 @@ class OVOSSkill(MycroftSkill):
         time.sleep(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
 
-    # these methods are copied from ovos-core for compat with mycroft-core
-    def _on_event_start(self, message, handler_info, skill_data):
-        """Indicate that the skill handler is starting."""
-        if handler_info:
-            # Indicate that the skill handler is starting if requested
-            msg_type = handler_info + '.start'
-            message.context["skill_id"] = self.skill_id
-            self.bus.emit(message.forward(msg_type, skill_data))
-
-    def _on_event_end(self, message, handler_info, skill_data):
-        """Store settings and indicate that the skill handler has completed
-        """
-        if self.settings != self._initial_settings:
-            try:  # ovos-core
-                self.settings.store()
-                self._initial_settings = copy(self.settings)
-            except:  # mycroft-core
-                from mycroft.skills.settings import save_settings
-                save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = dict(self.settings)
-        if handler_info:
-            msg_type = handler_info + '.complete'
-            message.context["skill_id"] = self.skill_id
-            self.bus.emit(message.forward(msg_type, skill_data))
-
-    def _on_event_error(self, error, message, handler_info, skill_data, speak_errors):
-        """Speak and log the error."""
-        # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-        handler_name = camel_case_split(self.name)
-        msg_data = {'skill': handler_name}
-        speech = get_dialog('skill.error', self.lang, msg_data)
-        if speak_errors:
-            self.speak(speech)
-        LOG.exception(error)
-        # append exception information in message
-        skill_data['exception'] = repr(error)
-        if handler_info:
-            # Indicate that the skill handler errored
-            msg_type = handler_info + '.error'
-            message = message or Message("")
-            message.context["skill_id"] = self.skill_id
-            self.bus.emit(message.forward(msg_type, skill_data))
-
-    def add_event(self, name, handler, handler_info=None, once=False, speak_errors=True):
-        """Create event handler for executing intent or other event.
-
-        Args:
-            name (string): IntentParser name
-            handler (func): Method to call
-            handler_info (string): Base message when reporting skill event
-                                   handler status on messagebus.
-            once (bool, optional): Event handler will be removed after it has
-                                   been run once.
-            speak_errors (bool, optional): Determines if an error dialog should be
-                                           spoken to inform the user whenever
-                                           an exception happens inside the handler
-        """
-        skill_data = {'name': get_handler_name(handler)}
-
-        def on_error(error, message):
-            if isinstance(error, AbortEvent):
-                LOG.info("Skill execution aborted")
-                self._on_event_end(message, handler_info, skill_data)
-                return
-            self._on_event_error(error, message, handler_info, skill_data, speak_errors)
-
-        def on_start(message):
-            self._on_event_start(message, handler_info, skill_data)
-
-        def on_end(message):
-            self._on_event_end(message, handler_info, skill_data)
-
-        wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
-                                 on_error)
-        return self.events.add(name, wrapper, once)
-
     def __handle_stop(self, message):
         self.bus.emit(message.forward(self.skill_id + ".stop",
                                       context={"skill_id": self.skill_id}))
-        super().__handle_stop(message)
+        try:
+            if self.stop():
+                self.bus.emit(message.reply("mycroft.stop.handled",
+                                            {"by": "skill:" + self.skill_id},
+                                            {"skill_id": self.skill_id}))
+        except Exception as e:
+            LOG.exception(e)
+            LOG.error(f'Failed to stop skill: {self.skill_id}')
 
     # abort get_response gracefully
     def _wait_response(self, is_cancel, validator, on_fail, num_retries):
@@ -355,48 +295,14 @@ class OVOSSkill(MycroftSkill):
             on_fail (callable): function handling retries
 
         """
-        self._response = False
+        self._converse_response = False
         self._real_wait_response(is_cancel, validator, on_fail, num_retries)
-        while self._response is False:
+        while not self._converse_event.is_set():
             time.sleep(0.1)
-        return self._response
-
-    def __get_response(self):
-        """Helper to get a reponse from the user
-
-        Returns:
-            str: user's response or None on a timeout
-        """
-
-        def converse(utterances, lang=None):
-            converse.response = utterances[0] if utterances else None
-            converse.finished = True
-            return True
-
-        # install a temporary conversation handler
-        self.make_active()
-        converse.finished = False
-        converse.response = None
-        self.converse = converse
-
-        # 10 for listener, 5 for SST, then timeout
-        # NOTE a threading event is not used otherwise we can't raise the
-        # AbortEvent exception to kill the thread
-        start = time.time()
-        while time.time() - start <= 15 and not converse.finished:
-            time.sleep(0.1)
-            if self._response is not False:
-                if self._response is None:
-                    # aborted externally (if None)
-                    self.log.debug("get_response aborted")
-                converse.finished = True
-                converse.response = self._response  # external override
-        self.converse = self._original_converse
-        return converse.response
+        return self._converse_response
 
     def _handle_killed_wait_response(self):
-        self._response = None
-        self.converse = self._original_converse
+        self._converse_response = None
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
                     callback=_handle_killed_wait_response, react_to_stop=True)
@@ -412,10 +318,10 @@ class OVOSSkill(MycroftSkill):
         """
         num_fails = 0
         while True:
-            if self._response is not False:
+            if self._converse_response is not False:
                 # usually None when aborted externally
                 # also allows overriding returned result from other events
-                return self._response
+                return self._converse_response
 
             response = self.__get_response()
 
@@ -423,23 +329,23 @@ class OVOSSkill(MycroftSkill):
                 # if nothing said, prompt one more time
                 num_none_fails = 1 if num_retries < 0 else num_retries
                 if num_fails >= num_none_fails:
-                    self._response = None
+                    self._converse_response = None
                     return
             else:
                 # catch user saying 'cancel'
                 if is_cancel(response):
-                    self._response = None
+                    self._converse_response = None
                     return
                 validated = validator(response)
                 # returns the validated value or the response
                 # (backwards compat)
                 if validated is not False and validated is not None:
                     self._response = response if validated is True else validated
-                    return                
+                    return
 
             num_fails += 1
-            if 0 < num_retries < num_fails or self._response is not False:
-                self._response = None
+            if 0 < num_retries < num_fails or self._converse_response is not False:
+                self._converse_response = None
                 return
 
             line = on_fail(response)
