@@ -20,55 +20,6 @@ SessionGuiType = Union[str, Tuple[str, SessionGuiDataType]]
 SessionGuisType = Union[SessionGuiType, Sequence[SessionGuiType]]
 
 
-class DeDinkumFier:
-    def __init__(self, skill_folder):
-        self.path = skill_folder
-        with open(f"{self.path}/__init__.py") as f:
-            self.code = f.read()
-
-    @property
-    def is_dinkum(self):
-        if "def create_skill(skill_id:" in self.code and "def __init__(self, skill_id" in self.code:
-            return True
-        return False
-
-    def fix(self):
-        if not self.is_dinkum:
-            raise RuntimeError("Not a dinkum skill!")
-        if "MycroftSkill" not in self.code:
-            raise ValueError("MycroftSkill class import not found")
-        self.fix_skill_id_init()
-        self.fix_imports()
-
-    def fix_skill_id_init(self):
-        lines = self.code.split("\n")
-        for idx, l in enumerate(lines):
-            if "skill_id" not in l:
-                continue
-            if "create_skill(" in l or " __init__(self, skill_id" in l:
-                lines[idx] = lines[idx].replace("skill_id: str", "skill_id=''")
-            elif "super(" in l and " __init__(" in l:
-                lines[idx] = lines[idx].replace("skill_id, ", "")
-        self.code = "\n".join(lines)
-
-    def fix_imports(self):
-        lines = self.code.split("\n")
-        import_start = 0
-        for idx, l in enumerate(lines):
-            if "import" in l and not import_start:
-                import_start = idx
-            if "from mycroft.skills import" in l:
-                l = l.replace(" MycroftSkill", "").replace(",,", ","). \
-                    replace(" GuiClear", "").replace(",,", ",").replace("import,", "import")
-                if l.strip().endswith(" import"):
-                    l = ""
-                lines[idx] = l
-            else:
-                lines[idx] = lines[idx].replace("MycroftSkill", "UnDinkumSkill")
-        lines.insert(import_start, "from ovos_workshop.skills.dinkum import GuiClear, UnDinkumSkill")
-        self.code = "\n".join(lines)
-
-
 class SkillControl:
     """
     the SkillControl class is used by the
