@@ -8,7 +8,6 @@ from uuid import uuid4
 
 from mycroft_bus_client import Message
 from ovos_utils.log import LOG
-from ovos_utils.sound import play_audio
 
 from ovos_workshop.skills.ovos import OVOSSkill
 
@@ -132,6 +131,19 @@ class UnDinkumSkill(OVOSSkill):
 
         if self.bus and skill_id:
             self._startup(self.bus, skill_id=skill_id)
+
+    def bind(self, bus):
+        if bus:
+            bus.real_emit = bus.emit
+            bus.emit = self.__inject_session
+            super().bind(bus)
+
+    def __inject_session(self, message):
+        # ensure the mycroft_session_id is always in message.data
+        # this way we don't need to override bunch of methods in subclasses
+        if "mycroft_session_id" not in message.data:
+            message.data["mycroft_session_id"] = self._mycroft_session_id
+        self.bus.real_emit(message)
 
     def change_state(self, new_state):
         """change skill state to new value.
