@@ -41,7 +41,15 @@ class DeDinkumFier:
         self.fix_imports()
 
     def fix_skill_id_init(self):
-        self.code = self.code.replace("skill_id: str", "skill_id=''")
+        lines = self.code.split("\n")
+        for idx, l in enumerate(lines):
+            if "skill_id" not in l:
+                continue
+            if "create_skill(" in l or " __init__(self, skill_id" in l:
+                lines[idx] = lines[idx].replace("skill_id: str", "skill_id=''")
+            elif "super(" in l and " __init__(" in l:
+                lines[idx] = lines[idx].replace("skill_id, ", "")
+        self.code = "\n".join(lines)
 
     def fix_imports(self):
         lines = self.code.split("\n")
@@ -58,6 +66,7 @@ class DeDinkumFier:
             else:
                 lines[idx] = lines[idx].replace("MycroftSkill", "UnDinkumSkill")
         lines.insert(import_start, "from ovos_workshop.skills.dinkum import GuiClear, UnDinkumSkill")
+        self.code = "\n".join(lines)
 
 
 class SkillControl:
