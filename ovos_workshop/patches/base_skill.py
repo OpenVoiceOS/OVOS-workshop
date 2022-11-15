@@ -172,7 +172,7 @@ class MycroftSkill(_MycroftSkill):
         # TODO - check for dinkum, return a UnDinkumSkill
         try:
             from mycroft.version import OVOS_VERSION_STR
-            return MycroftSkill(*args, **kwargs)
+            return super().__new__(cls, *args, **kwargs)
         except ImportError:
             return PatchedMycroftSkill(*args, **kwargs)
 
