@@ -361,7 +361,7 @@ class UnDinkumSkill(OVOSSkill):
                     "mycroft_session_id": self._mycroft_session_id,
                     "skill_id": self.skill_id,
                     "utterances": [response],
-                    "state": self.skill_control.state,
+                    "state": {},
                 }
                 self.bus.emit(Message("mycroft.skill-response", data))
             elif action["type"] == "stream_music":
