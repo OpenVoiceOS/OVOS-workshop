@@ -77,7 +77,7 @@ class MessageSend(str, Enum):
 
 
 class UnDinkumSkill(OVOSSkill):
-    def __init__(self, skill_id=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.skill_service_initializing = False
         self.skill_control = SkillControl()
@@ -88,9 +88,6 @@ class UnDinkumSkill(OVOSSkill):
         # Session id from last speak()
         self._tts_session_id: typing.Optional[str] = None
         self._tts_speak_finished = Event()
-
-        if self.bus and skill_id:
-            self._startup(self.bus, skill_id=skill_id)
 
     def bind(self, bus):
         if bus:
