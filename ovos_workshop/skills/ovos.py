@@ -39,9 +39,10 @@ class SkillNetworkRequirements:
     requires_internet: bool = True
     requires_network: bool = True
 
-    # can_handle_xxx is currently purely informative and not consumed by core
+    # xxx_fallback is currently purely informative and not consumed by core
     # this allows a skill to spec if it has a fallback for temporary offline events, eg, by having a cache
-    can_handle_offline: bool = False
+    no_internet_fallback: bool = False
+    no_network_fallback: bool = False
 
 
 class OVOSSkill(MycroftSkill):
@@ -81,7 +82,8 @@ class OVOSSkill(MycroftSkill):
                                      network_before_load=scans_on_init,
                                      requires_internet=False,
                                      requires_network=True,
-                                     can_handle_offline=False)
+                                     no_internet_fallback=True,
+                                     no_network_fallback=False)
 
          online search skill with a local cache:
             has_cache = False
@@ -89,14 +91,16 @@ class OVOSSkill(MycroftSkill):
                                      network_before_load=not has_cache,
                                      requires_internet=True,
                                      requires_network=True,
-                                     can_handle_offline=True)
+                                     no_internet_fallback=True,
+                                     no_network_fallback=True)
 
          a fully offline skill:
             SkillNetworkRequirements(internet_before_load=False,
                                      network_before_load=False,
                                      requires_internet=False,
                                      requires_network=False,
-                                     can_handle_offline=True)
+                                     no_internet_fallback=True,
+                                     no_network_fallback=True)
         """
         return SkillNetworkRequirements()
 
