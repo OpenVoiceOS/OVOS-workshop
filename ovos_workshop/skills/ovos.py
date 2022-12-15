@@ -19,7 +19,7 @@ from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 from ovos_utils.dialog import get_dialog
 from ovos_utils.messagebus import create_wrapper
-
+from ovos_workshop.decorators import classproperty
 
 from dataclasses import dataclass
 
@@ -70,7 +70,7 @@ class OVOSSkill(MycroftSkill):
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
 
-    @property
+    @classproperty
     def network_requirements(self):
         """ skill developers should override this if they do not require connectivity
 
