@@ -19,6 +19,30 @@ from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 from ovos_utils.dialog import get_dialog
 from ovos_utils.messagebus import create_wrapper
+from ovos_workshop.decorators import classproperty
+
+from dataclasses import dataclass
+
+
+@dataclass
+class SkillNetworkRequirements:
+    # to ensure backwards compatibility the default values require internet before skill loading
+    # skills in the wild may assume this behaviour and require network on initialization
+    # any ovos aware skills should change these as appropriate
+
+    # xxx_before_load is used by skills service
+    network_before_load: bool = True
+    internet_before_load: bool = True
+
+    # requires_xxx is currently purely informative and not consumed by core
+    # this allows a skill to spec if it needs connectivity to handle utterances
+    requires_internet: bool = True
+    requires_network: bool = True
+
+    # xxx_fallback is currently purely informative and not consumed by core
+    # this allows a skill to spec if it has a fallback for temporary offline events, eg, by having a cache
+    no_internet_fallback: bool = False
+    no_network_fallback: bool = False
 
 
 class OVOSSkill(MycroftSkill):
@@ -45,6 +69,40 @@ class OVOSSkill(MycroftSkill):
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
+
+    @classproperty
+    def network_requirements(self):
+        """ skill developers should override this if they do not require connectivity
+
+         some examples:
+
+         IOT skill that controls skills via LAN could return:
+            scans_on_init = True
+            SkillNetworkRequirements(internet_before_load=False,
+                                     network_before_load=scans_on_init,
+                                     requires_internet=False,
+                                     requires_network=True,
+                                     no_internet_fallback=True,
+                                     no_network_fallback=False)
+
+         online search skill with a local cache:
+            has_cache = False
+            SkillNetworkRequirements(internet_before_load=not has_cache,
+                                     network_before_load=not has_cache,
+                                     requires_internet=True,
+                                     requires_network=True,
+                                     no_internet_fallback=True,
+                                     no_network_fallback=True)
+
+         a fully offline skill:
+            SkillNetworkRequirements(internet_before_load=False,
+                                     network_before_load=False,
+                                     requires_internet=False,
+                                     requires_network=False,
+                                     no_internet_fallback=True,
+                                     no_network_fallback=True)
+        """
+        return SkillNetworkRequirements()
 
     def play_audio(self, filename):
         try:
