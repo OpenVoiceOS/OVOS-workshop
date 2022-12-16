@@ -50,7 +50,6 @@ jobs:
           python -m pip install build wheel
       - name: Install ovos workshop
         run: |
-          pip install git+https://github.com/OpenVoiceOS/ovos-utils@feat/sync_utils_with_core
           pip install .
       - name: Install test dependencies
         run: |
