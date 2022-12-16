@@ -15,28 +15,32 @@
 """Common functionality relating to the implementation of mycroft skills."""
 
 import shutil
-from copy import copy
+from abc import ABCMeta
 from os.path import join, exists
 
-from json_database import JsonStorage
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
 
 from ovos_workshop.skills.base import BaseSkill
 
 
-class _SkillMetaclass(type):
+class _SkillMetaclass(ABCMeta):
     """ To override isinstance checks we need to use a metaclass """
 
-    def __new__(cls, *args, **kwargs):
-        instance = super().__new__(cls, *args, **kwargs)
+    def __instancecheck__(self, instance):
         try:
-            from mycroft.skills import MycroftSkill as _CoreSkill
-            # inject reference to mycroft.skills class to allow isinstance checks to pass
-            instance.__bases__ = tuple([b for b in instance.__bases__] + [_CoreSkill])
+            from mycroft.version import OVOS_VERSION_STR
         except ImportError:
-            pass
-        return instance
+            # vanilla mycroft
+            try:
+                from mycroft.skills import MycroftSkill as _CoreSkill
+                if isinstance(instance, _CoreSkill):
+                    return True
+            except ImportError:
+                # not running in core
+                # standalone skill
+                pass
+        return super().__instancecheck__(instance)
 
 
 class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
@@ -54,6 +58,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all (DEPRECATED)
     """
+
     def __init__(self, name=None, bus=None, use_settings=True, *args, **kwargs):
         super().__init__(name=name, bus=bus, *args, **kwargs)
 
