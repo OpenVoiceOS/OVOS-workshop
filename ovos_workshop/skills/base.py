@@ -29,7 +29,7 @@ from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
 from mycroft_bus_client.message import Message, dig_for_message
-from ovos_backend_client.api import EmailApi
+from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils import camel_case_split
@@ -47,6 +47,7 @@ from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_acknowledge_sound, wait_while_speaking
 
 from ovos_workshop.decorators import classproperty
+from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, SkillResources, find_resource
@@ -1178,7 +1179,6 @@ class BaseSkill:
         skill_data = {'name': get_handler_name(handler)}
 
         def on_error(error, message):
-            from ovos_workshop.decorators.killable import AbortEvent
             if isinstance(error, AbortEvent):
                 LOG.info("Skill execution aborted")
                 self._on_event_end(message, handler_info, skill_data)
