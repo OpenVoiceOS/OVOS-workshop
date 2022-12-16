@@ -54,8 +54,7 @@ setup(
     packages=['ovos_workshop',
               'ovos_workshop.skills',
               'ovos_workshop.skills.decorators',
-              'ovos_workshop.decorators',
-              'ovos_workshop.patches'],
+              'ovos_workshop.decorators'],
     install_requires=required("requirements/requirements.txt"),
     extras_require={
         'ocp': required('requirements/ocp.txt')
