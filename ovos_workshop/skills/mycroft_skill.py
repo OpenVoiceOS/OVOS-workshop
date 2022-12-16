@@ -46,13 +46,16 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     For information on how to get started with creating mycroft skills see
     https://mycroft.ai/documentation/skills/introduction-developing-skills/
 
+    New methods added here are always private, public apis for Skill class are added in OVOSSkill
+    This is done to ensure no syntax errors when a MycroftSkill object comes from mycroft-core
+
     Args:
         name (str): skill name
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all (DEPRECATED)
     """
-    def __init__(self, name=None, bus=None, use_settings=True):
-        super().__init__(name=name, bus=bus)
+    def __init__(self, name=None, bus=None, use_settings=True, *args, **kwargs):
+        super().__init__(name=name, bus=bus, *args, **kwargs)
 
         self._initial_settings = {}
         self.settings_write_path = None

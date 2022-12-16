@@ -67,6 +67,8 @@ def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
                         callback()
 
             # save reference to threads so they can be killed later
+            if not hasattr(skill, "_threads"):
+                skill._threads = []
             skill._threads.append(t)
             skill.bus.once(msg, abort)
             if react_to_stop:
