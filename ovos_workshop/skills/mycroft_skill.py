@@ -22,32 +22,26 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
 
 from ovos_workshop.skills.base import BaseSkill
-
-
-def _is_ovos():
-    try:
-        from mycroft.version import OVOS_VERSION_STR
-        return True
-    except ImportError:
-        return False
+from ovos_workshop.util import is_ovos
 
 
 class _SkillMetaclass(ABCMeta):
     """ To override isinstance checks we need to use a metaclass """
 
     def __instancecheck__(self, instance):
-        try:
-            from mycroft.version import OVOS_VERSION_STR
-        except ImportError:
-            # vanilla mycroft
+        if not is_ovos():
+            # instance imported from vanilla mycroft
             try:
                 from mycroft.skills import MycroftSkill as _CoreSkill
                 if isinstance(instance, _CoreSkill):
                     return True
             except ImportError:
-                # not running in core
-                # standalone skill
+                # not running in core - standalone skill
                 pass
+
+            # instance imported from workshop
+            # we can not patch mycroft-core class to make isinstance return True
+
         return super().__instancecheck__(instance)
 
 
@@ -77,6 +71,9 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         # old kludge from fallback skills, unused according to grep
         if use_settings is False:
             LOG.warning("use_settings has been deprecated! skill settings are always enabled")
+
+        if not is_ovos():
+            self.settings_write_path = self.root_dir
 
     def _init_settings_manager(self):
         try:
@@ -118,14 +115,14 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     def _on_event_end(self, message, handler_info, skill_data):
         """Store settings and indicate that the skill handler has completed
         """
-        if _is_ovos():
+        if is_ovos():
             return super()._on_event_end(message, handler_info, skill_data)
 
         # mycroft-core style settings
         if self.settings != self._initial_settings:
             try:
                 from mycroft.skills.settings import save_settings
-                save_settings(self._settings_path, self.settings)
+                save_settings(self.settings_write_path, self.settings)
                 self._initial_settings = dict(self.settings)
             except Exception as e:
                 LOG.exception("Failed to save skill settings")
@@ -185,7 +182,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     # patched due to functional (internal) differences under mycroft-core
     @property
     def _settings_path(self):
-        if self.settings_write_path:
+        if self.settings_write_path and self.settings_write_path != self.root_dir:
             LOG.warning("self.settings_write_path has been deprecated! "
                         "Support will be dropped in a future release")
             return join(self.settings_write_path, 'settings.json')
