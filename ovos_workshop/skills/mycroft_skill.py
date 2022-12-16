@@ -125,7 +125,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         if self.settings != self._initial_settings:
             try:
                 from mycroft.skills.settings import save_settings
-                save_settings(self.settings_write_path, self.settings)
+                save_settings(self._settings_path, self.settings)
                 self._initial_settings = dict(self.settings)
             except Exception as e:
                 LOG.exception("Failed to save skill settings")
@@ -174,6 +174,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         LOG.warning("self.settings_meta has been deprecated! please use self.settings_manager instead")
         self._settings_meta = val
 
+    # internal - deprecated under ovos-core
     @property
     def _old_settings_path(self):
         old_dir = self.config_core.get("data_dir") or "/opt/mycroft"
@@ -181,10 +182,11 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
                          .get("directory") or "skills"
         return join(old_dir, old_folder, self.skill_id, 'settings.json')
 
+    # patched due to functional (internal) differences under mycroft-core
     @property
     def _settings_path(self):
         if self.settings_write_path:
             LOG.warning("self.settings_write_path has been deprecated! "
                         "Support will be dropped in a future release")
             return join(self.settings_write_path, 'settings.json')
-        return join(get_xdg_config_save_path(), 'skills', self.skill_id, 'settings.json')
+        return super()._settings_path
