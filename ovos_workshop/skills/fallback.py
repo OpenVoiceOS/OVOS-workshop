@@ -15,7 +15,6 @@
 """The fallback skill implements a special type of skill handling
 utterances not handled by the intent system.
 """
-import enum
 import operator
 
 from ovos_utils.log import LOG
@@ -23,12 +22,7 @@ from ovos_utils.messagebus import get_handler_name
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
 from ovos_workshop.skills.ovos import OVOSSkill
-
-
-class FallbackMode(str, enum.Enum):
-    ACCEPT_ALL = "accept_all"  # default mycroft-core behavior
-    WHITELIST = "whitelist"  # only call fallback for skills in whitelist
-    BLACKLIST = "blacklist"  # only call fallback for skills NOT in blacklist
+from ovos_workshop.permissions import FallbackMode
 
 
 class FallbackSkill(OVOSSkill):
