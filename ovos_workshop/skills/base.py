@@ -190,13 +190,15 @@ class BaseSkill:
         """
         return SkillNetworkRequirements()
 
+    # property not present in mycroft-core
     @property
-    def is_fully_initialized(self):
+    def _is_fully_initialized(self):
         """Determines if the skill has been fully loaded and setup.
         When True all data has been loaded and all internal state and events setup"""
         return self._init_event.is_set()
 
-    def handle_first_run(self):
+    # method not present in mycroft-core
+    def _handle_first_run(self):
         """The very first time a skill is run, speak the intro."""
         intro = self.get_intro_message()
         if intro:
@@ -205,12 +207,13 @@ class BaseSkill:
             # it is backwards compatible
             self.speak_dialog(intro)
 
+    # method not present in mycroft-core
     def _check_for_first_run(self):
         """Determine if its the very first time a skill is run."""
         first_run = self.settings.get("__mycroft_skill_firstrun", True)
         if first_run:
             LOG.info("First run of " + self.skill_id)
-            self.handle_first_run()
+            self._handle_first_run()
             self.settings["__mycroft_skill_firstrun"] = False
             self.settings.store()
 
@@ -226,7 +229,7 @@ class BaseSkill:
             skill_id (str): need to be unique, by default is set from skill path
                 but skill loader can override this
         """
-        if self.is_fully_initialized:
+        if self._is_fully_initialized:
             LOG.warning(f"Tried to initialize {self.skill_id} multiple times, ignoring")
             return
 
@@ -362,7 +365,6 @@ class BaseSkill:
     def dialog_renderer(self):
         return self._resources.dialog_renderer
 
-    # not a property in mycroft-core
     @property
     def enclosure(self):
         if self._enclosure:
@@ -429,7 +431,6 @@ class BaseSkill:
             return loc['timezone']['code']
         return None
 
-    # not a property in mycroft-core
     @property
     def lang(self):
         """Get the current language."""
@@ -586,14 +587,14 @@ class BaseSkill:
             self.add_event(f'{self.skill_id}.public_api',
                            self._send_public_api, speak_errors=False)
 
-    # method not present in mycroft-core
+    # property not present in mycroft-core
     @property
-    def stop_is_implemented(self):
+    def _stop_is_implemented(self):
         return self.__class__.stop is not BaseSkill.stop
 
-    # method not present in mycroft-core
+    # property not present in mycroft-core
     @property
-    def converse_is_implemented(self):
+    def _converse_is_implemented(self):
         return self.__class__.converse is not BaseSkill.converse or \
                self.__original_converse != self.converse
 
@@ -602,7 +603,7 @@ class BaseSkill:
         system.
         """
         # Only register stop if it's been implemented
-        if self.stop_is_implemented:
+        if self._stop_is_implemented:
             self.add_event('mycroft.stop', self.__handle_stop, speak_errors=False)
         self.add_event('skill.converse.ping', self._handle_converse_ack, speak_errors=False)
         self.add_event('skill.converse.request', self._handle_converse_request, speak_errors=False)
@@ -666,24 +667,27 @@ class BaseSkill:
         """
         return None
 
-    # converse handling
+    # method not present in mycroft-core
     def _handle_skill_activated(self, message):
         """ intent service activated a skill
         if it was this skill fire the skill activation event"""
         if message.data.get("skill_id") == self.skill_id:
             self.bus.emit(message.forward(f"{self.skill_id}.activate"))
 
+    # method not present in mycroft-core
     def handle_activate(self, message):
         """ skill is now considered active by the intent service
         converse method will be called, skills might want to prepare/resume
         """
 
+    # method not present in mycroft-core
     def _handle_skill_deactivated(self, message):
         """ intent service deactivated a skill
         if it was this skill fire the skill deactivation event"""
         if message.data.get("skill_id") == self.skill_id:
             self.bus.emit(message.forward(f"{self.skill_id}.deactivate"))
 
+    # method not present in mycroft-core
     def handle_deactivate(self, message):
         """ skill is no longer considered active by the intent service
         converse method will not be called, skills might want to reset state here
@@ -722,7 +726,7 @@ class BaseSkill:
         self.bus.emit(message.reply(
             "skill.converse.pong",
             data={"skill_id": self.skill_id,
-                  "can_handle": self.converse_is_implemented},
+                  "can_handle": self._converse_is_implemented},
             context={"skill_id": self.skill_id}))
 
     # method not present in mycroft-core
@@ -767,22 +771,6 @@ class BaseSkill:
             bool: True if an utterance was handled, otherwise False
         """
         return False
-
-    def _wait_response(self, is_cancel, validator, on_fail, num_retries):
-        """Loop until a valid response is received from the user or the retry
-        limit is reached.
-
-        Arguments:
-            is_cancel (callable): function checking cancel criteria
-            validator (callbale): function checking for a valid response
-            on_fail (callable): function handling retries
-
-        """
-        self.__response = False
-        self._real_wait_response(is_cancel, validator, on_fail, num_retries)
-        while self.__response is False:
-            time.sleep(0.1)
-        return self.__response
 
     def __get_response(self):
         """Helper to get a response from the user
@@ -896,10 +884,28 @@ class BaseSkill:
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
 
+    def _wait_response(self, is_cancel, validator, on_fail, num_retries):
+        """Loop until a valid response is received from the user or the retry
+        limit is reached.
+
+        Arguments:
+            is_cancel (callable): function checking cancel criteria
+            validator (callbale): function checking for a valid response
+            on_fail (callable): function handling retries
+
+        """
+        self.__response = False
+        self._real_wait_response(is_cancel, validator, on_fail, num_retries)
+        while self.__response is False:
+            time.sleep(0.1)
+        return self.__response
+
+    # method not present in mycroft-core
     def _handle_killed_wait_response(self):
         self.__response = None
         self.converse = self.__original_converse
 
+    # method not present in mycroft-core
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
                     callback=_handle_killed_wait_response, react_to_stop=True)
     def _real_wait_response(self, is_cancel, validator, on_fail, num_retries):

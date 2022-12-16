@@ -41,6 +41,20 @@ class OVOSSkill(MycroftSkill):
             self.audio_service = AudioServiceInterface(self.bus)
 
     # new public api, these are not available in MycroftSkill
+    @property
+    def is_fully_initialized(self):
+        """Determines if the skill has been fully loaded and setup.
+        When True all data has been loaded and all internal state and events setup"""
+        return self._is_fully_initialized
+
+    @property
+    def stop_is_implemented(self):
+        return self._stop_is_implemented
+
+    @property
+    def converse_is_implemented(self):
+        return self._converse_is_implemented
+
     def activate(self):
         """Bump skill to active_skill list in intent_service.
         This enables converse method to be called even without skill being
@@ -48,7 +62,6 @@ class OVOSSkill(MycroftSkill):
         """
         self._activate()
 
-    # method not present in mycroft-core
     def deactivate(self):
         """remove skill from active_skill list in intent_service.
         This stops converse method from being called
