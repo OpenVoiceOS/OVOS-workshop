@@ -1,6 +1,7 @@
 import unittest
 from ovos_workshop.decorators import classproperty
-from ovos_workshop.skills.ovos import OVOSSkill, SkillNetworkRequirements
+from ovos_workshop.skills.ovos import OVOSSkill
+from ovos_workshop.skills.base import SkillNetworkRequirements
 
 
 class OfflineSkill(OVOSSkill):

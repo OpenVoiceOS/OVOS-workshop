@@ -1,7 +1,8 @@
 import json
 import unittest
 from ovos_workshop.skills.ovos import OVOSSkill
-from mycroft.skills import MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
+from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from mycroft.skills.skill_loader import SkillLoader
@@ -33,6 +34,7 @@ class TestSkill(unittest.TestCase):
     def test_skill_id(self):
         self.assertTrue(isinstance(self.skill.instance, OVOSSkill))
         self.assertTrue(isinstance(self.skill.instance, MycroftSkill))
+        self.assertTrue(isinstance(self.skill.instance, CoreSkill))
 
         self.assertEqual(self.skill.skill_id, "abort.test")
         if is_ovos:
