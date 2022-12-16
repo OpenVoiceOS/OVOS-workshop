@@ -24,6 +24,14 @@ from ovos_utils.log import LOG
 from ovos_workshop.skills.base import BaseSkill
 
 
+def _is_ovos():
+    try:
+        from mycroft.version import OVOS_VERSION_STR
+        return True
+    except ImportError:
+        return False
+
+
 class _SkillMetaclass(ABCMeta):
     """ To override isinstance checks we need to use a metaclass """
 
@@ -105,6 +113,26 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         deprecated: use self.activate() instead
         """
         self._activate()
+
+    # patched due to functional (internal) differences under mycroft-core
+    def _on_event_end(self, message, handler_info, skill_data):
+        """Store settings and indicate that the skill handler has completed
+        """
+        if _is_ovos():
+            return super()._on_event_end(message, handler_info, skill_data)
+
+        # mycroft-core style settings
+        if self.settings != self._initial_settings:
+            try:
+                from mycroft.skills.settings import save_settings
+                save_settings(self.settings_write_path, self.settings)
+                self._initial_settings = dict(self.settings)
+            except Exception as e:
+                LOG.exception("Failed to save skill settings")
+        if handler_info:
+            msg_type = handler_info + '.complete'
+            message.context["skill_id"] = self.skill_id
+            self.bus.emit(message.forward(msg_type, skill_data))
 
     # renamed in base class for naming consistency
     # refactored to use new resource utils
