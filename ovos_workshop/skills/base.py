@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 """Common functionality relating to the implementation of mycroft skills."""
-
 import re
 import sys
+import time
 import traceback
 from copy import copy
 from dataclasses import dataclass
@@ -48,6 +48,8 @@ from ovos_utils.sound import play_acknowledge_sound, wait_while_speaking
 
 from ovos_workshop.decorators import classproperty
 from ovos_workshop.decorators.killable import AbortEvent
+from ovos_workshop.decorators.killable import killable_event, \
+    AbortQuestion
 from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, SkillResources, find_resource
@@ -752,7 +754,22 @@ class BaseSkill:
         """
         return False
 
-    ## TODO - move killable intents to this class
+    def _wait_response(self, is_cancel, validator, on_fail, num_retries):
+        """Loop until a valid response is received from the user or the retry
+        limit is reached.
+
+        Arguments:
+            is_cancel (callable): function checking cancel criteria
+            validator (callbale): function checking for a valid response
+            on_fail (callable): function handling retries
+
+        """
+        self.__response = False
+        self._real_wait_response(is_cancel, validator, on_fail, num_retries)
+        while self.__response is False:
+            time.sleep(0.1)
+        return self.__response
+
     def __get_response(self):
         """Helper to get a response from the user
 
@@ -768,19 +785,30 @@ class BaseSkill:
         Returns:
             str: user's response or None on a timeout
         """
-        event = Event()
 
         def converse(utterances, lang=None):
             converse.response = utterances[0] if utterances else None
-            event.set()
+            converse.finished = True
             return True
 
         # install a temporary conversation handler
-        self.activate()
+        self._activate()
+        converse.finished = False
         converse.response = None
-        self.__original_converse = self.converse
         self.converse = converse
-        event.wait(15)  # 10 for listener, 5 for SST, then timeout
+
+        # 10 for listener, 5 for SST, then timeout
+        # NOTE: a threading.Event is not used otherwise we can't raise the
+        # AbortEvent exception to kill the thread
+        start = time.time()
+        while time.time() - start <= 15 and not converse.finished:
+            time.sleep(0.1)
+            if self.__response is not False:
+                if self.__response is None:
+                    # aborted externally (if None)
+                    self.log.debug("get_response aborted")
+                converse.finished = True
+                converse.response = self.__response  # external override
         self.converse = self.__original_converse
         return converse.response
 
@@ -854,11 +882,17 @@ class BaseSkill:
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
 
-    def _wait_response(self, is_cancel, validator, on_fail, num_retries):
+    def _handle_killed_wait_response(self):
+        self.__response = None
+        self.converse = self.__original_converse
+
+    @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
+                    callback=_handle_killed_wait_response, react_to_stop=True)
+    def _real_wait_response(self, is_cancel, validator, on_fail, num_retries):
         """Loop until a valid response is received from the user or the retry
         limit is reached.
 
-        Args:
+        Arguments:
             is_cancel (callable): function checking cancel criteria
             validator (callbale): function checking for a valid response
             on_fail (callable): function handling retries
@@ -871,31 +905,39 @@ class BaseSkill:
 
         num_fails = 0
         while True:
+            if self.__response is not False:
+                # usually None when aborted externally
+                # also allows overriding returned result from other events
+                return self.__response
+
             response = self.__get_response()
 
             if response is None:
                 # if nothing said, prompt one more time
                 num_none_fails = 1 if num_retries < 0 else num_retries
                 if num_fails >= num_none_fails:
-                    return None
+                    self.__response = None
+                    return
             else:
                 if validator(response):
-                    return response
+                    self.__response = response
+                    return
 
                 # catch user saying 'cancel'
                 if is_cancel(response):
-                    return None
+                    self.__response = None
+                    return
 
             num_fails += 1
-            if 0 < num_retries < num_fails:
-                return None
+            if 0 < num_retries < num_fails or self.__response is not False:
+                self.__response = None
+                return
 
             line = on_fail(response)
             if line:
                 self.speak(line, expect_response=True)
             else:
                 self.bus.emit(msg)
-    ## end TODO
 
     def ask_yesno(self, prompt, data=None):
         """Read prompt and wait for a yes/no answer
