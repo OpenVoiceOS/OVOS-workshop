@@ -25,7 +25,21 @@ from ovos_utils.log import LOG
 from ovos_workshop.skills.base import BaseSkill
 
 
-class MycroftSkill(BaseSkill):
+class _SkillMetaclass(type):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls, *args, **kwargs)
+        try:
+            from mycroft.skills import MycroftSkill as _CoreSkill
+            # inject reference to mycroft.skills class to allow isinstance checks to pass
+            instance.__bases__ = tuple([b for b in instance.__bases__] + [_CoreSkill])
+        except ImportError:
+            pass
+        return instance
+
+
+class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     """Base class for mycroft skills providing common behaviour and parameters
     to all Skill implementations.
 
@@ -37,7 +51,6 @@ class MycroftSkill(BaseSkill):
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all (DEPRECATED)
     """
-
     def __init__(self, name=None, bus=None, use_settings=True):
         super().__init__(name=name, bus=bus)
 
