@@ -38,6 +38,7 @@ from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventSchedulerInterface
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.gui import GUIInterface
+from ovos_utils.intents import ConverseTracker
 from ovos_utils.intents import Intent, IntentBuilder
 from ovos_utils.intents.intent_service_interface import munge_regex, munge_intent_parser, IntentServiceInterface
 from ovos_utils.log import LOG
@@ -526,6 +527,17 @@ class BaseSkill:
             self.gui.setup_default_handlers()
 
             self._register_public_api()
+
+            try:
+                from mycroft.version import OVOS_VERSION_STR
+            except ImportError:
+                # inject ovos exclusive features in vanila mycroft-core if possible
+
+                ## limited support for missing skill deactivated event
+                # TODO - update ConverseTracker
+                ConverseTracker.connect_bus(self.bus)  # pull/1468
+                self.add_event("converse.skill.deactivated",
+                               self._handle_skill_deactivated, speak_errors=False)
 
     def _register_public_api(self):
         """ Find and register api methods.
