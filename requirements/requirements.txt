@@ -1,4 +1,4 @@
-ovos-utils~=0.0, >=0.0.26a1
+ovos-utils~=0.0, >=0.0.27a5
 ovos_config~=0.0,>=0.0.4
 ovos-lingua-franca>=0.4.6a1
 
