@@ -1,48 +1,19 @@
 import re
 import time
 
-# ensure mycroft can be imported
-from ovos_utils import ensure_mycroft_import
+from ovos_utils.intents import IntentBuilder, Intent
 from ovos_utils.log import LOG
-from ovos_utils.messagebus import Message, dig_for_message, get_message_lang
-from ovos_utils.skills.settings import PrivateSettings
-
-ensure_mycroft_import()
-
+from ovos_utils.messagebus import Message, dig_for_message
 from ovos_utils.skills import get_non_properties
-from ovos_utils.intents import IntentBuilder, Intent, AdaptIntent
+from ovos_utils.skills.audioservice import AudioServiceInterface
+from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
-from ovos_workshop.patches.base_skill import MycroftSkill, FallbackSkill
+
 from ovos_workshop.decorators.killable import killable_event, \
-    AbortEvent, AbortQuestion
-from ovos_workshop.skills.layers import IntentLayers
+    AbortQuestion
 from ovos_workshop.resource_files import SkillResources
-from ovos_utils.dialog import get_dialog
-from ovos_utils.messagebus import create_wrapper
-from ovos_workshop.decorators import classproperty
-
-from dataclasses import dataclass
-
-
-@dataclass
-class SkillNetworkRequirements:
-    # to ensure backwards compatibility the default values require internet before skill loading
-    # skills in the wild may assume this behaviour and require network on initialization
-    # any ovos aware skills should change these as appropriate
-
-    # xxx_before_load is used by skills service
-    network_before_load: bool = True
-    internet_before_load: bool = True
-
-    # requires_xxx is currently purely informative and not consumed by core
-    # this allows a skill to spec if it needs connectivity to handle utterances
-    requires_internet: bool = True
-    requires_network: bool = True
-
-    # xxx_fallback is currently purely informative and not consumed by core
-    # this allows a skill to spec if it has a fallback for temporary offline events, eg, by having a cache
-    no_internet_fallback: bool = False
-    no_network_fallback: bool = False
+from ovos_workshop.skills.layers import IntentLayers
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
 
 
 class OVOSSkill(MycroftSkill):
@@ -55,13 +26,12 @@ class OVOSSkill(MycroftSkill):
     """
 
     def __init__(self, *args, **kwargs):
-        # loaded lang file resources
-        self._lang_resources = {}
         super(OVOSSkill, self).__init__(*args, **kwargs)
         self.private_settings = None
         self._threads = []
         self._original_converse = self.converse
         self.intent_layers = IntentLayers()
+        self.audio_service = None
 
     def bind(self, bus):
         super().bind(bus)
@@ -69,40 +39,22 @@ class OVOSSkill(MycroftSkill):
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
+            self.audio_service = AudioServiceInterface(self.bus)
 
-    @classproperty
-    def network_requirements(self):
-        """ skill developers should override this if they do not require connectivity
-
-         some examples:
-
-         IOT skill that controls skills via LAN could return:
-            scans_on_init = True
-            SkillNetworkRequirements(internet_before_load=False,
-                                     network_before_load=scans_on_init,
-                                     requires_internet=False,
-                                     requires_network=True,
-                                     no_internet_fallback=True,
-                                     no_network_fallback=False)
-
-         online search skill with a local cache:
-            has_cache = False
-            SkillNetworkRequirements(internet_before_load=not has_cache,
-                                     network_before_load=not has_cache,
-                                     requires_internet=True,
-                                     requires_network=True,
-                                     no_internet_fallback=True,
-                                     no_network_fallback=True)
-
-         a fully offline skill:
-            SkillNetworkRequirements(internet_before_load=False,
-                                     network_before_load=False,
-                                     requires_internet=False,
-                                     requires_network=False,
-                                     no_internet_fallback=True,
-                                     no_network_fallback=True)
+    # new public api, these are not available in MycroftSkill
+    def activate(self):
+        """Bump skill to active_skill list in intent_service.
+        This enables converse method to be called even without skill being
+        used in last 5 minutes.
         """
-        return SkillNetworkRequirements()
+        self._activate()
+
+    # method not present in mycroft-core
+    def deactivate(self):
+        """remove skill from active_skill list in intent_service.
+        This stops converse method from being called
+        """
+        self._deactivate()
 
     def play_audio(self, filename):
         try:
@@ -118,40 +70,24 @@ class OVOSSkill(MycroftSkill):
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
         play_audio(filename).wait()
 
-    # lang support
-
-    # new public api, these are private methods in ovos-core
-    # preference is given to ovos-core code to account for updates
-    # but most functionality is otherwise duplicated here
-    # simply with an underscore removed from the name
     @property
     def core_lang(self):
         """Get the configured default language."""
-        if hasattr(self, "_core_lang"):
-            return self._core_lang
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        return self.config_core.get("lang", "en-us").lower()
+        return self._core_lang
 
     @property
     def secondary_langs(self):
         """Get the configured secondary languages, mycroft is not
         considered to be in these languages but i will load it's resource
         files. This provides initial support for multilingual input"""
-        if hasattr(self, "_secondary_langs"):
-            return self._secondary_langs
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        return [l.lower() for l in self.config_core.get('secondary_langs', [])
-                if l != self.core_lang]
+        return self._secondary_langs
 
     @property
     def native_langs(self):
         """Languages natively supported by core
         ie, resource files available and explicitly supported
         """
-        if hasattr(self, "_native_langs"):
-            return self._native_langs
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        return [self.core_lang] + self.secondary_langs
+        return self._native_langs
 
     @property
     def alphanumeric_skill_id(self):
@@ -161,11 +97,7 @@ class OVOSSkill(MycroftSkill):
         Returns:
             (str) String of letters
         """
-        if hasattr(self, "_alphanumeric_skill_id"):
-            return self._alphanumeric_skill_id
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        return ''.join(c if c.isalnum() else '_'
-                       for c in str(self.skill_id))
+        return self._alphanumeric_skill_id
 
     @property
     def resources(self):
@@ -173,26 +105,15 @@ class OVOSSkill(MycroftSkill):
         a new instance is always created to ensure self.lang
         reflects the active language and not the default core language
         """
-        if hasattr(self, "_resources"):
-            return self._resources
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        return self.load_lang(self.root_dir, self.lang)
+        return self._resources
 
     def load_lang(self, root_directory=None, lang=None):
         """Instantiates a ResourceFileLocator instance when needed.
         a new instance is always created to ensure lang
         reflects the active language and not the default core language
         """
-        if hasattr(self, "_load_lang"):
-            return self._load_lang(root_directory, lang)
-        # reimplemented from ovos-core, means we are running in mycroft-core or older ovos version
-        lang = lang or self.lang
-        root_directory = root_directory or self.root_dir
-        if lang not in self._lang_resources:
-            self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
-        return self._lang_resources[lang]
+        return self._load_lang(root_directory, lang)
 
-    #
     def voc_match(self, *args, **kwargs):
         try:
             return super().voc_match(*args, **kwargs)
@@ -243,7 +164,7 @@ class OVOSSkill(MycroftSkill):
             elif Intent is not None and isinstance(intent_file, Intent):
                 name = intent_file.name
             else:
-                name = intent_file
+                name = f'{self.skill_id}:{intent_file}'
             self.intent_layers.update_layer(layer_name, [name])
 
     # killable_events support
@@ -271,18 +192,6 @@ class OVOSSkill(MycroftSkill):
 
         time.sleep(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
-
-    def __handle_stop(self, message):
-        self.bus.emit(message.forward(self.skill_id + ".stop",
-                                      context={"skill_id": self.skill_id}))
-        try:
-            if self.stop():
-                self.bus.emit(message.reply("mycroft.stop.handled",
-                                            {"by": "skill:" + self.skill_id},
-                                            {"skill_id": self.skill_id}))
-        except Exception as e:
-            LOG.exception(e)
-            LOG.error(f'Failed to stop skill: {self.skill_id}')
 
     # abort get_response gracefully
     def _wait_response(self, is_cancel, validator, on_fail, num_retries):
@@ -356,19 +265,8 @@ class OVOSSkill(MycroftSkill):
                                       context={"skill_id": self.skill_id}))
 
 
-class OVOSFallbackSkill(FallbackSkill, OVOSSkill):
-    """ monkey patched mycroft fallback skill """
-
-    def _register_decorated(self):
-        """Register all intent handlers that are decorated with an intent.
-
-        Looks for all functions that have been marked by a decorator
-        and read the intent data from them.  The intent handlers aren't the
-        only decorators used.  Skip properties as calling getattr on them
-        executes the code which may have unintended side-effects
-        """
-        super()._register_decorated()
-        for attr_name in get_non_properties(self):
-            method = getattr(self, attr_name)
-            if hasattr(method, 'fallback_priority'):
-                self.register_fallback(method, method.fallback_priority)
+# backwards compat alias, no functional difference
+class OVOSFallbackSkill(OVOSSkill):
+    def __new__(cls, *args, **kwargs):
+        from ovos_workshop.skills.fallback import FallbackSkill
+        return FallbackSkill(*args, **kwargs)
