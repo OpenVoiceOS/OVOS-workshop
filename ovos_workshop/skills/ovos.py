@@ -203,14 +203,48 @@ class OVOSSkill(MycroftSkill):
             on_fail (callable): function handling retries
 
         """
-        self._converse_response = False
+        self._response = False
         self._real_wait_response(is_cancel, validator, on_fail, num_retries)
-        while not self._converse_event.is_set():
+        while self._response is False:
             time.sleep(0.1)
-        return self._converse_response
+        return self._response
+
+    def __get_response(self):
+        """Helper to get a reponse from the user
+
+        Returns:
+            str: user's response or None on a timeout
+        """
+
+        def converse(utterances, lang=None):
+            converse.response = utterances[0] if utterances else None
+            converse.finished = True
+            return True
+
+        # install a temporary conversation handler
+        self.make_active()
+        converse.finished = False
+        converse.response = None
+        self.converse = converse
+
+        # 10 for listener, 5 for SST, then timeout
+        # NOTE a threading event is not used otherwise we can't raise the
+        # AbortEvent exception to kill the thread
+        start = time.time()
+        while time.time() - start <= 15 and not converse.finished:
+            time.sleep(0.1)
+            if self._response is not False:
+                if self._response is None:
+                    # aborted externally (if None)
+                    self.log.debug("get_response aborted")
+                converse.finished = True
+                converse.response = self._response  # external override
+        self.converse = self._original_converse
+        return converse.response
 
     def _handle_killed_wait_response(self):
-        self._converse_response = None
+        self._response = None
+        self.converse = self._original_converse
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
                     callback=_handle_killed_wait_response, react_to_stop=True)
@@ -226,10 +260,10 @@ class OVOSSkill(MycroftSkill):
         """
         num_fails = 0
         while True:
-            if self._converse_response is not False:
+            if self._response is not False:
                 # usually None when aborted externally
                 # also allows overriding returned result from other events
-                return self._converse_response
+                return self._response
 
             response = self.__get_response()
 
@@ -237,21 +271,21 @@ class OVOSSkill(MycroftSkill):
                 # if nothing said, prompt one more time
                 num_none_fails = 1 if num_retries < 0 else num_retries
                 if num_fails >= num_none_fails:
-                    self._converse_response = None
+                    self._response = None
                     return
             else:
                 if validator(response):
-                    self._converse_response = response
+                    self._response = response
                     return
 
                 # catch user saying 'cancel'
                 if is_cancel(response):
-                    self._converse_response = None
+                    self._response = None
                     return
 
             num_fails += 1
-            if 0 < num_retries < num_fails or self._converse_response is not False:
-                self._converse_response = None
+            if 0 < num_retries < num_fails or self._response is not False:
+                self._response = None
                 return
 
             line = on_fail(response)
