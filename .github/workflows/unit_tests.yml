@@ -51,7 +51,7 @@ jobs:
       - name: Install ovos workshop
         run: |
           pip install .
-          pip install git+https://github.com/OpenVoiceOS/OVOS-utils@feat/sync_utils_with_core
+          pip install git+https://github.com/OpenVoiceOS/ovos-utils@feat/sync_utils_with_core
       - name: Install test dependencies
         run: |
           sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
