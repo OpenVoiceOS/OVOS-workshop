@@ -700,6 +700,9 @@ class BaseSkill:
             msg.context["skill_id"] = self.skill_id
         self.bus.emit(msg.forward("intent.service.skills.activate",
                                   data={"skill_id": self.skill_id}))
+        # backwards compat with mycroft-core
+        self.bus.emit(msg.forward("active_skill_request",
+                                  data={"skill_id": self.skill_id}))
 
     # method not present in mycroft-core
     def _deactivate(self):

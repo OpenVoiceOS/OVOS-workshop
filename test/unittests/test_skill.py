@@ -7,11 +7,7 @@ from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from mycroft.skills.skill_loader import SkillLoader
 
-try:
-    from mycroft.version import OVOS_VERSION_STR
-    is_ovos = True
-except ImportError:
-    is_ovos = False
+from ovos_workshop.util import is_ovos
 
 
 class TestSkill(unittest.TestCase):
@@ -34,10 +30,14 @@ class TestSkill(unittest.TestCase):
     def test_skill_id(self):
         self.assertTrue(isinstance(self.skill.instance, OVOSSkill))
         self.assertTrue(isinstance(self.skill.instance, MycroftSkill))
-        self.assertTrue(isinstance(self.skill.instance, CoreSkill))
 
         self.assertEqual(self.skill.skill_id, "abort.test")
-        if is_ovos:
+
+        if is_ovos():
+            # the metaclass ensures this returns True under ovos-core
+            # but we have no control over mycroft-core so can not patch isinstance checks there
+            self.assertTrue(isinstance(self.skill.instance, CoreSkill))
+
             # if running in ovos-core every message will have the skill_id in context
             for msg in self.bus.emitted_msgs:
                 if msg["type"] == 'mycroft.skills.loaded': # emitted by SkillLoader, not by skill
@@ -73,7 +73,7 @@ class TestSkill(unittest.TestCase):
             self.assertTrue(event in registered_events)
 
         # base skill class events exclusive to ovos-core
-        if is_ovos:
+        if is_ovos():
             default_ovos = ["skill.converse.ping",
                             "skill.converse.request",
                             "intent.service.skills.activated",
