@@ -25,6 +25,7 @@ from itertools import chain
 from os.path import join, abspath, dirname, basename, isfile
 from threading import Event
 
+
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
@@ -240,11 +241,11 @@ class BaseSkill:
 
             # initialize anything that depends on skill_id
             self.log = LOG.create_logger(self.skill_id)
-            self._init_skill_gui()
             self._init_settings()
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
+            self._init_skill_gui()
             self._init_settings_manager()
             self.load_data_files()
             self._register_decorated()
@@ -285,8 +286,11 @@ class BaseSkill:
         try:
             from mycroft.gui import SkillGUI
             self.gui = SkillGUI(self)
+            self.gui.setup_default_handlers()
         except ImportError:
             self.gui = GUIInterface(self.skill_id)
+            if self.bus:
+                self.gui.set_bus(self.bus)
 
     # method not in mycroft-core
     def _init_settings_manager(self):
@@ -521,11 +525,6 @@ class BaseSkill:
             self.event_scheduler.set_bus(bus)
             self._enclosure.set_bus(bus)
             self._register_system_event_handlers()
-            # Initialize the SkillGui
-            if hasattr(self.gui, "set_bus"):
-                self.gui.set_bus(self.bus)
-            self.gui.setup_default_handlers()
-
             self._register_public_api()
 
             try:
@@ -1653,11 +1652,13 @@ class BaseSkill:
             self._settings_watchdog.shutdown()
 
         # Clear skill from gui
-        self.gui.shutdown()
+        if self.gui:
+            self.gui.shutdown()
 
         # removing events
-        self.event_scheduler.shutdown()
-        self.events.clear()
+        if self.event_scheduler:
+            self.event_scheduler.shutdown()
+            self.events.clear()
 
         try:
             self.stop()
