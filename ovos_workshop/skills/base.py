@@ -241,6 +241,7 @@ class BaseSkill:
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
+            self._init_settings_manager()
             self.load_data_files()
             self._register_decorated()
             self.register_resting_screen()
@@ -273,7 +274,6 @@ class BaseSkill:
                     self._settings[k] = v
         self._initial_settings = copy(self.settings)
 
-        self._init_settings_manager()
         self._start_filewatcher()
 
     # method not in mycroft-core
