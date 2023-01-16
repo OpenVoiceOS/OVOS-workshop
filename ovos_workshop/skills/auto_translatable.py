@@ -1,7 +1,14 @@
 from ovos_utils import get_handler_name
 from ovos_utils.log import LOG
-from ovos_utils.lang.translate import detect_lang, translate_text
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
+
+try:
+    # TODO: Below methods are not defined in ovos_utils
+    from ovos_utils.lang.translate import detect_lang, translate_text
+except ImportError as e:
+    detect_lang = None
+    translate_text = None
+    LOG.exception(e)
 
 
 class UniversalSkill(OVOSSkill):
@@ -15,13 +22,13 @@ class UniversalSkill(OVOSSkill):
 
     def detect_language(self, utterance):
         try:
-            return detect_lang(utterance)
+            return detect_lang(utterance) if detect_lang else None
         except:
             return self.lang.split("-")[0]
 
     def translate(self, text, lang=None):
         lang = lang or self.lang
-        translated = translate_text(text, lang)
+        translated = translate_text(text, lang) if translate_text else None
         LOG.info("translated " + text + " to " + translated)
         return translated
 
