@@ -103,7 +103,10 @@ class BaseSkill:
         bus (MycroftWebsocketClient): Optional bus connection
     """
 
-    def __init__(self, name=None, bus=None, resources_dir=None, settings=None, gui=None):
+    def __init__(self, name=None, bus=None, resources_dir=None, settings=None,
+                 gui=None, enable_settings_manager=True):
+
+        self._settings_manager_enabled = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -297,11 +300,12 @@ class BaseSkill:
 
     # method not in mycroft-core
     def _init_settings_manager(self):
-        try:
-            from mycroft.skills.settings import SkillSettingsManager
-            self.settings_manager = SkillSettingsManager(self)
-        except ImportError:
-            pass
+        if self._settings_manager_enabled:
+            try:
+                from mycroft.skills.settings import SkillSettingsManager
+                self.settings_manager = SkillSettingsManager(self)
+            except ImportError:
+                pass
 
     # method not present in mycroft-core
     def _start_filewatcher(self):
