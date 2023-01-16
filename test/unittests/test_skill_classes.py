@@ -1,4 +1,6 @@
 import unittest
+
+from ovos_workshop import OVOSAbstractApplication
 from ovos_workshop.decorators import classproperty
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.base import SkillNetworkRequirements
@@ -27,7 +29,34 @@ class LANSkill(OVOSSkill):
                                         no_network_fallback=False)
 
 
-class TestSkill(unittest.TestCase):
+class TestSkill(OVOSSkill):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class TestApplication(OVOSAbstractApplication):
+    def __init__(self, *args, **kwargs):
+        super().__init__(skill_id="Test Application", *args, **kwargs)
+
+
+class TestSkills(unittest.TestCase):
+
+    def test_settings_manager_init(self):
+        from ovos_utils.messagebus import FakeBus
+        bus = FakeBus()
+        skill_default = TestSkill(bus=bus)
+        skill_default._startup(bus)
+        from mycroft.skills.settings import SkillSettingsManager
+        self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
+
+        skill_disabled_settings = TestSkill(bus=bus,
+                                            enable_settings_manager=False)
+        skill_disabled_settings._startup(bus)
+        self.assertIsNone(skill_disabled_settings.settings_manager)
+
+        plugin = TestApplication(bus=bus)
+        plugin._startup(bus)
+        self.assertIsNone(plugin.settings_manager)
 
     def test_class_property(self):
         self.assertEqual(OfflineSkill.network_requirements,

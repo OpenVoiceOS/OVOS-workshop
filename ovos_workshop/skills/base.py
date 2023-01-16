@@ -106,7 +106,7 @@ class BaseSkill:
     def __init__(self, name=None, bus=None, resources_dir=None, settings=None,
                  gui=None, enable_settings_manager=True):
 
-        self._settings_manager_enabled = enable_settings_manager
+        self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -252,7 +252,8 @@ class BaseSkill:
             # initialize anything that depends on the messagebus
             self.bind(bus)
             self._init_skill_gui()
-            self._init_settings_manager()
+            if self._enable_settings_manager:
+                self._init_settings_manager()
             self.load_data_files()
             self._register_decorated()
             self.register_resting_screen()
@@ -300,12 +301,11 @@ class BaseSkill:
 
     # method not in mycroft-core
     def _init_settings_manager(self):
-        if self._settings_manager_enabled:
-            try:
-                from mycroft.skills.settings import SkillSettingsManager
-                self.settings_manager = SkillSettingsManager(self)
-            except ImportError:
-                pass
+        try:
+            from mycroft.skills.settings import SkillSettingsManager
+            self.settings_manager = SkillSettingsManager(self)
+        except ImportError:
+            pass
 
     # method not present in mycroft-core
     def _start_filewatcher(self):
