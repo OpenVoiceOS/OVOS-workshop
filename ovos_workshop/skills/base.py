@@ -103,7 +103,7 @@ class BaseSkill:
         bus (MycroftWebsocketClient): Optional bus connection
     """
 
-    def __init__(self, name=None, bus=None, resources_dir=None, settings=None,
+    def __init__(self, name=None, bus=None, resources_dir=None, settings: JsonStorage =None,
                  gui=None, enable_settings_manager=True):
 
         self._enable_settings_manager = enable_settings_manager
@@ -247,7 +247,10 @@ class BaseSkill:
 
             # initialize anything that depends on skill_id
             self.log = LOG.create_logger(self.skill_id)
-            self._init_settings()
+            if not self._settings or not isinstance(self._settings,
+                                                    JsonStorage):
+                LOG.debug(f"Initializing settings file")
+                self._init_settings()
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
