@@ -54,7 +54,7 @@ jobs:
       - name: Install test dependencies
         run: |
           sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
-# TODO: Update to pip spec after core PR is merged
+          # TODO: Update to pip spec after core PR is merged
           pip install git+https://github.com/OpenVoiceOS/ovos-core@refactor/skill_class_from_workshop
           pip install pytest pytest-timeout pytest-cov
       - name: Run unittests
