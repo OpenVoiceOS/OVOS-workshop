@@ -1,5 +1,6 @@
 import unittest
 
+from ovos_utils.log import LOG
 from ovos_workshop import OVOSAbstractApplication
 from ovos_workshop.decorators import classproperty
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -46,17 +47,21 @@ class TestSkills(unittest.TestCase):
         bus = FakeBus()
         skill_default = TestSkill(bus=bus)
         skill_default._startup(bus)
-        from mycroft.skills.settings import SkillSettingsManager
-        self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
+        try:
+            from mycroft.skills.settings import SkillSettingsManager
+            self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
 
-        skill_disabled_settings = TestSkill(bus=bus,
-                                            enable_settings_manager=False)
-        skill_disabled_settings._startup(bus)
-        self.assertIsNone(skill_disabled_settings.settings_manager)
+            skill_disabled_settings = TestSkill(bus=bus,
+                                                enable_settings_manager=False)
+            skill_disabled_settings._startup(bus)
+            self.assertIsNone(skill_disabled_settings.settings_manager)
 
-        plugin = TestApplication(bus=bus)
-        plugin._startup(bus)
-        self.assertIsNone(plugin.settings_manager)
+            plugin = TestApplication(bus=bus)
+            plugin._startup(bus)
+            self.assertIsNone(plugin.settings_manager)
+        except ImportError:
+            # This doesn't apply to `mycroft-core`, only `ovos-core`
+            LOG.info("Skipping settings manager test")
 
     def test_bus_setter(self):
         from ovos_utils.messagebus import FakeBus
