@@ -50,3 +50,6 @@ class TestApp(unittest.TestCase):
 
     def test_gui_init(self):
         self.assertEqual(self.app.gui, self.gui)
+
+    def test_settings_path(self):
+        self.assertIn("/apps/", self.app._settings_path)
