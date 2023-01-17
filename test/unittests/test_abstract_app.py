@@ -57,8 +57,8 @@ class TestApp(unittest.TestCase):
         # Test settings path conflicts
         test_app = OVOSAbstractApplication(skill_id="test")
         from ovos_workshop.skills import OVOSSkill, MycroftSkill
-        test_skill = OVOSSkill(name="test")
-        mycroft_skill = MycroftSkill(name="test")
+        test_skill = OVOSSkill()
+        mycroft_skill = MycroftSkill()
 
         test_app._startup(self.bus, "test")
         test_skill._startup(self.bus, "test")
@@ -69,13 +69,14 @@ class TestApp(unittest.TestCase):
         self.assertIn("/skills/", test_skill._settings_path)
         self.assertEqual(test_skill._settings_path,
                          mycroft_skill._settings_path)
+        self.assertEqual(test_skill.settings.path,
+                         mycroft_skill.settings.path)
+        self.assertEqual(test_skill.settings, mycroft_skill.settings)
 
         # Test settings changes
         test_skill.settings['is_skill'] = True
         test_app.settings['is_skill'] = False
         self.assertTrue(test_skill.settings['is_skill'])
-        mycroft_skill.settings.reload()
-        self.assertTrue(mycroft_skill.settings['is_skill'])
         self.assertFalse(test_app.settings['is_skill'])
 
         # Cleanup test files
