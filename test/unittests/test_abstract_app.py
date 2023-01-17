@@ -3,6 +3,7 @@ import unittest
 from os.path import join, dirname
 from os import remove
 
+from ovos_utils.gui import GUIInterface
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.app import OVOSAbstractApplication
 from json_database import JsonStorage
@@ -22,10 +23,12 @@ class TestApp(unittest.TestCase):
     settings_obj = JsonStorage(test_path, True)
     settings_obj.update(settings)
 
+    gui = GUIInterface("TestApplication")
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = Application(skill_id="TestApplication",
-                              settings=cls.settings_obj)
+                              settings=cls.settings_obj, gui=cls.gui)
         cls.app._startup(cls.bus)
 
     @classmethod
@@ -44,3 +47,6 @@ class TestApp(unittest.TestCase):
         app._startup(self.bus)
         self.assertNotEqual(app.settings, self.settings)
         self.assertFalse(app.settings['__mycroft_skill_firstrun'])
+
+    def test_gui_init(self):
+        self.assertEqual(self.app.gui, self.gui)

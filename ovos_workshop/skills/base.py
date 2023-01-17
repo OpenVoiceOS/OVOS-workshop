@@ -254,7 +254,8 @@ class BaseSkill:
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
-            self._init_skill_gui()
+            if not self.gui:
+                self._init_skill_gui()
             if self._enable_settings_manager:
                 self._init_settings_manager()
             self.load_data_files()
