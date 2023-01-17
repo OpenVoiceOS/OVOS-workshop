@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.9...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a1...HEAD)
+
+**Implemented enhancements:**
+
+- Get response from validated value [\#35](https://github.com/OpenVoiceOS/OVOS-workshop/pull/35) ([emphasize](https://github.com/emphasize))
+
+## [V0.0.10a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.10a1) (2022-12-15)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.9...V0.0.10a1)
 
 **Implemented enhancements:**
 
