@@ -1298,7 +1298,19 @@ class BaseSkill:
             handler (func): function to register with intent
         """
         # Default to the handler's function name if none given
+        is_anonymous = not intent_parser.name
         name = intent_parser.name or handler.__name__
+        if is_anonymous:
+            # Find a good name
+            original_name = name
+            nbr = 0
+            while name in self.intent_service.intent_names:
+                nbr += 1
+                name = f'{original_name}{nbr}'
+        elif name in self.intent_service.intent_names and \
+                not self.intent_service.intent_is_detached(name):
+            raise ValueError(f'The intent name {name} is already taken')
+
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
@@ -1389,7 +1401,7 @@ class BaseSkill:
         """Listener to enable a registered intent if it belongs to this skill.
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service:
+        for (name, _) in self.intent_service.detached_intents:
             if name == intent_name:
                 return self.enable_intent(intent_name)
 
@@ -1397,7 +1409,7 @@ class BaseSkill:
         """Listener to disable a registered intent if it belongs to this skill.
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service:
+        for (name, _) in self.intent_service.registered_intents:
             if name == intent_name:
                 return self.disable_intent(intent_name)
 
