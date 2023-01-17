@@ -1,5 +1,6 @@
 import unittest
 
+from unittest.mock import Mock
 from ovos_utils.fingerprinting import is_ovos
 from ovos_workshop import OVOSAbstractApplication
 from ovos_workshop.decorators import classproperty
@@ -93,3 +94,27 @@ class TestSkills(unittest.TestCase):
         self.assertEqual(OVOSSkill.network_requirements,
                          SkillNetworkRequirements()
                          )
+
+    def test_class_inheritance(self):
+        from ovos_workshop.skills.base import BaseSkill
+        from ovos_workshop.skills.ovos import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        from ovos_workshop.app import OVOSAbstractApplication
+
+        skill = TestSkill()
+        self.assertIsInstance(skill, BaseSkill)
+        self.assertIsInstance(skill, OVOSSkill)
+        self.assertIsInstance(skill, MycroftSkill)
+        self.assertNotIsInstance(skill, OVOSAbstractApplication)
+
+        app = TestApplication()
+        self.assertIsInstance(app, BaseSkill)
+        self.assertIsInstance(app, OVOSSkill)
+        self.assertIsInstance(app, MycroftSkill)
+        self.assertIsInstance(app, OVOSAbstractApplication)
+
+        mycroft_skill = MycroftSkill()
+        self.assertIsInstance(mycroft_skill, BaseSkill)
+        self.assertIsInstance(mycroft_skill, MycroftSkill)
+        self.assertNotIsInstance(mycroft_skill, OVOSSkill)
+        self.assertNotIsInstance(mycroft_skill, OVOSAbstractApplication)

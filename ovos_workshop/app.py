@@ -1,5 +1,6 @@
 from os.path import isdir, join
 
+from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.messagebus import get_mycroft_bus
 
 from ovos_workshop.resource_files import locate_lang_directories
@@ -20,6 +21,11 @@ class OVOSAbstractApplication(OVOSSkill):
             self._dedicated_bus = True
             bus = get_mycroft_bus()
         self._startup(bus, skill_id)
+
+    @property
+    def _settings_path(self):
+        return join(get_xdg_config_save_path(), 'apps', self.skill_id,
+                    'settings.json')
 
     def default_shutdown(self):
         self.clear_intents()
