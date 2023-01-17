@@ -58,6 +58,18 @@ class TestSkills(unittest.TestCase):
         plugin._startup(bus)
         self.assertIsNone(plugin.settings_manager)
 
+    def test_bus_setter(self):
+        from ovos_utils.messagebus import FakeBus
+        bus = FakeBus()
+        skill = TestSkill()
+        skill._startup(bus)
+        self.assertEqual(skill.bus, bus)
+        new_bus = FakeBus()
+        skill.bus = new_bus
+        self.assertEqual(skill.bus, new_bus)
+        with self.assertRaises(TypeError):
+            skill.bus = None
+
     def test_class_property(self):
         self.assertEqual(OfflineSkill.network_requirements,
                          SkillNetworkRequirements(internet_before_load=False,

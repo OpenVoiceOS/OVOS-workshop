@@ -412,6 +412,15 @@ class BaseSkill:
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.bus in __init__')
 
+    @bus.setter
+    def bus(self, value):
+        from mycroft_bus_client import MessageBusClient
+        from ovos_utils.messagebus import FakeBus
+        if isinstance(value, (MessageBusClient, FakeBus)):
+            self._bus = value
+        else:
+            raise TypeError(f"Expected a MessageBusClient, got: {type(value)}")
+
     @property
     def location(self):
         """Get the JSON data struction holding location information."""
