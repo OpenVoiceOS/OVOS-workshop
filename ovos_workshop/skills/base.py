@@ -952,14 +952,17 @@ class BaseSkill:
                     self.__response = None
                     return
             else:
-                if validator(response):
-                    self.__response = response
-                    return
-
                 # catch user saying 'cancel'
                 if is_cancel(response):
                     self.__response = None
                     return
+
+            validated = validator(response)
+            # returns the validated value or the response
+            # (backwards compat)
+            if validated is not False and validated is not None:
+                self._response = response if validated is True else validated
+                return
 
             num_fails += 1
             if 0 < num_retries < num_fails or self.__response is not False:
