@@ -103,7 +103,10 @@ class BaseSkill:
         bus (MycroftWebsocketClient): Optional bus connection
     """
 
-    def __init__(self, name=None, bus=None, resources_dir=None, settings=None, gui=None):
+    def __init__(self, name=None, bus=None, resources_dir=None, settings=None,
+                 gui=None, enable_settings_manager=True):
+
+        self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -249,7 +252,8 @@ class BaseSkill:
             # initialize anything that depends on the messagebus
             self.bind(bus)
             self._init_skill_gui()
-            self._init_settings_manager()
+            if self._enable_settings_manager:
+                self._init_settings_manager()
             self.load_data_files()
             self._register_decorated()
             self.register_resting_screen()
@@ -407,6 +411,15 @@ class BaseSkill:
                       'from __init__() to initialize() to correct this.')
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.bus in __init__')
+
+    @bus.setter
+    def bus(self, value):
+        from mycroft_bus_client import MessageBusClient
+        from ovos_utils.messagebus import FakeBus
+        if isinstance(value, (MessageBusClient, FakeBus)):
+            self._bus = value
+        else:
+            raise TypeError(f"Expected a MessageBusClient, got: {type(value)}")
 
     @property
     def location(self):

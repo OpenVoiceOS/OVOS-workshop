@@ -8,8 +8,10 @@ from ovos_workshop.skills.ovos import OVOSSkill
 
 class OVOSAbstractApplication(OVOSSkill):
     def __init__(self, skill_id, bus=None, resources_dir=None,
-                 lang=None, settings=None, gui=None):
-        super().__init__(bus=bus, gui=gui, settings=settings, resources_dir=resources_dir)
+                 lang=None, settings=None, gui=None, enable_settings_manager=False):
+        super().__init__(bus=bus, gui=gui, settings=settings,
+                         resources_dir=resources_dir,
+                         enable_settings_manager=enable_settings_manager)
         self.skill_id = skill_id
         self._dedicated_bus = False
         if bus:
