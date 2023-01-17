@@ -996,7 +996,7 @@ class BaseSkill:
                        one of those, including None
         """
         resp = self.get_response(dialog=prompt, data=data)
-        answer = yes_or_no(resp, lang=self.lang)
+        answer = yes_or_no(resp, lang=self.lang) if resp else resp
         if answer is True:
             return "yes"
         elif answer is False:
