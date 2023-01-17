@@ -15,6 +15,8 @@ class UniversalSkill(OVOSSkill):
     ''' Skill that auto translates input/output from any language '''
 
     def __init__(self, *args, **kwargs):
+        if not detect_lang and translate_text:
+            raise NotImplementedError("Translate methods not yet implemented")
         super().__init__(*args, **kwargs)
         self.input_lang = self.lang
         self.translate_keys = []
@@ -22,13 +24,13 @@ class UniversalSkill(OVOSSkill):
 
     def detect_language(self, utterance):
         try:
-            return detect_lang(utterance) if detect_lang else None
+            return detect_lang(utterance)
         except:
             return self.lang.split("-")[0]
 
     def translate(self, text, lang=None):
         lang = lang or self.lang
-        translated = translate_text(text, lang) if translate_text else None
+        translated = translate_text(text, lang)
         LOG.info("translated " + text + " to " + translated)
         return translated
 
