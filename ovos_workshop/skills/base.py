@@ -129,8 +129,8 @@ class BaseSkill:
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration()
 
-        self._settings = settings
-        self._initial_settings = {}
+        self._settings = None
+        self._initial_settings = settings or dict()
         self._settings_watchdog = None
 
         #: Set to register a callback method that will be called every time
@@ -248,12 +248,7 @@ class BaseSkill:
 
             # initialize anything that depends on skill_id
             self.log = LOG.create_logger(self.skill_id)
-            if self._settings and isinstance(self._settings, JsonStorage):
-                LOG.warning(f"Passing settings to __init__ is deprecated and"
-                            f"will be removed in an upcoming release")
-            else:
-                LOG.debug(f"Initializing settings file")
-                self._init_settings()
+            self._init_settings()
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
@@ -287,7 +282,8 @@ class BaseSkill:
         if self._initial_settings:
             # TODO make a debug log in next version
             LOG.warning("Copying default settings values defined in __init__ \n"
-                        "Please move code from __init__() to initialize() if you did not expect to see this message")
+                        "Please move code from __init__() to initialize() "
+                        "if you did not expect to see this message")
             for k, v in self._initial_settings.items():
                 if k not in self._settings:
                     self._settings[k] = v
