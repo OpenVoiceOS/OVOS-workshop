@@ -1,13 +1,13 @@
 import json
 import unittest
+
+from ovos_utils.fingerprinting import is_ovos
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from mycroft.skills.skill_loader import SkillLoader
-
-from ovos_workshop.util import is_ovos
 
 
 class TestSkill(unittest.TestCase):
