@@ -24,7 +24,7 @@ from adapt.intent import IntentBuilder
 from ovos_config.config import Configuration
 from mycroft_bus_client import Message
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
-from test.util import base_config
+from .mocks import base_config
 
 BASE_CONF = base_config()
 
