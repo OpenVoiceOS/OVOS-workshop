@@ -14,7 +14,6 @@
 #
 """Handling of skill data such as intents and regular expressions."""
 import os
-import random
 import re
 from collections import namedtuple
 from os import walk

@@ -26,7 +26,7 @@ implementation details defined within the skill that uses this as a base class.
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message
 
-from ovos_workshop.patches.base_skill import MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
 
 
 class IdleDisplaySkill(MycroftSkill):

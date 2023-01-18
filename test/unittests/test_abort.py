@@ -6,11 +6,7 @@ from time import sleep
 from mycroft.skills.skill_loader import SkillLoader
 from ovos_utils.messagebus import FakeBus, Message
 
-try:
-    from mycroft.version import OVOS_VERSION_STR
-    is_ovos = True
-except ImportError:
-    is_ovos = False
+from ovos_utils.fingerprinting import is_ovos
 
 
 class TestKillableIntents(unittest.TestCase):
@@ -38,15 +34,10 @@ class TestKillableIntents(unittest.TestCase):
         # check that intent triggered
         start_msg = {'type': 'mycroft.skill.handler.start',
                      'data': {'name': 'KillableSkill.handle_test_abort_intent'}}
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'still here', 'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'still here', 'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'still here', 'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
         self.assertIn(start_msg, self.bus.emitted_msgs)
         self.assertIn(speak_msg, self.bus.emitted_msgs)
         self.assertTrue(self.skill.instance.my_special_var == "changed")
@@ -66,15 +57,10 @@ class TestKillableIntents(unittest.TestCase):
         self.assertIn(tts_stop, self.bus.emitted_msgs)
 
         # check that cleanup callback was called
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'I am dead', 'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
         self.assertIn(speak_msg, self.bus.emitted_msgs)
         self.assertTrue(self.skill.instance.my_special_var == "default")
 
@@ -92,14 +78,9 @@ class TestKillableIntents(unittest.TestCase):
         # check that intent triggered
         start_msg = {'type': 'mycroft.skill.handler.start',
                      'data': {'name': 'KillableSkill.handle_test_abort_intent'}}
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'still here', 'expect_response': False,
-                                  'meta': {'skill': 'abort.test'}, 'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'still here', 'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'still here', 'expect_response': False,
+                              'meta': {'skill': 'abort.test'}, 'lang': 'en-us'}}
         self.assertIn(start_msg, self.bus.emitted_msgs)
         self.assertIn(speak_msg, self.bus.emitted_msgs)
         self.assertTrue(self.skill.instance.my_special_var == "changed")
@@ -118,15 +99,10 @@ class TestKillableIntents(unittest.TestCase):
         self.assertIn(tts_stop, self.bus.emitted_msgs)
 
         # check that cleanup callback was called
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'I am dead', 'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
 
         self.assertIn(speak_msg, self.bus.emitted_msgs)
         self.assertTrue(self.skill.instance.my_special_var == "default")
@@ -146,18 +122,14 @@ class TestKillableIntents(unittest.TestCase):
         # check that intent triggered
         start_msg = {'type': 'mycroft.skill.handler.start',
                      'data': {'name': 'KillableSkill.handle_test_get_response_intent'}}
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'this is a question',
-                                  'expect_response': True,
-                                  'meta': {'dialog': 'question', 'data': {}, 'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'this is a question',
+                              'expect_response': True,
+                              'meta': {'dialog': 'question', 'data': {}, 'skill': 'abort.test'},
+                              'lang': 'en-us'}}
+        if is_ovos():
             activate_msg = {'type': 'intent.service.skills.activate', 'data': {'skill_id': 'abort.test'}}
         else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'this is a question',
-                                  'expect_response': True,
-                                  'meta': {'dialog': 'question', 'data': {}, 'skill': 'KillableSkill'}}}
             activate_msg = {'type': 'active_skill_request', 'data': {'skill_id': 'abort.test'}}
 
         self.assertIn(start_msg, self.bus.emitted_msgs)
@@ -174,17 +146,11 @@ class TestKillableIntents(unittest.TestCase):
         self.assertFalse(self.skill.instance.stop_called)
 
         # check that speak message after get_response loop was spoken
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'question aborted',
-                                  'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'question aborted',
-                                  'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'question aborted',
+                              'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
         self.assertIn(speak_msg, self.bus.emitted_msgs)
 
     def test_developer_stop_msg(self):
@@ -197,17 +163,11 @@ class TestKillableIntents(unittest.TestCase):
         # check that intent triggered
         start_msg = {'type': 'mycroft.skill.handler.start',
                      'data': {'name': 'KillableSkill.handle_test_msg_intent'}}
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': "you can't abort me",
-                                  'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': "you can't abort me",
-                                  'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': "you can't abort me",
+                              'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
         self.assertIn(start_msg, self.bus.emitted_msgs)
         self.assertIn(speak_msg, self.bus.emitted_msgs)
 
@@ -233,15 +193,10 @@ class TestKillableIntents(unittest.TestCase):
         self.assertIn(tts_stop, self.bus.emitted_msgs)
 
         # check that cleanup callback was called
-        if is_ovos:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'abort.test'},
-                                  'lang': 'en-us'}}
-        else:
-            speak_msg = {'type': 'speak',
-                         'data': {'utterance': 'I am dead', 'expect_response': False,
-                                  'meta': {'skill': 'KillableSkill'}}}
+        speak_msg = {'type': 'speak',
+                     'data': {'utterance': 'I am dead', 'expect_response': False,
+                              'meta': {'skill': 'abort.test'},
+                              'lang': 'en-us'}}
         self.assertIn(speak_msg, self.bus.emitted_msgs)
         self.assertTrue(self.skill.instance.my_special_var == "default")
 

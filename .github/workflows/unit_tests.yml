@@ -54,8 +54,9 @@ jobs:
       - name: Install test dependencies
         run: |
           sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
-          pip install ovos-core[skills_lgpl]>=0.0.4a44
-          pip install pytest pytest-timeout pytest-cov
+          # TODO: Update to pip spec after core PR is merged
+          pip install git+https://github.com/OpenVoiceOS/ovos-core@refactor/skill_class_from_workshop
+          pip install pytest pytest-timeout pytest-cov adapt-parser~=0.5
       - name: Run unittests
         run: |
           pytest --cov=ovos_workshop --cov-report xml test/unittests
@@ -65,7 +66,9 @@ jobs:
       - name: Replace ovos-core with mycroft-core
         run: |
           pip uninstall ovos-core -y
+          pip uninstall ovos-lingua-franca -y
           pip install git+https://github.com/MycroftAI/mycroft-core
+          pip install .
       - name: Run mycroft unittests
         run: |
           pytest --cov-append --cov=ovos_workshop --cov-report xml test/unittests
