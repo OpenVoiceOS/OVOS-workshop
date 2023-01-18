@@ -22,7 +22,7 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
 
 from ovos_workshop.skills.base import BaseSkill
-from ovos_workshop.util import is_ovos
+from ovos_utils.fingerprinting import is_ovos
 
 
 class _SkillMetaclass(ABCMeta):

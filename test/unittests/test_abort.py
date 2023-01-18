@@ -6,7 +6,7 @@ from time import sleep
 from mycroft.skills.skill_loader import SkillLoader
 from ovos_utils.messagebus import FakeBus, Message
 
-from ovos_workshop.util import is_ovos
+from ovos_utils.fingerprinting import is_ovos
 
 
 class TestKillableIntents(unittest.TestCase):
