@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a1...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a2...HEAD)
+
+**Merged pull requests:**
+
+- refactor the old patches module [\#34](https://github.com/OpenVoiceOS/OVOS-workshop/pull/34) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.10a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.10a2) (2023-01-17)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a1...V0.0.10a2)
 
 **Implemented enhancements:**
 
