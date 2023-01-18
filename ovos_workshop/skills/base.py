@@ -968,7 +968,7 @@ class BaseSkill:
             # returns the validated value or the response
             # (backwards compat)
             if validated is not False and validated is not None:
-                self._response = response if validated is True else validated
+                self.__response = response if validated is True else validated
                 return
 
             num_fails += 1
