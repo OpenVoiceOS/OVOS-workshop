@@ -229,7 +229,7 @@ class TestMycroftSkill(unittest.TestCase):
                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
-    @pytest.skip
+    @pytest.mark.skip
     def test_register_decorators(self):
         """ Test decorated intents """
         path_orig = sys.path
