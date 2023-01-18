@@ -99,6 +99,7 @@ class TestSkills(unittest.TestCase):
         from ovos_workshop.skills.base import BaseSkill
         from ovos_workshop.skills.ovos import OVOSSkill
         from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        from ovos_workshop.skills.fallback import FallbackSkill
         from ovos_workshop.app import OVOSAbstractApplication
 
         skill = TestSkill()
@@ -118,3 +119,10 @@ class TestSkills(unittest.TestCase):
         self.assertIsInstance(mycroft_skill, MycroftSkill)
         self.assertNotIsInstance(mycroft_skill, OVOSSkill)
         self.assertNotIsInstance(mycroft_skill, OVOSAbstractApplication)
+
+        fallback = FallbackSkill("test")
+        self.assertIsInstance(fallback, BaseSkill)
+        self.assertIsInstance(fallback, OVOSSkill)
+        self.assertIsInstance(fallback, MycroftSkill)
+        self.assertIsInstance(fallback, FallbackSkill)
+        self.assertNotIsInstance(fallback, OVOSAbstractApplication)
