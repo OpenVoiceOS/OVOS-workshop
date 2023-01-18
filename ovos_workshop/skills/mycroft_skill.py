@@ -33,7 +33,7 @@ class _SkillMetaclass(ABCMeta):
             # instance imported from vanilla mycroft
             try:
                 from mycroft.skills import MycroftSkill as _CoreSkill
-                if isinstance(instance, _CoreSkill):
+                if issubclass(instance.__class__, _CoreSkill):
                     return True
             except ImportError:
                 # not running in core - standalone skill
