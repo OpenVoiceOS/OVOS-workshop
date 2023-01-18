@@ -10,7 +10,7 @@ from lingua_franca import load_language
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from mycroft_bus_client import Message
 
-from test.unittests.mocks import base_config, AnyCallable
+from .mocks import base_config, AnyCallable
 
 
 load_language("en-us")
