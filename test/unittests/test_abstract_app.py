@@ -31,15 +31,13 @@ class TestApp(unittest.TestCase):
                               settings=cls.settings_obj, gui=cls.gui)
         cls.app._startup(cls.bus)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        remove(cls.test_path)
-
     def test_settings_init(self):
-        self.assertEqual(self.app.settings, self.settings_obj)
+        self.assertNotEqual(self.app.settings, self.settings_obj)
         self.assertFalse(self.app.settings['__mycroft_skill_firstrun'])
+        self.assertTrue(self.app.settings['test'])
+        self.assertFalse(self.app.settings['updated'])
         self.settings_obj['updated'] = True
-        self.assertEqual(self.app.settings, self.settings_obj)
+        self.assertFalse(self.app.settings['updated'])
 
     def test_settings_init_invalid_arg(self):
         app = Application(skill_id="TestApplication",

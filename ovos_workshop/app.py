@@ -2,6 +2,7 @@ from os.path import isdir, join
 
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.messagebus import get_mycroft_bus
+from ovos_utils.log import LOG
 
 from ovos_workshop.resource_files import locate_lang_directories
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -10,8 +11,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 class OVOSAbstractApplication(OVOSSkill):
     def __init__(self, skill_id, bus=None, resources_dir=None,
                  lang=None, settings=None, gui=None, enable_settings_manager=False):
-        super().__init__(bus=bus, gui=gui, settings=settings,
-                         resources_dir=resources_dir,
+        super().__init__(bus=bus, gui=gui, resources_dir=resources_dir,
                          enable_settings_manager=enable_settings_manager)
         self.skill_id = skill_id
         self._dedicated_bus = False
@@ -21,6 +21,10 @@ class OVOSAbstractApplication(OVOSSkill):
             self._dedicated_bus = True
             bus = get_mycroft_bus()
         self._startup(bus, skill_id)
+        if settings:
+            LOG.warning("settings arg is deprecated and will be removed "
+                        "in a future release")
+            self.settings.merge(settings)
 
     @property
     def _settings_path(self):
