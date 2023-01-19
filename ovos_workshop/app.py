@@ -13,10 +13,6 @@ class OVOSAbstractApplication(OVOSSkill):
                  lang=None, settings=None, gui=None, enable_settings_manager=False):
         super().__init__(bus=bus, gui=gui, resources_dir=resources_dir,
                          enable_settings_manager=enable_settings_manager)
-        if settings:
-            LOG.warning("settings arg is deprecated and will be removed "
-                        "in a future release")
-            self.settings.merge(settings)
         self.skill_id = skill_id
         self._dedicated_bus = False
         if bus:
@@ -25,6 +21,10 @@ class OVOSAbstractApplication(OVOSSkill):
             self._dedicated_bus = True
             bus = get_mycroft_bus()
         self._startup(bus, skill_id)
+        if settings:
+            LOG.warning("settings arg is deprecated and will be removed "
+                        "in a future release")
+            self.settings.merge(settings)
 
     @property
     def _settings_path(self):
