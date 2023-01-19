@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a2...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a3...HEAD)
+
+**Merged pull requests:**
+
+- Deprecate Application-managed `settings` [\#43](https://github.com/OpenVoiceOS/OVOS-workshop/pull/43) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.10a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.10a3) (2023-01-18)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a2...V0.0.10a3)
 
 **Merged pull requests:**
 
