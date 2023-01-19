@@ -31,9 +31,6 @@ class TestApp(unittest.TestCase):
                               settings=cls.settings_obj, gui=cls.gui)
         cls.app._startup(cls.bus)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        remove(cls.test_path)
 
     def test_settings_init(self):
         self.assertEqual(self.app.settings, self.settings_obj)
