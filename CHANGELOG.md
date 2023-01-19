@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a3...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a4...HEAD)
+
+**Fixed bugs:**
+
+- Fix message context handling in `__handle_stop` [\#44](https://github.com/OpenVoiceOS/OVOS-workshop/pull/44) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.10a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.10a4) (2023-01-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a3...V0.0.10a4)
 
 **Merged pull requests:**
 
