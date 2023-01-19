@@ -1,5 +1,8 @@
 import json
 import unittest
+from unittest.mock import Mock
+
+from mycroft_bus_client import Message
 
 from ovos_utils.fingerprinting import is_ovos
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -82,6 +85,20 @@ class TestSkill(unittest.TestCase):
                             f"{self.skill.skill_id}.deactivate"]
             for event in default_ovos:
                 self.assertTrue(event in registered_events)
+
+    def test_stop(self):
+        skill = self.skill.instance
+        handle_stop = Mock()
+        real_stop = skill.stop
+        skill.stop = Mock()
+        self.bus.once(f"{self.skill.skill_id}.stop", handle_stop)
+        self.bus.emit(Message("mycroft.stop"))
+        handle_stop.assert_called_once()
+        self.assertEqual(handle_stop.call_args[0][0].context['skill_id'],
+                         skill.skill_id)
+        skill.stop.assert_called_once()
+
+        skill.stop = real_stop
 
     def tearDown(self) -> None:
         self.skill.unload()

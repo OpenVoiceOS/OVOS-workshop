@@ -1652,8 +1652,8 @@ class BaseSkill:
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
-        self.bus.emit(message.forward(self.skill_id + ".stop",
-                                      context={"skill_id": self.skill_id}))
+        message.context['skill_id'] = self.skill_id
+        self.bus.emit(message.forward(self.skill_id + ".stop"))
         try:
             if self.stop():
                 self.bus.emit(message.reply("mycroft.stop.handled",
