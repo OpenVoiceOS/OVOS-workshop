@@ -34,7 +34,6 @@ class TestApp(unittest.TestCase):
     def test_settings_init(self):
         self.assertNotEqual(self.app.settings, self.settings_obj)
         self.assertFalse(self.app.settings['__mycroft_skill_firstrun'])
-        self.app.settings.update(self.settings)
         self.assertTrue(self.app.settings['test'])
         self.assertFalse(self.app.settings['updated'])
         self.settings_obj['updated'] = True

@@ -11,11 +11,12 @@ from ovos_workshop.skills.ovos import OVOSSkill
 class OVOSAbstractApplication(OVOSSkill):
     def __init__(self, skill_id, bus=None, resources_dir=None,
                  lang=None, settings=None, gui=None, enable_settings_manager=False):
-        if settings:
-            LOG.error("settings arg is deprecated and will be ignored. You may"
-                      "update settings after Application init")
         super().__init__(bus=bus, gui=gui, resources_dir=resources_dir,
                          enable_settings_manager=enable_settings_manager)
+        if settings:
+            LOG.warning("settings arg is deprecated and will be removed "
+                        "in a future release")
+            self.settings.merge(settings)
         self.skill_id = skill_id
         self._dedicated_bus = False
         if bus:
