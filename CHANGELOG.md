@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a5...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a6...HEAD)
+
+**Merged pull requests:**
+
+- Update ovos-core ref in unit tests [\#46](https://github.com/OpenVoiceOS/OVOS-workshop/pull/46) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.10a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.10a6) (2023-01-24)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10a5...V0.0.10a6)
 
 **Merged pull requests:**
 
