@@ -365,7 +365,7 @@ class BaseSkill:
             return
         # ensure self._settings remains a JsonDatabase
         self._settings.clear()  # clear data
-        self._settings.merge(val)  # merge new data
+        self._settings.merge(val, skip_empty=False)  # merge new data
 
     # not a property in mycroft-core
     @property
