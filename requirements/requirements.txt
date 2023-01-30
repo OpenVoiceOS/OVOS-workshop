@@ -1,5 +1,5 @@
-ovos-utils~=0.0.27
-ovos_config~=0.0.4
+ovos-utils~=0.0,>=0.0.27
+ovos_config~=0.0,>=0.0.4
 ovos-lingua-franca~=0.4,>=0.4.6
 
 # optional but improves fuzzy matching and silences logs
