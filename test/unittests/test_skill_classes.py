@@ -1,11 +1,11 @@
 import unittest
 
 from unittest.mock import Mock
-from ovos_utils.fingerprinting import is_ovos
 from ovos_workshop import OVOSAbstractApplication
 from ovos_workshop.decorators import classproperty
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.base import SkillNetworkRequirements
+from ovos_workshop.skills.mycroft_skill import is_classic_core
 
 
 class OfflineSkill(OVOSSkill):
@@ -49,7 +49,7 @@ class TestSkills(unittest.TestCase):
         skill_default = TestSkill(bus=bus)
         skill_default._startup(bus)
         # This doesn't apply to `mycroft-core`, only `ovos-core`
-        if is_ovos():
+        if not is_classic_core():
             from mycroft.skills.settings import SkillSettingsManager
             self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
 
