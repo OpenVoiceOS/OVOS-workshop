@@ -6,7 +6,7 @@ from time import sleep
 from mycroft.skills.skill_loader import SkillLoader
 from ovos_utils.messagebus import FakeBus, Message
 
-from ovos_utils.fingerprinting import is_ovos
+from ovos_workshop.skills.mycroft_skill import is_classic_core
 
 
 class TestKillableIntents(unittest.TestCase):
@@ -127,7 +127,7 @@ class TestKillableIntents(unittest.TestCase):
                               'expect_response': True,
                               'meta': {'dialog': 'question', 'data': {}, 'skill': 'abort.test'},
                               'lang': 'en-us'}}
-        if is_ovos():
+        if not is_classic_core():
             activate_msg = {'type': 'intent.service.skills.activate', 'data': {'skill_id': 'abort.test'}}
         else:
             activate_msg = {'type': 'active_skill_request', 'data': {'skill_id': 'abort.test'}}

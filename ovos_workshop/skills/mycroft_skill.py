@@ -22,14 +22,22 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
 
 from ovos_workshop.skills.base import BaseSkill
-from ovos_utils.fingerprinting import is_ovos
+
+
+def is_classic_core():
+    """ Check if the current core is the classic mycroft-core """
+    try:
+        from mycroft.version import OVOS_VERSION_STR
+        return False
+    except ImportError:
+        return True
 
 
 class _SkillMetaclass(ABCMeta):
     """ To override isinstance checks we need to use a metaclass """
 
     def __instancecheck__(self, instance):
-        if not is_ovos():
+        if is_classic_core():
             # instance imported from vanilla mycroft
             try:
                 from mycroft.skills import MycroftSkill as _CoreSkill
@@ -72,7 +80,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         if use_settings is False:
             LOG.warning("use_settings has been deprecated! skill settings are always enabled")
 
-        if not is_ovos():
+        if is_classic_core():
             self.settings_write_path = self.root_dir
 
     def _init_settings_manager(self):
@@ -115,7 +123,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     def _on_event_end(self, message, handler_info, skill_data):
         """Store settings and indicate that the skill handler has completed
         """
-        if is_ovos():
+        if not is_classic_core():
             return super()._on_event_end(message, handler_info, skill_data)
 
         # mycroft-core style settings

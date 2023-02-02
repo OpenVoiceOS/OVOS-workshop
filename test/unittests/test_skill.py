@@ -4,9 +4,8 @@ from unittest.mock import Mock
 
 from mycroft_bus_client import Message
 
-from ovos_utils.fingerprinting import is_ovos
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
@@ -36,7 +35,7 @@ class TestSkill(unittest.TestCase):
 
         self.assertEqual(self.skill.skill_id, "abort.test")
 
-        if is_ovos():
+        if not is_classic_core():
             # the metaclass ensures this returns True under ovos-core
             # but we have no control over mycroft-core so can not patch isinstance checks there
             self.assertTrue(isinstance(self.skill.instance, CoreSkill))
@@ -76,7 +75,7 @@ class TestSkill(unittest.TestCase):
             self.assertTrue(event in registered_events)
 
         # base skill class events exclusive to ovos-core
-        if is_ovos():
+        if not is_classic_core():
             default_ovos = ["skill.converse.ping",
                             "skill.converse.request",
                             "intent.service.skills.activated",
