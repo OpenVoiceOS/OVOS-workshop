@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a2...HEAD)
+
+**Fixed bugs:**
+
+- replace is\_ovos with is\_classic\_core [\#48](https://github.com/OpenVoiceOS/OVOS-workshop/pull/48) ([AIIX](https://github.com/AIIX))
+
+## [V0.0.11a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a2) (2023-01-30)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a1...V0.0.11a2)
+
 ## [V0.0.11a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a1) (2023-01-28)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.10...V0.0.11a1)
