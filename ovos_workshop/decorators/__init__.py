@@ -1,9 +1,9 @@
-from ovos_workshop.decorators.killable import \
-    killable_intent, killable_event
+from ovos_workshop.decorators.killable import killable_intent, killable_event
 from ovos_workshop.decorators.layers import enables_layer, \
     disables_layer, layer_intent, removes_layer, resets_layers, replaces_layer
 from ovos_workshop.decorators.converse import converse_handler
 from ovos_workshop.decorators.fallback_handler import fallback_handler
+from ovos_utils import classproperty
 try:
     from ovos_workshop.decorators.ocp import ocp_next, ocp_play, ocp_pause, ocp_resume, ocp_search, ocp_previous, ocp_featured_media
 except ImportError:
@@ -25,9 +25,3 @@ def resting_screen_handler(name):
 
     return real_decorator
 
-
-class classproperty(property):
-    """Decorator for a Class-level property.
-    Credit to Denis Rhyzhkov on Stackoverflow: https://stackoverflow.com/a/13624858/1280629"""
-    def __get__(self, owner_self, owner_cls):
-        return self.fget(owner_cls)
