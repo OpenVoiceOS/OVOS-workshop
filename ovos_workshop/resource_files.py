@@ -268,6 +268,10 @@ class ResourceFile:
 class QmlFile(ResourceFile):
     def _locate(self):
         """ QML files are special because we do not want to walk the directory """
+        config = Configuration()
+        enclosure_config = config.get("gui") or {}
+        qt_version_target = enclosure_config.get("qt_version", 5)
+
         file_path = None
         if self.resource_name.endswith(self.resource_type.file_extension):
             file_name = self.resource_name
@@ -295,6 +299,12 @@ class QmlFile(ResourceFile):
 
         if file_path is None:
             LOG.error(f"Could not find resource file {file_name}")
+
+        # Will be used to load the correct UI file for the target Qt version
+        # TODO: Remove this when we drop Qt5 support
+        if qt_version_target == 6:
+            if "ui/" in str(file_path):
+                file_path = Path(str(file_path).replace("ui/", "ui6/"))
 
         return file_path
 
