@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a3...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a4...HEAD)
+
+**Fixed bugs:**
+
+- allow skills to bump workshop and still work in core \< 0.0.7 [\#51](https://github.com/OpenVoiceOS/OVOS-workshop/pull/51) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.11a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a4) (2023-02-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a3...V0.0.11a4)
 
 **Merged pull requests:**
 
