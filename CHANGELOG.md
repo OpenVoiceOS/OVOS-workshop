@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a2...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a3...HEAD)
+
+**Merged pull requests:**
+
+- feat/generalize runtime requirements [\#49](https://github.com/OpenVoiceOS/OVOS-workshop/pull/49) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.11a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a3) (2023-02-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a2...V0.0.11a3)
 
 **Fixed bugs:**
 
