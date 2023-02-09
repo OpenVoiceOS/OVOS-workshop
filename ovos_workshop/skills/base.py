@@ -182,6 +182,12 @@ class BaseSkill:
         """
         return RuntimeRequirements()
 
+    @classproperty
+    def network_requirements(self):
+        LOG.warning("network_requirements renamed to runtime_requirements, "
+                    "will be removed in ovos-core 0.0.8")
+        return self.runtime_requirements
+
     # property not present in mycroft-core
     @property
     def _is_fully_initialized(self):
