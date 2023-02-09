@@ -58,6 +58,14 @@ from ovos_workshop.resource_files import ResourceFile, \
 from ovos_utils.process_utils import RuntimeRequirements
 
 
+# backwards compat alias
+class SkillNetworkRequirements(RuntimeRequirements):
+    def __init__(self, *args, **kwargs):
+        LOG.warning("SkillNetworkRequirements has been renamed to RuntimeRequirements\n"
+                    "from ovos_utils.process_utils import RuntimeRequirements")
+        super().__init__(*args, **kwargs)
+
+
 def simple_trace(stack_trace):
     """Generate a simplified traceback.
 
