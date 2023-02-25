@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a4...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a5...HEAD)
+
+**Merged pull requests:**
+
+- Update ovos\_utils dependency to stable release [\#52](https://github.com/OpenVoiceOS/OVOS-workshop/pull/52) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.11a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a5) (2023-02-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a4...V0.0.11a5)
 
 **Fixed bugs:**
 
