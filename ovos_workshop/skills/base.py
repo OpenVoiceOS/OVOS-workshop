@@ -133,7 +133,7 @@ class BaseSkill:
         self.reload_skill = True  #: allow reloading (default True)
 
         self.events = EventContainer(bus)
-        self.voc_match_cache = {}
+        self._voc_cache = {}
 
         # loaded lang file resources
         self._lang_resources = {}
@@ -1047,6 +1047,30 @@ class BaseSkill:
                 resp = match
         return resp
 
+    # method not present in mycroft-core
+    def voc_list(self, voc_filename, lang=None):
+        """
+        Get vocabulary list and cache the results
+
+        Args:
+            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
+                                'res/text/en-us/yes.voc')
+            lang (str): Language code, defaults to self.lang
+
+        Returns:
+            list: List of vocabulary found in voc_filename
+        """
+        lang = lang or self.lang
+        cache_key = lang + voc_filename
+
+        if cache_key not in self._voc_cache:    
+            vocab = self._resources.load_vocabulary_file(voc_filename) or \
+                    CoreResources(lang).load_vocabulary_file(voc_filename)
+            if vocab:
+                self._voc_cache[cache_key] = list(chain(*vocab))
+        
+        return self._voc_cache.get(cache_key) or []
+
     def voc_match(self, utt, voc_filename, lang=None, exact=False):
         """Determine if the given utterance contains the vocabulary provided.
 
@@ -1070,21 +1094,17 @@ class BaseSkill:
             bool: True if the utterance has the given vocabulary it
         """
         match = False
-        lang = lang or self.lang
-        cache_key = lang + voc_filename
-        if cache_key not in self.voc_match_cache:
-            vocab = self._resources.load_vocabulary_file(voc_filename) or \
-                    CoreResources(lang).load_vocabulary_file(voc_filename)
-            self.voc_match_cache[cache_key] = list(chain(*vocab))
-        if utt:
+        _vocs = self.voc_list(voc_filename, lang)
+
+        if utt and _vocs:
             if exact:
                 # Check for exact match
                 match = any(i.strip() == utt
-                            for i in self.voc_match_cache[cache_key])
+                            for i in _vocs)
             else:
                 # Check for matches against complete words
                 match = any([re.match(r'.*\b' + i + r'\b.*', utt)
-                             for i in self.voc_match_cache[cache_key]])
+                             for i in _vocs])
 
         return match
 
