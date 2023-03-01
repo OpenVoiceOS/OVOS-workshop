@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+## [V0.0.11a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a6) (2023-02-25)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a5...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a5...V0.0.11a6)
 
 **Merged pull requests:**
 
