@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11...HEAD)
+
+**Closed issues:**
+
+- Add helper function `voc_list` to the OvosSkill class [\#53](https://github.com/OpenVoiceOS/OVOS-workshop/issues/53)
+
+**Merged pull requests:**
+
+- add `voc_list` helper function [\#54](https://github.com/OpenVoiceOS/OVOS-workshop/pull/54) ([emphasize](https://github.com/emphasize))
+
+## [V0.0.11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11) (2023-02-25)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a6...V0.0.11)
+
 ## [V0.0.11a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.11a6) (2023-02-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11a5...V0.0.11a6)
