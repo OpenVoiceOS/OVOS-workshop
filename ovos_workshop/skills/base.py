@@ -189,6 +189,21 @@ class BaseSkill:
                     "will be removed in ovos-core 0.0.8")
         return self.runtime_requirements
 
+    @property
+    def voc_match_cache(self):
+        """
+        Backwards-compatible accessor method for vocab cache
+        @return: dict vocab resources to parsed resources
+        """
+        return self._voc_cache
+
+    @voc_match_cache.setter
+    def voc_match_cache(self, val):
+        LOG.warning("self._voc_cache should not be modified externally. This"
+                    "functionality will be deprecated in a future release")
+        if isinstance(val, dict):
+            self._voc_cache = val
+
     # property not present in mycroft-core
     @property
     def _is_fully_initialized(self):
