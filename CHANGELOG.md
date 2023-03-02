@@ -2,11 +2,19 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a1...HEAD)
 
 **Closed issues:**
 
 - Add helper function `voc_list` to the OvosSkill class [\#53](https://github.com/OpenVoiceOS/OVOS-workshop/issues/53)
+
+**Merged pull requests:**
+
+- Add backwards-compat. voc\_cache property and setter [\#55](https://github.com/OpenVoiceOS/OVOS-workshop/pull/55) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a1) (2023-03-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.11...V0.0.12a1)
 
 **Merged pull requests:**
 
