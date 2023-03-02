@@ -437,6 +437,15 @@ class TestMycroftSkill(unittest.TestCase):
                                     exact=True))
         self.assertFalse(s.voc_match("would you please turn off the lights",
                                      "turn_off_test", exact=True))
+        
+    def test_voc_list(self):
+        s = SimpleSkill1()
+        s.root_dir = abspath(dirname(__file__))
+
+        self.assertEqual(s._voc_list("turn_off_test"),
+                         ["turn off", "switch off"])
+        cache_key = s.lang+"turn_off_test"
+        self.assertIn(cache_key, s._voc_cache)
 
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and

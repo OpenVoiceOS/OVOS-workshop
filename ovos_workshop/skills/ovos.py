@@ -1,5 +1,6 @@
 import re
 import time
+from typing import List
 
 from ovos_utils.intents import IntentBuilder, Intent
 from ovos_utils.log import LOG
@@ -132,17 +133,25 @@ class OVOSSkill(MycroftSkill):
         except FileNotFoundError:
             return False
 
+    def voc_list(self, voc_filename, lang=None) -> List[str]:
+        """
+        Get vocabulary list and cache the results
+
+        Args:
+            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
+                                'res/text/en-us/yes.voc')
+            lang (str): Language code, defaults to self.lang
+
+        Returns:
+            list: List of vocabulary found in voc_filename
+        """
+        return self._voc_list(voc_filename, lang)
+
     def remove_voc(self, utt, voc_filename, lang=None):
         """ removes any entry in .voc file from the utterance """
-        lang = lang or self.lang
-        cache_key = lang + voc_filename
-
-        if cache_key not in self.voc_match_cache:
-            self.voc_match(utt, voc_filename, lang)
-
         if utt:
             # Check for matches against complete words
-            for i in self.voc_match_cache.get(cache_key) or []:
+            for i in self.voc_list(voc_filename, lang):
                 # Substitute only whole words matching the token
                 utt = re.sub(r'\b' + i + r"\b", "", utt)
 
