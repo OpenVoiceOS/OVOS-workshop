@@ -442,7 +442,7 @@ class TestMycroftSkill(unittest.TestCase):
         s = SimpleSkill1()
         s.root_dir = abspath(dirname(__file__))
 
-        self.assertEqual(s.voc_list("turn_off_test"),
+        self.assertEqual(s._voc_list("turn_off_test"),
                          ["turn off", "switch off"])
         cache_key = s.lang+"turn_off_test"
         self.assertIn(cache_key, s._voc_cache)

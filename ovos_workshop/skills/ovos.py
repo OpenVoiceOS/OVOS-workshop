@@ -1,5 +1,6 @@
 import re
 import time
+from typing import List
 
 from ovos_utils.intents import IntentBuilder, Intent
 from ovos_utils.log import LOG
@@ -131,6 +132,20 @@ class OVOSSkill(MycroftSkill):
             return super().voc_match(*args, **kwargs)
         except FileNotFoundError:
             return False
+
+    def voc_list(self, voc_filename, lang=None) -> List[str]:
+        """
+        Get vocabulary list and cache the results
+
+        Args:
+            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
+                                'res/text/en-us/yes.voc')
+            lang (str): Language code, defaults to self.lang
+
+        Returns:
+            list: List of vocabulary found in voc_filename
+        """
+        return self._voc_list(voc_filename, lang)
 
     def remove_voc(self, utt, voc_filename, lang=None):
         """ removes any entry in .voc file from the utterance """

@@ -21,6 +21,7 @@ from copy import copy
 from dataclasses import dataclass
 from hashlib import md5
 from inspect import signature
+from typing import List
 from itertools import chain
 from os.path import join, abspath, dirname, basename, isfile
 from threading import Event
@@ -1048,18 +1049,8 @@ class BaseSkill:
         return resp
 
     # method not present in mycroft-core
-    def voc_list(self, voc_filename, lang=None):
-        """
-        Get vocabulary list and cache the results
+    def _voc_list(self, voc_filename, lang=None) -> List[str]:
 
-        Args:
-            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
-                                'res/text/en-us/yes.voc')
-            lang (str): Language code, defaults to self.lang
-
-        Returns:
-            list: List of vocabulary found in voc_filename
-        """
         lang = lang or self.lang
         cache_key = lang + voc_filename
 
@@ -1094,7 +1085,7 @@ class BaseSkill:
             bool: True if the utterance has the given vocabulary it
         """
         match = False
-        _vocs = self.voc_list(voc_filename, lang)
+        _vocs = self._voc_list(voc_filename, lang)
 
         if utt and _vocs:
             if exact:
