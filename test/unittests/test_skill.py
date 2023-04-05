@@ -2,7 +2,7 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from mycroft_bus_client import Message
+from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core

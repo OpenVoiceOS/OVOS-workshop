@@ -18,19 +18,17 @@ import sys
 import time
 import traceback
 from copy import copy
-from dataclasses import dataclass
 from hashlib import md5
 from inspect import signature
-from typing import List
 from itertools import chain
 from os.path import join, abspath, dirname, basename, isfile
 from threading import Event
-
+from typing import List
 
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from mycroft_bus_client.message import Message, dig_for_message
+from ovos_bus_client.message import Message, dig_for_message
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_config_save_path
@@ -46,6 +44,7 @@ from ovos_utils.intents.intent_service_interface import munge_regex, munge_inten
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_handler_name, create_wrapper, EventContainer, get_message_lang
 from ovos_utils.parse import match_one
+from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_acknowledge_sound, wait_while_speaking
 
@@ -56,7 +55,6 @@ from ovos_workshop.decorators.killable import killable_event, \
 from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, SkillResources, find_resource
-from ovos_utils.process_utils import RuntimeRequirements
 
 
 # backwards compat alias
@@ -65,6 +63,76 @@ class SkillNetworkRequirements(RuntimeRequirements):
         LOG.warning("SkillNetworkRequirements has been renamed to RuntimeRequirements\n"
                     "from ovos_utils.process_utils import RuntimeRequirements")
         super().__init__(*args, **kwargs)
+
+
+class SkillGUI(GUIInterface):
+    """SkillGUI - Interface to the Graphical User Interface
+
+    Values set in this class are synced to the GUI, accessible within QML
+    via the built-in sessionData mechanism.  For example, in Python you can
+    write in a skill:
+        self.gui['temp'] = 33
+        self.gui.show_page('Weather.qml')
+    Then in the Weather.qml you'd access the temp via code such as:
+        text: sessionData.time
+    """
+
+    def __init__(self, skill):
+        self.skill = skill
+        super().__init__(skill.skill_id, config=Configuration())
+
+    @property
+    def bus(self):
+        if self.skill:
+            return self.skill.bus
+
+    @property
+    def skill_id(self):
+        return self.skill.skill_id
+
+    def setup_default_handlers(self):
+        """Sets the handlers for the default messages."""
+        msg_type = self.build_message_type('set')
+        self.skill.add_event(msg_type, self.gui_set)
+
+    def register_handler(self, event, handler):
+        """Register a handler for GUI events.
+
+        When using the triggerEvent method from Qt
+        triggerEvent("event", {"data": "cool"})
+
+        Args:
+            event (str):    event to catch
+            handler:        function to handle the event
+        """
+        msg_type = self.build_message_type(event)
+        self.skill.add_event(msg_type, handler)
+
+    def _pages2uri(self, page_names):
+        # Convert pages to full reference
+        page_urls = []
+        for name in page_names:
+            page = self.skill._resources.locate_qml_file(name)
+            if page:
+                if self.remote_url:
+                    page_urls.append(self.remote_url + "/" + page)
+                elif page.startswith("file://"):
+                    page_urls.append(page)
+                else:
+                    page_urls.append("file://" + page)
+            else:
+                raise FileNotFoundError(f"Unable to find page: {name}")
+
+        return page_urls
+
+    def shutdown(self):
+        """Shutdown gui interface.
+
+        Clear pages loaded through this interface and remove the skill
+        reference to make ref counting warning more precise.
+        """
+        self.release()
+        self.skill = None
 
 
 def simple_trace(stack_trace):
@@ -427,7 +495,7 @@ class BaseSkill:
 
     @bus.setter
     def bus(self, value):
-        from mycroft_bus_client import MessageBusClient
+        from ovos_bus_client import MessageBusClient
         from ovos_utils.messagebus import FakeBus
         if isinstance(value, (MessageBusClient, FakeBus)):
             self._bus = value
@@ -622,7 +690,7 @@ class BaseSkill:
     @property
     def _converse_is_implemented(self):
         return self.__class__.converse is not BaseSkill.converse or \
-               self.__original_converse != self.converse
+            self.__original_converse != self.converse
 
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
@@ -1069,12 +1137,12 @@ class BaseSkill:
         lang = lang or self.lang
         cache_key = lang + voc_filename
 
-        if cache_key not in self._voc_cache:    
+        if cache_key not in self._voc_cache:
             vocab = self._resources.load_vocabulary_file(voc_filename) or \
                     CoreResources(lang).load_vocabulary_file(voc_filename)
             if vocab:
                 self._voc_cache[cache_key] = list(chain(*vocab))
-        
+
         return self._voc_cache.get(cache_key) or []
 
     def voc_match(self, utt, voc_filename, lang=None, exact=False):

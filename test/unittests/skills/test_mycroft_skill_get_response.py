@@ -8,7 +8,7 @@ from unittest import TestCase, mock
 from lingua_franca import load_language
 
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
-from mycroft_bus_client import Message
+from ovos_bus_client import Message
 
 from .mocks import base_config, AnyCallable
 
