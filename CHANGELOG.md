@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/OVOS-workshop/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a1...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a2...HEAD)
+
+**Merged pull requests:**
+
+- ovos-bus-client + skillGui class in ovos\_workshop [\#57](https://github.com/OpenVoiceOS/OVOS-workshop/pull/57) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a2) (2023-03-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a1...V0.0.12a2)
 
 **Closed issues:**
 
