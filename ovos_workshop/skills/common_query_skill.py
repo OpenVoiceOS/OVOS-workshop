@@ -112,8 +112,9 @@ class CommonQuerySkill(OVOSSkill):
             match = result[0]
             level = result[1]
             answer = result[2]
-            callback = result[3] if len(result) > 3 else None
+            callback = result[3] if len(result) > 3 else {}
             confidence = self.__calc_confidence(match, search_phrase, level, answer)
+            callback["answer"] = answer  # ensure we get it back in CQS_action
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -192,7 +193,19 @@ class CommonQuerySkill(OVOSSkill):
             # Not for this skill!
             return
         phrase = message.data["phrase"]
-        data = message.data.get("callback_data")
+        data = message.data.get("callback_data") or {}
+        if data.get("answer"):
+            # check core version, ovos-core does this speak call itself up to version 0.0.8
+            core_speak = False
+            try:
+                # TODO - validate this version before PR merge
+                from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD
+                if OVOS_VERSION_MAJOR < 1 and OVOS_VERSION_MINOR < 1 and OVOS_VERSION_BUILD < 8:
+                    core_speak = True
+            except ImportError:
+                pass
+            if not core_speak:
+                self.speak(data["answer"])
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
 
