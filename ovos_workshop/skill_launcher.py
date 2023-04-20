@@ -11,6 +11,7 @@ from ovos_bus_client.client import MessageBusClient
 from ovos_bus_client.message import Message
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_data_dirs, get_xdg_data_save_path
+from ovos_config.locale import setup_locale
 from ovos_plugin_manager.skills import find_skill_plugins
 from ovos_utils import wait_for_exit_signal
 from ovos_utils.file_utils import FileWatcher
@@ -475,6 +476,8 @@ class PluginSkillLoader(SkillLoader):
 
 def launch_plugin_skill(skill_id):
     """ run a plugin skill standalone """
+    setup_locale()  # ensure any initializations and resource loading is handled
+
     bus = MessageBusClient()
     bus.run_in_thread()
     plugins = find_skill_plugins()
@@ -493,6 +496,8 @@ def launch_plugin_skill(skill_id):
 
 def launch_standalone_skill(skill_directory, skill_id):
     """ run a skill standalone from a directory """
+    setup_locale()  # ensure any initializations and resource loading is handled
+
     bus = MessageBusClient()
     bus.run_in_thread()
     skill_loader = SkillLoader(bus, skill_directory,
@@ -508,6 +513,7 @@ def launch_standalone_skill(skill_directory, skill_id):
 
 def _launch_script():
     """USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]"""
+
     if (args_count := len(sys.argv)) == 2:
         skill_id = sys.argv[1]
 
