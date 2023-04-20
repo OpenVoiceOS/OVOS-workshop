@@ -1,4 +1,4 @@
-ovos-utils[extras]~=0.0, >=0.0.31a3
+ovos-utils[extras] < 0.1.0, >=0.0.31
 ovos_config~=0.0,>=0.0.4
 ovos-lingua-franca~=0.4,>=0.4.6
-ovos-bus-client~=0.0, >=0.0.3a4
+ovos-bus-client < 0.1.0, >=0.0.3
