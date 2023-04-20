@@ -474,12 +474,30 @@ class PluginSkillLoader(SkillLoader):
         return self.loaded
 
 
-def launch_plugin_skill(skill_id):
-    """ run a plugin skill standalone """
+def _connect_to_core():
     setup_locale()  # ensure any initializations and resource loading is handled
-
     bus = MessageBusClient()
     bus.run_in_thread()
+    bus.connected_event.wait()
+    connected = False
+    while not connected:
+        LOG.debug("checking skills service status")
+        response = bus.wait_for_response(Message(f'mycroft.skills.is_ready',
+                                                 context={"source": "workshop",
+                                                          "destination": "skills"}))
+        if response and response.data['status']:
+            connected = True
+        else:
+            LOG.warning("ovos-core does not seem to be running")
+    LOG.debug("connected to core")
+    return bus
+
+
+def launch_plugin_skill(skill_id):
+    """ run a plugin skill standalone """
+
+    bus = _connect_to_core()
+
     plugins = find_skill_plugins()
     if skill_id not in plugins:
         raise ValueError(f"unknown skill_id: {skill_id}")
@@ -496,10 +514,9 @@ def launch_plugin_skill(skill_id):
 
 def launch_standalone_skill(skill_directory, skill_id):
     """ run a skill standalone from a directory """
-    setup_locale()  # ensure any initializations and resource loading is handled
 
-    bus = MessageBusClient()
-    bus.run_in_thread()
+    bus = _connect_to_core()
+
     skill_loader = SkillLoader(bus, skill_directory,
                                skill_id=skill_id)
     try:
