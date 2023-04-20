@@ -155,56 +155,6 @@ def load_skill_module(path, skill_id):
     return mod
 
 
-def _bad_mod_times(mod_times):
-    """Return all entries with modification time in the future.
-
-    Args:
-        mod_times (dict): dict mapping file paths to modification times.
-
-    Returns:
-        List of files with bad modification times.
-    """
-    current_time = time()
-    return [path for path in mod_times if mod_times[path] > current_time]
-
-
-def _get_last_modified_time(path):
-    """Get the last modified date of the most recently updated file in a path.
-
-    Exclude compiled python files, hidden directories and the settings.json
-    file.
-
-    Args:
-        path: skill directory to check
-
-    Returns:
-        int: time of last change
-    """
-    all_files = []
-    for root_dir, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        for f in files:
-            ignore_file = (
-                    f.endswith('.pyc') or
-                    f == 'settings.json' or
-                    f.startswith('.') or
-                    f.endswith('.qmlc')
-            )
-            if not ignore_file:
-                all_files.append(os.path.join(root_dir, f))
-
-    # check files of interest in the skill root directory
-    mod_times = {f: os.path.getmtime(f) for f in all_files}
-    # Ensure modification times are valid
-    bad_times = _bad_mod_times(mod_times)
-    if bad_times:
-        raise OSError(f'{bad_times} had bad modification times')
-    if all_files:
-        return max(os.path.getmtime(f) for f in all_files)
-    else:
-        return 0
-
-
 def get_skill_class(skill_module):
     """Find MycroftSkill based class in skill module.
 
