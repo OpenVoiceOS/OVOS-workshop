@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a5) (2023-04-18)
+## [0.0.12a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a6) (2023-04-20)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a4...0.0.12a5)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a5...0.0.12a6)
+
+**Merged pull requests:**
+
+- Cleanup Changes [\#64](https://github.com/OpenVoiceOS/OVOS-workshop/pull/64) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a5) (2023-04-18)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a4...V0.0.12a5)
 
 **Merged pull requests:**
 
