@@ -409,10 +409,10 @@ class SkillLoader:
         """
         skill_module = skill_module or self.skill_module
         try:
-
             # in skill classes __new__ should fully create the skill object
             try:
-                self.instance = self.skill_class(bus=self.bus, skill_id=self.skill_id)
+                skill_class = get_skill_class(skill_module)
+                self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
             except:  # guess it wasnt subclassing from ovos_workshop (fail here ?)
 
                 # attempt to use old style create_skill function entrypoint
