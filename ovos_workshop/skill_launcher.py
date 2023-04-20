@@ -1,6 +1,7 @@
 import gc
 import importlib
 import os
+from os.path import isdir
 import sys
 from inspect import isclass
 from os import path, makedirs
@@ -473,6 +474,7 @@ class PluginSkillLoader(SkillLoader):
 
 
 def launch_plugin_skill(skill_id):
+    """ run a plugin skill standalone """
     bus = MessageBusClient()
     bus.run_in_thread()
     plugins = find_skill_plugins()
@@ -490,6 +492,7 @@ def launch_plugin_skill(skill_id):
 
 
 def launch_standalone_skill(skill_directory, skill_id):
+    """ run a skill standalone from a directory """
     bus = MessageBusClient()
     bus.run_in_thread()
     skill_loader = SkillLoader(bus, skill_directory,
@@ -504,7 +507,7 @@ def launch_standalone_skill(skill_directory, skill_id):
 
 
 def _launch_script():
-    from os.path import isdir
+    """USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]"""
     if (args_count := len(sys.argv)) == 2:
         skill_id = sys.argv[1]
 
