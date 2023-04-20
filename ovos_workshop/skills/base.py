@@ -28,8 +28,8 @@ from typing import List
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_bus_client.message import Message, dig_for_message
 from ovos_backend_client.api import EmailApi, MetricsApi
+from ovos_bus_client.message import Message, dig_for_message
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils import camel_case_split
@@ -162,13 +162,15 @@ class BaseSkill:
 
     def __init__(self, name=None, bus=None, resources_dir=None,
                  settings: JsonStorage = None,
-                 gui=None, enable_settings_manager=True):
+                 gui=None, enable_settings_manager=True,
+                 skill_id=""):
 
+        self.log = LOG  # a dedicated namespace will be assigned in _startup
         self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.resting_name = None
-        self.skill_id = ''  # will be set by SkillLoader, guaranteed unique
+        self.skill_id = skill_id  # will be set by SkillLoader, guaranteed unique
         self._settings_meta = None  # DEPRECATED - backwards compat only
         self.settings_manager = None
 
@@ -215,6 +217,10 @@ class BaseSkill:
         self.public_api = {}
 
         self.__original_converse = self.converse
+
+        # yay, following python best practices again!
+        if self.skill_id and self.bus:
+            self._startup(self.bus, self.skill_id)
 
     # classproperty not present in mycroft-core
     @classproperty
@@ -267,8 +273,8 @@ class BaseSkill:
 
     @voc_match_cache.setter
     def voc_match_cache(self, val):
-        LOG.warning("self._voc_cache should not be modified externally. This"
-                    "functionality will be deprecated in a future release")
+        self.log.warning("self._voc_cache should not be modified externally. This"
+                         "functionality will be deprecated in a future release")
         if isinstance(val, dict):
             self._voc_cache = val
 
@@ -294,7 +300,7 @@ class BaseSkill:
         """Determine if its the very first time a skill is run."""
         first_run = self.settings.get("__mycroft_skill_firstrun", True)
         if first_run:
-            LOG.info("First run of " + self.skill_id)
+            self.log.info("First run of " + self.skill_id)
             self._handle_first_run()
             self.settings["__mycroft_skill_firstrun"] = False
             self.settings.store()
@@ -312,7 +318,7 @@ class BaseSkill:
                 but skill loader can override this
         """
         if self._is_fully_initialized:
-            LOG.warning(f"Tried to initialize {self.skill_id} multiple times, ignoring")
+            self.log.warning(f"Tried to initialize {self.skill_id} multiple times, ignoring")
             return
 
         # NOTE: this method is called by SkillLoader
@@ -343,7 +349,7 @@ class BaseSkill:
             self._check_for_first_run()
             self._init_event.set()
         except Exception as e:
-            LOG.exception('Skill initialization failed')
+            self.log.exception('Skill initialization failed')
             # If an exception occurs, attempt to clean up the skill
             try:
                 self.default_shutdown()
@@ -353,15 +359,14 @@ class BaseSkill:
 
     def _init_settings(self):
         """Setup skill settings."""
-        LOG.debug(f"initializing skill settings for {self.skill_id}")
+        self.log.debug(f"initializing skill settings for {self.skill_id}")
 
         # NOTE: lock is disabled due to usage of deepcopy and to allow json serialization
         self._settings = JsonStorage(self._settings_path, disable_lock=True)
-        if self._initial_settings:
-            # TODO make a debug log in next version
-            LOG.warning("Copying default settings values defined in __init__ \n"
-                        "Please move code from __init__() to initialize() "
-                        "if you did not expect to see this message")
+        if self._initial_settings and not self._is_fully_initialized:
+            self.log.warning("Copying default settings values defined in __init__ \n"
+                             f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                             f"to skill class {self.__class__.__name__}")
             for k, v in self._initial_settings.items():
                 if k not in self._settings:
                     self._settings[k] = v
@@ -372,7 +377,6 @@ class BaseSkill:
     # method not in mycroft-core
     def _init_skill_gui(self):
         try:
-            from mycroft.gui import SkillGUI
             self.gui = SkillGUI(self)
             self.gui.setup_default_handlers()
         except ImportError:
@@ -428,9 +432,11 @@ class BaseSkill:
         if self._settings is not None:
             return self._settings
         else:
-            LOG.error('Skill not fully initialized. '
-                      'Only default values can be set, no settings can be read or changed.'
-                      'Move code from  __init__() to initialize() to correct this.')
+            self.log.warning('Skill not fully initialized. '
+                             'Only default values can be set, no settings can be read or changed.'
+                             f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                             f"to skill class {self.__class__.__name__}")
+            self.log.error(simple_trace(traceback.format_stack()))
             return self._initial_settings
 
     # not a property in mycroft-core
@@ -455,9 +461,10 @@ class BaseSkill:
         if self._enclosure:
             return self._enclosure
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
-            LOG.error(simple_trace(traceback.format_stack()))
+            self.log.warning('Skill not fully initialized.'
+                             f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                             f"to skill class {self.__class__.__name__}")
+            self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.enclosure in __init__')
 
     # not a property in mycroft-core
@@ -472,9 +479,10 @@ class BaseSkill:
         if self._file_system:
             return self._file_system
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
-            LOG.error(simple_trace(traceback.format_stack()))
+            self.log.warning('Skill not fully initialized.'
+                             f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                             f"to skill class {self.__class__.__name__}")
+            self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.file_system in __init__')
 
     @file_system.setter
@@ -488,9 +496,10 @@ class BaseSkill:
         if self._bus:
             return self._bus
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from __init__() to initialize() to correct this.')
-            LOG.error(simple_trace(traceback.format_stack()))
+            self.log.warning('Skill not fully initialized.'
+                             f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                             f"to skill class {self.__class__.__name__}")
+            self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.bus in __init__')
 
     @bus.setter
@@ -669,7 +678,7 @@ class BaseSkill:
         for key in self.public_api:
             if ('type' in self.public_api[key] and
                     'func' in self.public_api[key]):
-                LOG.debug(f"Adding api method: {self.public_api[key]['type']}")
+                self.log.debug(f"Adding api method: {self.public_api[key]['type']}")
 
                 # remove the function member since it shouldn't be
                 # reused and can't be sent over the messagebus
@@ -722,7 +731,7 @@ class BaseSkill:
         """
         remote_settings = message.data.get(self.skill_id)
         if remote_settings is not None:
-            LOG.info('Updating settings for skill ' + self.skill_id)
+            self.log.info('Updating settings for skill ' + self.skill_id)
             self.settings.update(**remote_settings)
             self.settings.store()
             if self.settings_change_callback is not None:
@@ -1193,7 +1202,7 @@ class BaseSkill:
             if Configuration().get('opt_in', False):
                 MetricsApi().report_metric(name, data)
         except Exception as e:
-            LOG.error(f'Metric couldn\'t be uploaded, due to a network error ({e})')
+            self.log.error(f'Metric couldn\'t be uploaded, due to a network error ({e})')
 
     def send_email(self, title, body):
         """Send an email to the registered user's email.
@@ -1321,7 +1330,7 @@ class BaseSkill:
         speech = get_dialog('skill.error', self.lang, msg_data)
         if speak_errors:
             self.speak(speech)
-        LOG.exception(error)
+        self.log.exception(error)
         # append exception information in message
         skill_data['exception'] = repr(error)
         if handler_info:
@@ -1349,7 +1358,7 @@ class BaseSkill:
 
         def on_error(error, message):
             if isinstance(error, AbortEvent):
-                LOG.info("Skill execution aborted")
+                self.log.info("Skill execution aborted")
                 self._on_event_end(message, handler_info, skill_data)
                 return
             self._on_event_error(error, message, handler_info, skill_data, speak_errors)
@@ -1507,7 +1516,7 @@ class BaseSkill:
                 bool: True if disabled, False if it wasn't registered
         """
         if intent_name in self.intent_service:
-            LOG.info('Disabling intent ' + intent_name)
+            self.log.info('Disabling intent ' + intent_name)
             name = f'{self.skill_id}:{intent_name}'
             self.intent_service.detach_intent(name)
 
@@ -1517,7 +1526,7 @@ class BaseSkill:
                 self.intent_service.detach_intent(lang_intent_name)
             return True
         else:
-            LOG.error(f'Could not disable {intent_name}, it hasn\'t been registered.')
+            self.log.error(f'Could not disable {intent_name}, it hasn\'t been registered.')
             return False
 
     def enable_intent(self, intent_name):
@@ -1536,10 +1545,10 @@ class BaseSkill:
             else:
                 intent.name = intent_name
                 self.register_intent(intent, None)
-            LOG.debug(f'Enabling intent {intent_name}')
+            self.log.debug(f'Enabling intent {intent_name}')
             return True
         else:
-            LOG.error(f'Could not enable {intent_name}, it hasn\'t been registered.')
+            self.log.error(f'Could not enable {intent_name}, it hasn\'t been registered.')
             return False
 
     def set_context(self, context, word='', origin=''):
@@ -1748,8 +1757,7 @@ class BaseSkill:
                                             {"by": "skill:" + self.skill_id},
                                             {"skill_id": self.skill_id}))
         except Exception as e:
-            LOG.exception(e)
-            LOG.error(f'Failed to stop skill: {self.skill_id}')
+            self.log.exception(f'Failed to stop skill: {self.skill_id}')
 
     def stop(self):
         """Optional method implemented by subclass."""
@@ -1791,12 +1799,12 @@ class BaseSkill:
         try:
             self.stop()
         except Exception:
-            LOG.error(f'Failed to stop skill: {self.skill_id}', exc_info=True)
+            self.log.error(f'Failed to stop skill: {self.skill_id}', exc_info=True)
 
         try:
             self.shutdown()
         except Exception as e:
-            LOG.error(f'Skill specific shutdown function encountered an error: {e}')
+            self.log.error(f'Skill specific shutdown function encountered an error: {e}')
 
         self.bus.emit(
             Message('detach_skill', {'skill_id': str(self.skill_id) + ':'},
