@@ -264,14 +264,11 @@ class SkillLoader:
         self._skill_class = None
         self._loaded = None
         self.load_attempted = False
-        self.last_modified = 0
         self.last_loaded = 0
         self.instance: BaseSkill = None
         self.active = True
         self._watchdog = None
         self.config = Configuration()
-
-        self.modtime_error_log_written = False
         self.skill_module = None
 
     @property
@@ -337,13 +334,6 @@ class SkillLoader:
     @property
     def reload_allowed(self):
         return self.active and (self.instance is None or self.instance.reload_skill)
-
-    def reload_needed(self):
-        """DEPRECATED: backwards compatibility only
-
-        this is now event based and always returns False after initial load
-        """
-        return self.instance is None
 
     def reload(self):
         LOG.info(f'ATTEMPTING TO RELOAD SKILL: {self.skill_id}')
@@ -429,26 +419,11 @@ class SkillLoader:
 
     def _handle_filechange(self):
         LOG.info("Skill change detected!")
-
         try:
             if self.reload_allowed:
                 self.reload()
         except Exception:
             LOG.exception(f'Unhandled exception occurred while reloading {self.skill_directory}')
-
-        # NOTE: below could be removed, but is kept for api backwards compatibility
-        # users of SkillLoader will still have all properties properly updated
-
-        # TODO on ntp sync last_modified needs to be updated
-        try:
-            self.last_modified = _get_last_modified_time(self.skill_directory)
-        except OSError as err:
-            self.last_modified = self.last_loaded
-            if not self.modtime_error_log_written:
-                self.modtime_error_log_written = True
-                LOG.error(f'Failed to get last_modification time ({err})')
-        else:
-            self.modtime_error_log_written = False
 
     def _prepare_for_load(self):
         self.load_attempted = True
@@ -516,8 +491,7 @@ class SkillLoader:
             message = Message('mycroft.skills.loaded',
                               {"path": self.skill_directory,
                                "id": self.skill_id,
-                               "name": self.instance.name,
-                               "modified": self.last_modified})
+                               "name": self.instance.name})
             self.bus.emit(message)
             LOG.info(f'Skill {self.skill_id} loaded successfully')
         else:
@@ -534,9 +508,6 @@ class PluginSkillLoader(SkillLoader):
     def __init__(self, bus, skill_id):
         super().__init__(bus)
         self._skill_id = skill_id
-
-    def reload_needed(self):
-        return False
 
     def load(self, skill_class):
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
