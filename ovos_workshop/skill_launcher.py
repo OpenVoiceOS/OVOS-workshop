@@ -409,30 +409,29 @@ class SkillLoader:
         """
         skill_module = skill_module or self.skill_module
         try:
-            skill_creator = get_create_skill_function(skill_module) or \
-                            self.skill_class
 
-            # create the skill
-            # if the signature supports skill_id and bus pass them
-            # to fully initialize the skill in 1 go
+            # in skill classes __new__ should fully create the skill object
             try:
-                # many skills do not expose this, if they don't allow bus/skill_id kwargs
-                # in __init__ we need to manually call _startup
-                self.instance = skill_creator(bus=self.bus,
-                                              skill_id=self.skill_id)
-                # skills will have bus and skill_id available as soon as they call super()
-            except:
-                self.instance = skill_creator()
+                self.instance = self.skill_class(bus=self.bus, skill_id=self.skill_id)
+            except:  # guess it wasnt subclassing from ovos_workshop (fail here ?)
 
-            if hasattr(self.instance, "is_fully_initialized"):
-                LOG.warning(f"Deprecated skill signature! Skill class should be"
-                            f" imported from `ovos_workshop.skills`")
-                is_initialized = self.instance.is_fully_initialized
-            else:
-                is_initialized = self.instance._is_fully_initialized
-            if not is_initialized:
-                # finish initialization of skill class
+                # attempt to use old style create_skill function entrypoint
+                skill_creator = get_create_skill_function(skill_module) or self.skill_class
+
+                # if the signature supports skill_id and bus pass them to fully initialize the skill in 1 go
+                try:
+                    # skills that do will have bus and skill_id available as soon as they call super()
+                    self.instance = skill_creator(bus=self.bus,
+                                                  skill_id=self.skill_id)
+                except:
+                    # most old skills do not expose bus/skill_id kwargs
+                    self.instance = skill_creator()
+
+            # finish initialization of skill if we didn't manage to inject skill_id and bus kwargs
+            # these skills only have skill_id and bus available in initialize, not in __init__
+            if not self.instance._is_fully_initialized:
                 self.instance._startup(self.bus, self.skill_id)
+
         except Exception as e:
             LOG.exception(f'Skill __init__ failed with {e}')
             self.instance = None
