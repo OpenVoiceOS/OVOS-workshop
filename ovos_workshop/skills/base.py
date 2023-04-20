@@ -162,13 +162,14 @@ class BaseSkill:
 
     def __init__(self, name=None, bus=None, resources_dir=None,
                  settings: JsonStorage = None,
-                 gui=None, enable_settings_manager=True):
+                 gui=None, enable_settings_manager=True,
+                 skill_id=""):
 
         self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.resting_name = None
-        self.skill_id = ''  # will be set by SkillLoader, guaranteed unique
+        self.skill_id = skill_id  # will be set by SkillLoader, guaranteed unique
         self._settings_meta = None  # DEPRECATED - backwards compat only
         self.settings_manager = None
 
@@ -215,6 +216,10 @@ class BaseSkill:
         self.public_api = {}
 
         self.__original_converse = self.converse
+
+        # yay, following python best practices again!
+        if self.skill_id and self.bus:
+            self._startup(self.bus, self.skill_id)
 
     # classproperty not present in mycroft-core
     @classproperty
@@ -357,11 +362,13 @@ class BaseSkill:
 
         # NOTE: lock is disabled due to usage of deepcopy and to allow json serialization
         self._settings = JsonStorage(self._settings_path, disable_lock=True)
-        if self._initial_settings:
+        if self._initial_settings and not self._is_fully_initialized:
             # TODO make a debug log in next version
             LOG.warning("Copying default settings values defined in __init__ \n"
                         "Please move code from __init__() to initialize() "
                         "if you did not expect to see this message")
+            LOG.warning(f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                        f"to skill class {self.__class__.__name__}")
             for k, v in self._initial_settings.items():
                 if k not in self._settings:
                     self._settings[k] = v
@@ -372,7 +379,6 @@ class BaseSkill:
     # method not in mycroft-core
     def _init_skill_gui(self):
         try:
-            from mycroft.gui import SkillGUI
             self.gui = SkillGUI(self)
             self.gui.setup_default_handlers()
         except ImportError:
@@ -429,8 +435,9 @@ class BaseSkill:
             return self._settings
         else:
             LOG.error('Skill not fully initialized. '
-                      'Only default values can be set, no settings can be read or changed.'
-                      'Move code from  __init__() to initialize() to correct this.')
+                      'Only default values can be set, no settings can be read or changed.')
+            LOG.warning(f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                        f"to skill class {self.__class__.__name__}")
             return self._initial_settings
 
     # not a property in mycroft-core
@@ -455,8 +462,9 @@ class BaseSkill:
         if self._enclosure:
             return self._enclosure
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
+            LOG.error('Skill not fully initialized.')
+            LOG.warning(f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                        f"to skill class {self.__class__.__name__}")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.enclosure in __init__')
 
@@ -472,8 +480,9 @@ class BaseSkill:
         if self._file_system:
             return self._file_system
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from  __init__() to initialize() to correct this.')
+            LOG.error('Skill not fully initialized.')
+            LOG.warning(f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                        f"to skill class {self.__class__.__name__}")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.file_system in __init__')
 
@@ -488,8 +497,9 @@ class BaseSkill:
         if self._bus:
             return self._bus
         else:
-            LOG.error('Skill not fully initialized. Move code ' +
-                      'from __init__() to initialize() to correct this.')
+            LOG.error('Skill not fully initialized.')
+            LOG.warning(f"to correct this add kwargs __init__(bus=None, skill_id='') "
+                        f"to skill class {self.__class__.__name__}")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed MycroftSkill.bus in __init__')
 
