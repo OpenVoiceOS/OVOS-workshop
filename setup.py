@@ -65,5 +65,10 @@ setup(
     author='jarbasAi',
     author_email='jarbasai@mailfence.com',
     include_package_data=True,
-    description='frameworks, templates and patches for the mycroft universe'
+    description='frameworks, templates and patches for the mycroft universe',
+    entry_points={
+        'console_scripts': [
+            'ovos-skill-launcher=ovos_workshop.skill_launcher:_launch_script'
+        ]
+    }
 )

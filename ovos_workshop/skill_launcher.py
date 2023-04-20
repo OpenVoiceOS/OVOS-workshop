@@ -207,10 +207,10 @@ def get_create_skill_function(skill_module):
 
 
 class SkillLoader:
-    def __init__(self, bus, skill_directory=None):
+    def __init__(self, bus, skill_directory=None, skill_id=None):
         self.bus = bus
         self._skill_directory = skill_directory
-        self._skill_id = None
+        self._skill_id = skill_id
         self._skill_class = None
         self._loaded = None
         self.load_attempted = False
@@ -456,8 +456,7 @@ class SkillLoader:
 
 class PluginSkillLoader(SkillLoader):
     def __init__(self, bus, skill_id):
-        super().__init__(bus)
-        self._skill_id = skill_id
+        super().__init__(bus, skill_id=skill_id)
 
     def load(self, skill_class):
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
@@ -474,7 +473,6 @@ class PluginSkillLoader(SkillLoader):
 
 
 def launch_plugin_skill(skill_id):
-    # TODO - cli entrypoint
     bus = MessageBusClient()
     bus.run_in_thread()
     plugins = find_skill_plugins()
@@ -491,11 +489,11 @@ def launch_plugin_skill(skill_id):
         LOG.exception(f'Load of skill {skill_id} failed!')
 
 
-def launch_standalone_skill(skill_directory):
-    # TODO - cli entrypoint
+def launch_standalone_skill(skill_directory, skill_id):
     bus = MessageBusClient()
     bus.run_in_thread()
-    skill_loader = SkillLoader(bus, skill_directory)
+    skill_loader = SkillLoader(bus, skill_directory,
+                               skill_id=skill_id)
     try:
         skill_loader.load()
         wait_for_exit_signal()
@@ -503,3 +501,30 @@ def launch_standalone_skill(skill_directory):
         skill_loader.deactivate()
     except Exception:
         LOG.exception(f'Load of skill {skill_directory} failed!')
+
+
+def _launch_script():
+    from os.path import isdir
+    if (args_count := len(sys.argv)) == 2:
+        skill_id = sys.argv[1]
+
+        # preference to local skills
+        for p in get_skill_directories():
+            if isdir(f"{p}/{skill_id}"):
+                skill_directory = f"{p}/{skill_id}"
+                LOG.info(f"found local skill, loading {skill_directory}")
+                launch_standalone_skill(skill_directory, skill_id)
+                break
+        else:  # plugin skill
+            LOG.info(f"found plugin skill {skill_id}")
+            launch_plugin_skill(skill_id)
+
+    elif args_count == 3:
+        # user asked explicitly for a directory
+        skill_id = sys.argv[1]
+        skill_directory = sys.argv[2]
+        launch_standalone_skill(skill_directory, skill_id)
+    else:
+        print("USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]")
+        raise SystemExit(2)
+
