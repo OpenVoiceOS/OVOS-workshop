@@ -28,6 +28,10 @@ class UniversalSkill(OVOSSkill):
         self.internal_language = None  # the skill internally only works in this language
         self.translate_tags = True  # __tags__ private value will be translated (adapt entities)
         self.translate_keys = ["utterance", "utterances"]  # keys added here will have values translated in message.data
+
+        # autodetect will detect the lang of the utterance regardless of what has been reported
+        # to test just type in the cli in another language and watch answers still coming
+        self.autodetect = False  # TODO from mycroft.conf
         if self.internal_language is None:
             lang = Configuration().get("lang", "en-us")
             LOG.warning(f"UniversalSkill are expected to specify their internal_language, casting to {lang}")
@@ -52,7 +56,10 @@ class UniversalSkill(OVOSSkill):
             return self.lang.split("-")[0]
 
     def translate_utterance(self, text, target_lang, sauce_lang=None):
-        sauce_lang = sauce_lang or self.detect_language(text)
+        if self.autodetect:
+            sauce_lang = self.detect_language(text)
+        else:
+            sauce_lang = sauce_lang or self.detect_language(text)
         if sauce_lang.split("-")[0] != target_lang:
             translated = self.translator.translate(text, source=sauce_lang, target=target_lang)
             LOG.info("translated " + text + " to " + translated)
@@ -63,6 +70,10 @@ class UniversalSkill(OVOSSkill):
         # translate speech from input lang to internal lang
         sauce_lang = self.lang  # from message or config
         out_lang = self.internal_language  # skill wants input is in this language,
+
+        if sauce_lang == out_lang and not self.autodetect:
+            # do nothing
+            return message
 
         translation_data = {"original": {}, "translated": {},
                             "source_lang": sauce_lang, "internal_lang": self.internal_language}
@@ -114,7 +125,7 @@ class UniversalSkill(OVOSSkill):
         # translate speech from input lang to output lang
         out_lang = self.lang  # from message or config
         sauce_lang = self.internal_language  # skill output is in this language
-        if out_lang != sauce_lang:
+        if out_lang != sauce_lang or self.autodetect:
             meta = kwargs.get("meta") or {}
             meta["translation_data"] = {
                 "original": utterance,
@@ -180,13 +191,17 @@ class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill):
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
-        message.data["phrase"] = self.translate_utterance(message.data["phrase"],
-                                                          sauce_lang=self.lang,
-                                                          target_lang=self.internal_language)
+        if self.lang != self.internal_language or self.autodetect:
+            message.data["phrase"] = self.translate_utterance(message.data["phrase"],
+                                                              sauce_lang=self.lang,
+                                                              target_lang=self.internal_language)
 
         super().__handle_query_action(message)
 
     def __get_cq(self, search_phrase):
+        if self.lang == self.internal_language and not self.autodetect:
+            return super().__get_cq(search_phrase)
+
         # convert input into internal lang
         search_phrase = self.translate_utterance(search_phrase, self.internal_language, self.lang)
         result = super().__get_cq(search_phrase)
