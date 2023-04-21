@@ -62,11 +62,12 @@ class CommonQuerySkill(OVOSSkill):
         default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}/noise_words.list"
         noise_words_filename = resolve_resource_file(noise_words_filepath) or \
                                resolve_resource_file(default_res)
-        self.translated_noise_words = []
+
+        self._translated_noise_words = {}
         if noise_words_filename:
             with open(noise_words_filename) as f:
-                self.translated_noise_words = f.read().strip()
-            self.translated_noise_words = self.translated_noise_words.split()
+                translated_noise_words = f.read().strip()
+            self._translated_noise_words[self.lang] = translated_noise_words.split()
 
         # these should probably be configurable
         self.level_confidence = {
@@ -74,6 +75,16 @@ class CommonQuerySkill(OVOSSkill):
             CQSMatchLevel.CATEGORY: 0.6,
             CQSMatchLevel.GENERAL: 0.5
         }
+
+    @property
+    def translated_noise_words(self):
+        LOG.warning("self.translated_noise_words will become a private variable in next release")
+        return self._translated_noise_words.get(self.lang, [])
+
+    @translated_noise_words.setter
+    def translated_noise_words(self, val):
+        LOG.warning("self.translated_noise_words will become a private variable in next release")
+        self._translated_noise_words[self.lang] = val
 
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
@@ -123,10 +134,11 @@ class CommonQuerySkill(OVOSSkill):
             result = None
         return result
 
-    def remove_noise(self, phrase):
+    def remove_noise(self, phrase, lang=None):
         """remove noise to produce essence of question"""
+        lang = lang or self.lang
         phrase = ' ' + phrase + ' '
-        for word in self.translated_noise_words:
+        for word in self._translated_noise_words.get(lang, []):
             mtch = ' ' + word + ' '
             if phrase.find(mtch) > -1:
                 phrase = phrase.replace(mtch, " ")

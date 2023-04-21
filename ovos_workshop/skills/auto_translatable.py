@@ -165,6 +165,17 @@ class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill):
         # convert input into internal lang
         search_phrase = self.translate_utterance(search_phrase, self.internal_language, self.lang)
         result = super().__get_cq(search_phrase)
+        answer = result[2]
         # convert response back into source lang
-        result = self.translate_utterance(result, self.lang, self.internal_language)
+        answer = self.translate_utterance(answer, self.lang, self.internal_language)
+        if len(result) > 3:
+            # optional callback_data
+            result = (result[0], result[1], answer, result[3])
+        else:
+            result = (result[0], result[1], answer)
         return result
+
+    def remove_noise(self, phrase, lang=None):
+        """remove noise to produce essence of question"""
+        return super().remove_noise(phrase, self.internal_language)
+
