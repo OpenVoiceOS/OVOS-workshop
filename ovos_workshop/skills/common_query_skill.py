@@ -95,20 +95,14 @@ class CommonQuerySkill(OVOSSkill):
                                         "skill_id": self.skill_id,
                                         "searching": True}))
 
-        # Now invoke the CQS handler to let the skill perform its search
-        try:
-            result = self.CQS_match_query_phrase(search_phrase)
-        except:
-            LOG.exception(f"error matching {search_phrase} with {self.skill_id}")
-            result = None
+        result = self.__get_cq(search_phrase)
 
         if result:
             match = result[0]
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
-            confidence = self.__calc_confidence(
-                match, search_phrase, level, answer)
+            confidence = self.__calc_confidence(match, search_phrase, level, answer)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -119,6 +113,15 @@ class CommonQuerySkill(OVOSSkill):
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "searching": False}))
+
+    def __get_cq(self, search_phrase):
+        # Now invoke the CQS handler to let the skill perform its search
+        try:
+            result = self.CQS_match_query_phrase(search_phrase)
+        except:
+            LOG.exception(f"error matching {search_phrase} with {self.skill_id}")
+            result = None
+        return result
 
     def remove_noise(self, phrase):
         """remove noise to produce essence of question"""
@@ -183,7 +186,7 @@ class CommonQuerySkill(OVOSSkill):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase):
-        """Analyze phrase to see if it is a play-able phrase with this skill.
+        """Analyze phrase to see if it is a answer-able phrase with this skill.
 
         Needs to be implemented by the skill.
 

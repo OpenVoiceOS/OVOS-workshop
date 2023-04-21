@@ -41,6 +41,7 @@ from ovos_utils.gui import GUIInterface
 from ovos_utils.intents import ConverseTracker
 from ovos_utils.intents import Intent, IntentBuilder
 from ovos_utils.intents.intent_service_interface import munge_regex, munge_intent_parser, IntentServiceInterface
+from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_handler_name, create_wrapper, EventContainer, get_message_lang
 from ovos_utils.parse import match_one
@@ -1652,10 +1653,19 @@ class BaseSkill:
                 'expect_response': expect_response,
                 'meta': meta,
                 'lang': self.lang}
+
+        # grab message that triggered speech so we can keep context
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
         m.context["skill_id"] = self.skill_id
+
+        # update any auto-translation metadata in message.context
+        if "translation_data" in meta:
+            tx_data = merge_dict(m.context.get("translation_data", {}),
+                                 meta["translation_data"])
+            m.context["translation_data"] = tx_data
+
         self.bus.emit(m)
 
         if wait:

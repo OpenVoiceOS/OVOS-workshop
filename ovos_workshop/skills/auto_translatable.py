@@ -2,7 +2,9 @@ from ovos_config import Configuration
 from ovos_plugin_manager.language import OVOSLangDetectionFactory, OVOSLangTranslationFactory
 from ovos_utils import get_handler_name
 from ovos_utils.log import LOG
+
 from ovos_workshop.resource_files import SkillResources
+from ovos_workshop.skills.common_query_skill import CommonQuerySkill
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
 
 
@@ -16,7 +18,7 @@ class UniversalSkill(OVOSSkill):
 
         self.internal_language = None  # the skill internally only works in this language
         self.translate_tags = True  # __tags__ private value will be translated (adapt entities)
-        self.translate_keys = []  # any keys added here will have values translated in message.data
+        self.translate_keys = ["utterance", "utterances"]  # keys added here will have values translated in message.data
         if self.internal_language is None:
             lang = Configuration().get("lang", "en-us")
             LOG.warning(f"UniversalSkill are expected to specify their internal_language, casting to {lang}")
@@ -53,21 +55,33 @@ class UniversalSkill(OVOSSkill):
         sauce_lang = self.lang  # from message or config
         out_lang = self.internal_language  # skill wants input is in this language,
 
-        ut = message.data.get("utterance")
-        if ut:
-            message.data["utterance"] = self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
-        if "utterances" in message.data:
-            message.data["utterances"] = [self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
-                                          for ut in message.data["utterances"]]
+        translation_data = {"original": {}, "translated": {},
+                            "source_lang": sauce_lang, "internal_lang": self.internal_language}
+
+        def _do_tx(thing):
+            if isinstance(thing, str):
+                thing = self.translate_utterance(thing, target_lang=out_lang, sauce_lang=sauce_lang)
+            elif isinstance(thing, list):
+                thing = [_do_tx(t) for t in thing]
+            elif isinstance(thing, dict):
+                thing = {k: _do_tx(v) for k, v in thing.items()}
+            return thing
+
         for key in self.translate_keys:
             if key in message.data:
-                ut = message.data[key]
-                message.data[key] = self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
+                translation_data["original"][key] = message.data[key]
+                translation_data["translated"][key] = message.data[key] = _do_tx(message.data[key])
+
+        # special case
         if self.translate_tags:
+            translation_data["translated"]["__tags__"] = message.data["__tags__"]
             for idx, token in enumerate(message.data["__tags__"]):
                 message.data["__tags__"][idx] = self.translate_utterance(token.get("key", ""),
                                                                          target_lang=out_lang,
                                                                          sauce_lang=sauce_lang)
+            translation_data["translated"]["__tags__"] = message.data["__tags__"]
+
+        message.context["translation_data"] = translation_data
         return message
 
     def create_universal_handler(self, handler):
@@ -91,7 +105,16 @@ class UniversalSkill(OVOSSkill):
         # translate speech from input lang to output lang
         out_lang = self.lang  # from message or config
         sauce_lang = self.internal_language  # skill output is in this language
-        utterance = self.translate_utterance(utterance, sauce_lang, out_lang)
+        if out_lang != sauce_lang:
+            meta = kwargs.get("meta") or {}
+            meta["translation_data"] = {
+                "original": utterance,
+                "internal_lang": self.internal_language,
+                "target_lang": out_lang
+            }
+            utterance = self.translate_utterance(utterance, sauce_lang, out_lang)
+            meta["translation_data"]["translated"] = utterance
+            kwargs["meta"] = meta
         super().speak(utterance, *args, **kwargs)
 
 
@@ -113,3 +136,35 @@ class UniversalFallback(UniversalSkill, OVOSFallbackSkill):
     def register_fallback(self, handler, priority):
         handler = self.create_universal_fallback_handler(handler)
         super().register_fallback(handler, priority)
+
+
+class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill):
+    ''' CommonQuerySkill that auto translates input/output from any language
+
+     CQS_match_query_phrase and CQS_action are ensured to received phrase in self.internal_language
+
+     CQS_match_query_phrase is assumed to return a response in self.internal_lang, then translated back before speaking
+     '''
+
+    def __handle_query_action(self, message):
+        """Message handler for question:action.
+
+        Extracts phrase and data from message forward this to the skills
+        CQS_action method.
+        """
+        if message.data["skill_id"] != self.skill_id:
+            # Not for this skill!
+            return
+        message.data["phrase"] = self.translate_utterance(message.data["phrase"],
+                                                          sauce_lang=self.lang,
+                                                          target_lang=self.internal_language)
+
+        super().__handle_query_action(message)
+
+    def __get_cq(self, search_phrase):
+        # convert input into internal lang
+        search_phrase = self.translate_utterance(search_phrase, self.internal_language, self.lang)
+        result = super().__get_cq(search_phrase)
+        # convert response back into source lang
+        result = self.translate_utterance(result, self.lang, self.internal_language)
+        return result
