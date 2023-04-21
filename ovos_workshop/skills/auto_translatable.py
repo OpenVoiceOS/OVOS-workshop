@@ -1,58 +1,73 @@
+from ovos_config import Configuration
+from ovos_plugin_manager.language import OVOSLangDetectionFactory, OVOSLangTranslationFactory
 from ovos_utils import get_handler_name
 from ovos_utils.log import LOG
+from ovos_workshop.resource_files import SkillResources
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
-
-try:
-    # TODO: Below methods are not defined in ovos_utils
-    from ovos_utils.lang.translate import detect_lang, translate_text
-except ImportError as e:
-    detect_lang = None
-    translate_text = None
-    LOG.exception(e)
 
 
 class UniversalSkill(OVOSSkill):
     ''' Skill that auto translates input/output from any language '''
 
     def __init__(self, *args, **kwargs):
-        if not detect_lang and translate_text:
-            raise NotImplementedError("Translate methods not yet implemented")
         super().__init__(*args, **kwargs)
-        self.input_lang = self.lang
-        self.translate_keys = []
-        self.translate_tags = True
+        self.lang_detector = OVOSLangDetectionFactory.create()
+        self.translator = OVOSLangTranslationFactory.create()
+
+        self.internal_language = None  # the skill internally only works in this language
+        self.translate_tags = True  # __tags__ private value will be translated (adapt entities)
+        self.translate_keys = []  # any keys added here will have values translated in message.data
+        if self.internal_language is None:
+            lang = Configuration().get("lang", "en-us")
+            LOG.warning(f"UniversalSkill are expected to specify their internal_language, casting to {lang}")
+            self.internal_language = lang
+
+    def _load_lang(self, root_directory=None, lang=None):
+        """unlike base skill class all resources are in self.internal_language by default
+        instead of self.lang (which comes from message)
+        this ensures things like self.dialog_render reflect self.internal_lang
+        """
+        lang = lang or self.internal_language  # self.lang in base class
+        root_directory = root_directory or self.res_dir
+        if lang not in self._lang_resources:
+            self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
+        return self._lang_resources[lang]
 
     def detect_language(self, utterance):
         try:
-            return detect_lang(utterance)
+            return self.lang_detector.detect(utterance)
         except:
+            # self.lang to account for lang defined in message
             return self.lang.split("-")[0]
 
-    def translate(self, text, lang=None):
-        lang = lang or self.lang
-        translated = translate_text(text, lang)
-        LOG.info("translated " + text + " to " + translated)
-        return translated
-
-    def _translate_utterance(self, utterance="", lang=None):
-        lang = lang or self.input_lang
-        if utterance and lang is not None:
-            ut_lang = self.detect_language(utterance)
-            if lang.split("-")[0] != ut_lang:
-                utterance = self.translate(utterance, lang)
-        return utterance
+    def translate_utterance(self, text, target_lang, sauce_lang=None):
+        sauce_lang = sauce_lang or self.detect_language(text)
+        if sauce_lang.split("-")[0] != target_lang:
+            translated = self.translator.translate(text, source=sauce_lang, target=target_lang)
+            LOG.info("translated " + text + " to " + translated)
+            return translated
+        return text
 
     def _translate_message(self, message):
+        # translate speech from input lang to internal lang
+        sauce_lang = self.lang  # from message or config
+        out_lang = self.internal_language  # skill wants input is in this language,
+
         ut = message.data.get("utterance")
         if ut:
-            message.data["utterance"] = self._translate_utterance(ut)
+            message.data["utterance"] = self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
+        if "utterances" in message.data:
+            message.data["utterances"] = [self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
+                                          for ut in message.data["utterances"]]
         for key in self.translate_keys:
             if key in message.data:
                 ut = message.data[key]
-                message.data[key] = self._translate_utterance(ut)
+                message.data[key] = self.translate_utterance(ut, target_lang=out_lang, sauce_lang=sauce_lang)
         if self.translate_tags:
             for idx, token in enumerate(message.data["__tags__"]):
-                message.data["__tags__"][idx] = self._translate_utterance(token.get("key", ""))
+                message.data["__tags__"][idx] = self.translate_utterance(token.get("key", ""),
+                                                                         target_lang=out_lang,
+                                                                         sauce_lang=sauce_lang)
         return message
 
     def create_universal_handler(self, handler):
@@ -72,16 +87,18 @@ class UniversalSkill(OVOSSkill):
         handler = self.create_universal_handler(handler)
         super().register_intent_file(intent_file, handler)
 
-    def speak(self, utterance, expect_response=False, wait=False):
-        utterance = self._translate_utterance(utterance)
-        super().speak(utterance, expect_response, wait)
+    def speak(self, utterance, *args, **kwargs):
+        # translate speech from input lang to output lang
+        out_lang = self.lang  # from message or config
+        sauce_lang = self.internal_language  # skill output is in this language
+        utterance = self.translate_utterance(utterance, sauce_lang, out_lang)
+        super().speak(utterance, *args, **kwargs)
 
 
 class UniversalFallback(UniversalSkill, OVOSFallbackSkill):
     ''' Fallback Skill that auto translates input/output from any language '''
 
     def create_universal_fallback_handler(self, handler):
-
         def universal_fallback_handler(message):
             # auto_Translate input
             message = self._translate_message(message)
@@ -95,5 +112,4 @@ class UniversalFallback(UniversalSkill, OVOSFallbackSkill):
 
     def register_fallback(self, handler, priority):
         handler = self.create_universal_fallback_handler(handler)
-        self.instance_fallback_handlers.append(handler)
-        self._register_fallback(handler, priority)
+        super().register_fallback(handler, priority)
