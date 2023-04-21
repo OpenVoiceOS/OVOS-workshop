@@ -2,7 +2,7 @@ from ovos_config import Configuration
 from ovos_plugin_manager.language import OVOSLangDetectionFactory, OVOSLangTranslationFactory
 from ovos_utils import get_handler_name
 from ovos_utils.log import LOG
-
+from ovos_workshop.resource_files import SkillResources
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
 
 
@@ -22,6 +22,16 @@ class UniversalSkill(OVOSSkill):
             LOG.warning(f"UniversalSkill are expected to specify their internal_language, casting to {lang}")
             self.internal_language = lang
 
+    def _load_lang(self, root_directory=None, lang=None):
+        """unlike base skill class all resources are in self.internal_language by default
+        instead of self.lang (which comes from message)
+        this ensures things like self.dialog_render reflect self.internal_lang
+        """
+        lang = lang or self.internal_language  # self.lang in base class
+        root_directory = root_directory or self.res_dir
+        self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
+        return self._lang_resources[lang]
+
     def detect_language(self, utterance):
         try:
             return self.lang_detector.detect(utterance)
@@ -40,7 +50,7 @@ class UniversalSkill(OVOSSkill):
     def _translate_message(self, message):
         # translate speech from input lang to internal lang
         sauce_lang = self.lang  # from message or config
-        out_lang = self.internal_language  # skill reports output is in this language,
+        out_lang = self.internal_language  # skill wants input is in this language,
 
         ut = message.data.get("utterance")
         if ut:
@@ -79,8 +89,7 @@ class UniversalSkill(OVOSSkill):
     def speak(self, utterance, *args, **kwargs):
         # translate speech from input lang to output lang
         out_lang = self.lang  # from message or config
-        sauce_lang = self.internal_language  # skill reports output is in this language,
-        # but .dialog files might not actually need translation
+        sauce_lang = self.internal_language  # skill output is in this language
         utterance = self.translate_utterance(utterance, sauce_lang, out_lang)
         super().speak(utterance, *args, **kwargs)
 
