@@ -74,7 +74,7 @@ class UniversalSkill(OVOSSkill):
 
         # special case
         if self.translate_tags:
-            translation_data["translated"]["__tags__"] = message.data["__tags__"]
+            translation_data["original"]["__tags__"] = message.data["__tags__"]
             for idx, token in enumerate(message.data["__tags__"]):
                 message.data["__tags__"][idx] = self.translate_utterance(token.get("key", ""),
                                                                          target_lang=out_lang,
