@@ -54,7 +54,7 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
         return FallbackSkillV2(*args, **kwargs)
 
 
-class FallbackSkillV1(OVOSSkill):
+class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback):
     """Fallbacks come into play when no skill matches an Adapt or closely with
     a Padatious intent.  All Fallback skills work together to give them a
     view of the user's utterance.  Fallback handlers are called in an order
