@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a7) (2023-04-20)
+## [0.0.12a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a8) (2023-04-21)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a6...0.0.12a7)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a7...0.0.12a8)
+
+**Merged pull requests:**
+
+- refactor/move\_intent\_decorators [\#73](https://github.com/OpenVoiceOS/OVOS-workshop/pull/73) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a7) (2023-04-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a6...V0.0.12a7)
 
 **Implemented enhancements:**
 
