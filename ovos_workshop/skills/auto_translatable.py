@@ -9,7 +9,11 @@ from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
 
 
 class UniversalSkill(OVOSSkill):
-    ''' Skill that auto translates input/output from any language '''
+    ''' Skill that auto translates input/output from any language
+
+    intent handlers are ensured to receive utterances in self.internal_language
+    intent handlers are expected to produce utterances in self.internal_language
+    '''
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,7 +123,11 @@ class UniversalSkill(OVOSSkill):
 
 
 class UniversalFallback(UniversalSkill, OVOSFallbackSkill):
-    ''' Fallback Skill that auto translates input/output from any language '''
+    ''' Fallback Skill that auto translates input/output from any language
+
+    fallback handlers are ensured to receive utterances in self.internal_language
+    fallback handlers are expected to produce utterances in self.internal_language
+    '''
 
     def create_universal_fallback_handler(self, handler):
         def universal_fallback_handler(message):
