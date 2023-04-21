@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a8) (2023-04-21)
+## [0.0.12a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a9) (2023-04-21)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a7...0.0.12a8)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a8...0.0.12a9)
+
+**Fixed bugs:**
+
+- fix/skill\_launcher\_locale\_init [\#71](https://github.com/OpenVoiceOS/OVOS-workshop/pull/71) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a8) (2023-04-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a7...V0.0.12a8)
 
 **Merged pull requests:**
 
