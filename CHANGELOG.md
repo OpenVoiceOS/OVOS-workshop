@@ -1,8 +1,17 @@
 # Changelog
 
-## [0.0.12a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a9) (2023-04-21)
+## [0.0.12a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a10) (2023-04-21)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a8...0.0.12a9)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a9...0.0.12a10)
+
+**Fixed bugs:**
+
+- ERROR - No module named 'ovos\_utils.lang.translate' [\#67](https://github.com/OpenVoiceOS/OVOS-workshop/issues/67)
+- fix/universal\_skills\_are\_back [\#72](https://github.com/OpenVoiceOS/OVOS-workshop/pull/72) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a9) (2023-04-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a8...V0.0.12a9)
 
 **Fixed bugs:**
 
