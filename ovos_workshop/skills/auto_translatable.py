@@ -13,6 +13,11 @@ class UniversalSkill(OVOSSkill):
 
     intent handlers are ensured to receive utterances in self.internal_language
     intent handlers are expected to produce utterances in self.internal_language
+
+    self.speak will always translate utterances from self.internal_lang to self.lang
+
+    NOTE: self.lang reflects the original query language
+          but received utterances are always in self.internal_language
     '''
 
     def __init__(self, *args, **kwargs):
@@ -127,6 +132,12 @@ class UniversalFallback(UniversalSkill, OVOSFallbackSkill):
 
     fallback handlers are ensured to receive utterances in self.internal_language
     fallback handlers are expected to produce utterances in self.internal_language
+
+    self.speak will always translate utterances from self.internal_lang to self.lang
+
+    NOTE: self.lang reflects the original query language
+          but received utterances are always in self.internal_language
+
     '''
 
     def create_universal_fallback_handler(self, handler):
@@ -151,7 +162,13 @@ class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill):
 
      CQS_match_query_phrase and CQS_action are ensured to received phrase in self.internal_language
 
-     CQS_match_query_phrase is assumed to return a response in self.internal_lang, then translated back before speaking
+     CQS_match_query_phrase is assumed to return a response in self.internal_lang
+      it will be translated back before speaking
+
+    self.speak will always translate utterances from self.internal_lang to self.lang
+
+    NOTE: self.lang reflects the original query language
+          but received utterances are always in self.internal_language
      '''
 
     def __handle_query_action(self, message):
