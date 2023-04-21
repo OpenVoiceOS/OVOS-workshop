@@ -29,7 +29,8 @@ class UniversalSkill(OVOSSkill):
         """
         lang = lang or self.internal_language  # self.lang in base class
         root_directory = root_directory or self.res_dir
-        self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
+        if lang not in self._lang_resources:
+            self._lang_resources[lang] = SkillResources(root_directory, lang, skill_id=self.skill_id)
         return self._lang_resources[lang]
 
     def detect_language(self, utterance):
