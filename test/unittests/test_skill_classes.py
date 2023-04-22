@@ -6,6 +6,8 @@ from ovos_workshop.decorators import classproperty
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_workshop.skills.mycroft_skill import is_classic_core
+from ovos_utils.messagebus import FakeBus
+from ovos_workshop.settings import SkillSettingsManager
 
 
 class OfflineSkill(OVOSSkill):
@@ -44,13 +46,11 @@ class TestApplication(OVOSAbstractApplication):
 class TestSkills(unittest.TestCase):
 
     def test_settings_manager_init(self):
-        from ovos_utils.messagebus import FakeBus
         bus = FakeBus()
         skill_default = TestSkill(bus=bus)
         skill_default._startup(bus)
         # This doesn't apply to `mycroft-core`, only `ovos-core`
         if not is_classic_core():
-            from mycroft.skills.settings import SkillSettingsManager
             self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
 
             skill_disabled_settings = TestSkill(bus=bus,
