@@ -512,13 +512,10 @@ class SkillContainer:
             self.skill_loader.reload()
             return
         LOG.info("launching skill")
-        try:
-            if not self.skill_directory:
-                self._launch_plugin_skill()
-            else:
-                self._launch_standalone_skill()
-        except KeyboardInterrupt:
-            pass
+        if not self.skill_directory:
+            self._launch_plugin_skill()
+        else:
+            self._launch_standalone_skill()
 
     def run(self):
         self._connect_to_core()
