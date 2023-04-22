@@ -205,6 +205,8 @@ class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill):
         # convert input into internal lang
         search_phrase = self.translate_utterance(search_phrase, self.internal_language, self.lang)
         result = super().__get_cq(search_phrase)
+        if not result:
+            return None
         answer = result[2]
         # convert response back into source lang
         answer = self.translate_utterance(answer, self.lang, self.internal_language)
