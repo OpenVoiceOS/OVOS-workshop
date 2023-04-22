@@ -204,7 +204,11 @@ class CommonQuerySkill(OVOSSkill):
                 if OVOS_VERSION_MAJOR < 1 and OVOS_VERSION_MINOR < 1 and OVOS_VERSION_BUILD < 8:
                     core_speak = True
             except ImportError:
-                pass
+                try:  # classic core
+                    from mycroft.version import CORE_VERSION_MAJOR
+                    core_speak = True
+                except ImportError:
+                    pass
             if not core_speak:
                 self.speak(data["answer"])
         # Invoke derived class to provide playback data
