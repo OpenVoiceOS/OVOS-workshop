@@ -480,6 +480,12 @@ class SkillContainer:
         setup_locale()  # ensure any initializations and resource loading is handled
         self.bus = MessageBusClient()
         self.skill_id = skill_id
+        if not skill_directory:  # preference to local skills instead of plugins
+            for p in get_skill_directories():
+                if isdir(f"{p}/{skill_id}"):
+                    skill_directory = f"{p}/{skill_id}"
+                    LOG.debug(f"found local skill {skill_id}: {skill_directory}")
+                    break
         self.skill_directory = skill_directory
         self.skill_loader = None
 
@@ -552,18 +558,7 @@ def _launch_script():
     args_count = len(sys.argv)
     if args_count == 2:
         skill_id = sys.argv[1]
-
-        # preference to local skills
-        for p in get_skill_directories():
-            if isdir(f"{p}/{skill_id}"):
-                skill_directory = f"{p}/{skill_id}"
-                LOG.info(f"found local skill, loading {skill_directory}")
-                skill = SkillContainer(skill_id, skill_directory)
-                break
-        else:  # plugin skill
-            LOG.info(f"found plugin skill {skill_id}")
-            skill = SkillContainer(skill_id)
-
+        skill = SkillContainer(skill_id)
     elif args_count == 3:
         # user asked explicitly for a directory
         skill_id = sys.argv[1]
