@@ -530,8 +530,8 @@ def launch_standalone_skill(skill_directory, skill_id):
 
 def _launch_script():
     """USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]"""
-
-    if (args_count := len(sys.argv)) == 2:
+    args_count = len(sys.argv)
+    if args_count == 2:
         skill_id = sys.argv[1]
 
         # preference to local skills
