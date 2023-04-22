@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a13) (2023-04-22)
+## [0.0.12a14](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a14) (2023-04-22)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a12...0.0.12a13)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a13...0.0.12a14)
+
+**Merged pull requests:**
+
+- refactor/common\_qa\_speak [\#63](https://github.com/OpenVoiceOS/OVOS-workshop/pull/63) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a13) (2023-04-22)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a12...V0.0.12a13)
 
 **Fixed bugs:**
 
