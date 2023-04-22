@@ -476,9 +476,9 @@ class PluginSkillLoader(SkillLoader):
 
 
 class SkillContainer:
-    def __init__(self, skill_id, skill_directory=None):
+    def __init__(self, skill_id, skill_directory=None, bus=None):
         setup_locale()  # ensure any initializations and resource loading is handled
-        self.bus = MessageBusClient()
+        self.bus = bus
         self.skill_id = skill_id
         if not skill_directory:  # preference to local skills instead of plugins
             for p in get_skill_directories():
@@ -491,8 +491,10 @@ class SkillContainer:
 
     def _connect_to_core(self):
 
-        self.bus.run_in_thread()
-        self.bus.connected_event.wait()
+        if not self.bus:
+            self.bus = MessageBusClient()
+            self.bus.run_in_thread()
+            self.bus.connected_event.wait()
 
         LOG.debug("checking skills service status")
         response = self.bus.wait_for_response(Message(f'mycroft.skills.is_ready',
@@ -523,7 +525,6 @@ class SkillContainer:
             wait_for_exit_signal()
         except KeyboardInterrupt:
             pass
-
         if self.skill_loader:
             self.skill_loader.deactivate()
 
