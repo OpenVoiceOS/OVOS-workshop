@@ -118,6 +118,7 @@ class CommonQuerySkill(OVOSSkill):
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
+                                            "handles_speech": True,  # signal we performed speech in the skill
                                             "callback_data": callback,
                                             "conf": confidence}))
         else:
