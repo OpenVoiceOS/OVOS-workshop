@@ -13,7 +13,7 @@ from ovos_utils.sound import play_audio
 from ovos_workshop.decorators.killable import killable_event, \
     AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 
 
 class OVOSSkill(MycroftSkill):
@@ -70,16 +70,17 @@ class OVOSSkill(MycroftSkill):
         self._deactivate()
 
     def play_audio(self, filename):
-        try:
-            from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
-            if OVOS_VERSION_MAJOR >= 1 or \
-                    OVOS_VERSION_MINOR > 0 or \
-                    OVOS_VERSION_BUILD >= 4:
-                self.bus.emit(Message("mycroft.audio.queue",
-                                      {"filename": filename}))
-                return
-        except:
-            pass
+        if not is_classic_core():
+            try:
+                from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+                if OVOS_VERSION_MAJOR >= 1 or \
+                        OVOS_VERSION_MINOR > 0 or \
+                        OVOS_VERSION_BUILD >= 4:
+                    self.bus.emit(Message("mycroft.audio.queue",
+                                          {"filename": filename}))
+                    return
+            except:
+                pass
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
         play_audio(filename).wait()
 
@@ -202,9 +203,7 @@ class OVOSSkill(MycroftSkill):
         self.bus.emit(msg.forward('recognizer_loop:record_stop'))
 
         # special non-ovos handling
-        try:
-            from mycroft.version import OVOS_VERSION_STR
-        except ImportError:
+        if is_classic_core():
             # NOTE: mycroft does not have an event to stop recording
             # this attempts to force a stop by sending silence to end STT step
             self.bus.emit(Message('mycroft.mic.mute'))

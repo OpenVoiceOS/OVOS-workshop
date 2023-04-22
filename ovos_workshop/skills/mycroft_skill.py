@@ -21,16 +21,7 @@ from os.path import join, exists
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
 
-from ovos_workshop.skills.base import BaseSkill
-
-
-def is_classic_core():
-    """ Check if the current core is the classic mycroft-core """
-    try:
-        from mycroft.version import OVOS_VERSION_STR
-        return False
-    except ImportError:
-        return True
+from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
 class _SkillMetaclass(ABCMeta):
