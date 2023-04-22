@@ -17,7 +17,7 @@ from os.path import dirname
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG
 
-from ovos_workshop.skills.ovos import OVOSSkill
+from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
 
 class CQSMatchLevel(IntEnum):
@@ -197,16 +197,13 @@ class CommonQuerySkill(OVOSSkill):
         data = message.data.get("callback_data") or {}
         if data.get("answer"):
             # check core version, ovos-core does this speak call itself up to version 0.0.8
-            core_speak = False
-            try:
-                # TODO - validate this version before PR merge
-                from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD
-                if OVOS_VERSION_MAJOR < 1 and OVOS_VERSION_MINOR < 1 and OVOS_VERSION_BUILD < 8:
-                    core_speak = True
-            except ImportError:
-                try:  # classic core
-                    from mycroft.version import CORE_VERSION_MAJOR
-                    core_speak = True
+            core_speak = is_classic_core()
+            if not core_speak:
+                try:
+                    # TODO - validate this version before PR merge
+                    from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD
+                    if OVOS_VERSION_MAJOR < 1 and OVOS_VERSION_MINOR < 1 and OVOS_VERSION_BUILD < 8:
+                        core_speak = True
                 except ImportError:
                     pass
             if not core_speak:
