@@ -67,10 +67,15 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
 
     def _init_settings_manager(self):
         super()._init_settings_manager()
+        # backwards compat - self.settings_meta has been deprecated in favor of settings manager
         if is_classic_core():
-            from mycroft.deprecated.skills.settings import SettingsMetaUploader
-            # backwards compat - self.settings_meta has been deprecated in favor of settings manager
-            self._settings_meta = SettingsMetaUploader(self.root_dir, self.skill_id)
+            from mycroft.skills.settings import SettingsMetaUploader
+        else:
+            try:  # ovos-core compat layer
+                from mycroft.deprecated.skills.settings import SettingsMetaUploader
+                self._settings_meta = SettingsMetaUploader(self.root_dir, self.skill_id)
+            except ImportError:
+                pass  # standalone skill, skip backwards compat property
 
     def _init_settings(self):
         """Setup skill settings."""
