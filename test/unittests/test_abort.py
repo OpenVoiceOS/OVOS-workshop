@@ -3,7 +3,7 @@ import unittest
 from os.path import dirname
 from time import sleep
 
-from mycroft.skills.skill_loader import SkillLoader
+from ovos_workshop.skill_launcher import SkillLoader
 from ovos_utils.messagebus import FakeBus, Message
 
 from ovos_workshop.skills.mycroft_skill import is_classic_core

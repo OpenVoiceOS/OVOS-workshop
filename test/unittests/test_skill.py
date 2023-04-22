@@ -9,7 +9,7 @@ from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
-from mycroft.skills.skill_loader import SkillLoader
+from ovos_workshop.skill_launcher import SkillLoader
 
 
 class TestSkill(unittest.TestCase):

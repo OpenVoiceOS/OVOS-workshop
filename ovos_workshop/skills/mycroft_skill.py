@@ -18,9 +18,7 @@ import shutil
 from abc import ABCMeta
 from os.path import join, exists
 
-from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
-
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
@@ -30,16 +28,9 @@ class _SkillMetaclass(ABCMeta):
     def __instancecheck__(self, instance):
         if is_classic_core():
             # instance imported from vanilla mycroft
-            try:
-                from mycroft.skills import MycroftSkill as _CoreSkill
-                if issubclass(self.__class__, _CoreSkill):
-                    return True
-            except ImportError:
-                # not running in core - standalone skill
-                pass
-
-            # instance imported from workshop
-            # we can not patch mycroft-core class to make isinstance return True
+            from mycroft.skills import MycroftSkill as _CoreSkill
+            if issubclass(self.__class__, _CoreSkill):
+                return True
 
         return super().__instancecheck__(instance)
 
@@ -75,22 +66,25 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
             self.settings_write_path = self.root_dir
 
     def _init_settings_manager(self):
-        try:
-            from mycroft.skills.settings import SkillSettingsManager
-            from mycroft.deprecated.skills.settings import SettingsMetaUploader
-            self.settings_manager = SkillSettingsManager(self)
-            # backwards compat - self.settings_meta has been deprecated in favor of settings manager
-            self._settings_meta = SettingsMetaUploader(self.root_dir, self.skill_id)
-        except ImportError:
-            pass
+        super()._init_settings_manager()
+        # backwards compat - self.settings_meta has been deprecated in favor of settings manager
+        if is_classic_core():
+            from mycroft.skills.settings import SettingsMetaUploader
+        else:
+            try:  # ovos-core compat layer
+                from mycroft.deprecated.skills.settings import SettingsMetaUploader
+                self._settings_meta = SettingsMetaUploader(self.root_dir, self.skill_id)
+            except ImportError:
+                pass  # standalone skill, skip backwards compat property
 
     def _init_settings(self):
         """Setup skill settings."""
-        # migrate settings if needed
-        if not exists(self._settings_path) and exists(self._old_settings_path):
-            LOG.warning("Found skill settings at pre-xdg location, migrating!")
-            shutil.copy(self._old_settings_path, self._settings_path)
-            LOG.info(f"{self._old_settings_path} moved to {self._settings_path}")
+        if is_classic_core():
+            # migrate settings if needed
+            if not exists(self._settings_path) and exists(self._old_settings_path):
+                LOG.warning("Found skill settings at pre-xdg location, migrating!")
+                shutil.copy(self._old_settings_path, self._settings_path)
+                LOG.info(f"{self._old_settings_path} moved to {self._settings_path}")
 
         super()._init_settings()
 
@@ -181,8 +175,9 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     # patched due to functional (internal) differences under mycroft-core
     @property
     def _settings_path(self):
-        if self.settings_write_path and self.settings_write_path != self.root_dir:
-            LOG.warning("self.settings_write_path has been deprecated! "
-                        "Support will be dropped in a future release")
-            return join(self.settings_write_path, 'settings.json')
+        if is_classic_core():
+            if self.settings_write_path and self.settings_write_path != self.root_dir:
+                LOG.warning("self.settings_write_path has been deprecated! "
+                            "Support will be dropped in a future release")
+                return join(self.settings_write_path, 'settings.json')
         return super()._settings_path

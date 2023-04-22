@@ -17,6 +17,7 @@ import os
 import re
 from collections import namedtuple
 from os import walk
+from os.path import dirname
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -678,8 +679,11 @@ class SkillResources:
 
 class CoreResources(SkillResources):
     def __init__(self, language):
-        from mycroft import MYCROFT_ROOT_PATH
-        directory = f"{MYCROFT_ROOT_PATH}/mycroft/res"
+        try:
+            from mycroft import MYCROFT_ROOT_PATH
+            directory = f"{MYCROFT_ROOT_PATH}/mycroft/res"
+        except ImportError:
+            directory = f"{dirname(__file__)}/res"
         super().__init__(directory, language)
 
 
@@ -815,6 +819,10 @@ def resolve_resource_file(res_name):
     data_dir = config.get('data_dir', get_xdg_data_save_path())
     res_dir = os.path.join(data_dir, 'res')
     filename = os.path.expanduser(os.path.join(res_dir, res_name))
+    if os.path.isfile(filename):
+        return filename
+
+    filename = f"{dirname(__file__)}/res"
     if os.path.isfile(filename):
         return filename
 

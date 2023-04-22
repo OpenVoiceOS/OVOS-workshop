@@ -56,6 +56,7 @@ from ovos_workshop.decorators.killable import killable_event, \
 from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, SkillResources, find_resource
+from ovos_workshop.settings import SkillSettingsManager
 
 
 # backwards compat alias
@@ -400,11 +401,7 @@ class BaseSkill:
 
     # method not in mycroft-core
     def _init_settings_manager(self):
-        try:
-            from mycroft.skills.settings import SkillSettingsManager
-            self.settings_manager = SkillSettingsManager(self)
-        except ImportError:
-            pass
+        self.settings_manager = SkillSettingsManager(self)
 
     # method not present in mycroft-core
     def _start_filewatcher(self):
