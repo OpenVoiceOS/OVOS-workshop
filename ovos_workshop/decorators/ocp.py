@@ -1,7 +1,11 @@
 from functools import wraps
 from ovos_workshop.decorators.layers import IntentLayers
-from ovos_plugin_common_play.ocp import *
-from ovos_plugin_common_play.ocp.status import *
+
+try:  # TODO - remove in next stable release, nothing should import from here...
+    from ovos_plugin_common_play.ocp import *
+    from ovos_plugin_common_play.ocp.status import *
+except ImportError:
+    pass
 
 
 def ocp_search():
