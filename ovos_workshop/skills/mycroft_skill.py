@@ -18,9 +18,7 @@ import shutil
 from abc import ABCMeta
 from os.path import join, exists
 
-from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.log import LOG
-
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
@@ -68,10 +66,9 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
             self.settings_write_path = self.root_dir
 
     def _init_settings_manager(self):
+        super()._init_settings_manager()
         if is_classic_core():
-            from mycroft.skills.settings import SkillSettingsManager
             from mycroft.deprecated.skills.settings import SettingsMetaUploader
-            self.settings_manager = SkillSettingsManager(self)
             # backwards compat - self.settings_meta has been deprecated in favor of settings manager
             self._settings_meta = SettingsMetaUploader(self.root_dir, self.skill_id)
 
