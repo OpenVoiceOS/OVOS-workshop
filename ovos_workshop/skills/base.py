@@ -66,6 +66,19 @@ class SkillNetworkRequirements(RuntimeRequirements):
         super().__init__(*args, **kwargs)
 
 
+def is_classic_core():
+    """ Check if the current core is the classic mycroft-core """
+    try:
+        from mycroft.version import OVOS_VERSION_STR
+        return False  # ovos-core
+    except ImportError:
+        try:
+            from mycroft.version import CORE_VERSION_STR
+            return True  # mycroft-core
+        except ImportError:
+            return False  # standalone
+
+
 class SkillGUI(GUIInterface):
     """SkillGUI - Interface to the Graphical User Interface
 
@@ -632,11 +645,8 @@ class BaseSkill:
             self._register_system_event_handlers()
             self._register_public_api()
 
-            try:
-                from mycroft.version import OVOS_VERSION_STR
-            except ImportError:
+            if is_classic_core():
                 # inject ovos exclusive features in vanila mycroft-core if possible
-
                 ## limited support for missing skill deactivated event
                 # TODO - update ConverseTracker
                 ConverseTracker.connect_bus(self.bus)  # pull/1468
