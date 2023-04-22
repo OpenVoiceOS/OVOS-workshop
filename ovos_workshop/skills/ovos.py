@@ -26,12 +26,13 @@ class OVOSSkill(MycroftSkill):
     """
 
     def __init__(self, *args, **kwargs):
-        super(OVOSSkill, self).__init__(*args, **kwargs)
+        # note - define these before super() because of self.bind()
         self.private_settings = None
         self._threads = []
         self._original_converse = self.converse
         self.intent_layers = IntentLayers()
         self.audio_service = None
+        super(OVOSSkill, self).__init__(*args, **kwargs)
 
     def bind(self, bus):
         super().bind(bus)
