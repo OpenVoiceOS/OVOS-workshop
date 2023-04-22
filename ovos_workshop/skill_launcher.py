@@ -288,6 +288,7 @@ class SkillLoader:
         return self.active and (self.instance is None or self.instance.reload_skill)
 
     def reload(self):
+        self.load_attempted = True
         LOG.info(f'ATTEMPTING TO RELOAD SKILL: {self.skill_id}')
         if self.instance:
             if not self.instance.reload_skill:
@@ -474,58 +475,80 @@ class PluginSkillLoader(SkillLoader):
         return self.loaded
 
 
-def _connect_to_core():
-    setup_locale()  # ensure any initializations and resource loading is handled
-    bus = MessageBusClient()
-    bus.run_in_thread()
-    bus.connected_event.wait()
-    connected = False
-    while not connected:
+class SkillContainer:
+    def __init__(self, skill_id, skill_directory=None, bus=None):
+        setup_locale()  # ensure any initializations and resource loading is handled
+        self.bus = bus
+        self.skill_id = skill_id
+        if not skill_directory:  # preference to local skills instead of plugins
+            for p in get_skill_directories():
+                if isdir(f"{p}/{skill_id}"):
+                    skill_directory = f"{p}/{skill_id}"
+                    LOG.debug(f"found local skill {skill_id}: {skill_directory}")
+                    break
+        self.skill_directory = skill_directory
+        self.skill_loader = None
+
+    def _connect_to_core(self):
+
+        if not self.bus:
+            self.bus = MessageBusClient()
+            self.bus.run_in_thread()
+            self.bus.connected_event.wait()
+
         LOG.debug("checking skills service status")
-        response = bus.wait_for_response(Message(f'mycroft.skills.is_ready',
+        response = self.bus.wait_for_response(Message(f'mycroft.skills.is_ready',
                                                  context={"source": "workshop",
                                                           "destination": "skills"}))
         if response and response.data['status']:
-            connected = True
+            LOG.info("connected to core")
+            self.load_skill()
         else:
             LOG.warning("ovos-core does not seem to be running")
-    LOG.debug("connected to core")
-    return bus
 
+        self.bus.on("mycroft.ready", self.load_skill)
 
-def launch_plugin_skill(skill_id):
-    """ run a plugin skill standalone """
+    def load_skill(self, message=None):
+        if self.skill_loader:
+            LOG.info("detected core reload, reloading skill")
+            self.skill_loader.reload()
+            return
+        LOG.info("launching skill")
+        if not self.skill_directory:
+            self._launch_plugin_skill()
+        else:
+            self._launch_standalone_skill()
 
-    bus = _connect_to_core()
+    def run(self):
+        self._connect_to_core()
+        try:
+            wait_for_exit_signal()
+        except KeyboardInterrupt:
+            pass
+        if self.skill_loader:
+            self.skill_loader.deactivate()
 
-    plugins = find_skill_plugins()
-    if skill_id not in plugins:
-        raise ValueError(f"unknown skill_id: {skill_id}")
-    skill_plugin = plugins[skill_id]
-    skill_loader = PluginSkillLoader(bus, skill_id)
-    try:
-        skill_loader.load(skill_plugin)
-        wait_for_exit_signal()
-    except KeyboardInterrupt:
-        skill_loader.deactivate()
-    except Exception:
-        LOG.exception(f'Load of skill {skill_id} failed!')
+    def _launch_plugin_skill(self):
+        """ run a plugin skill standalone """
 
+        plugins = find_skill_plugins()
+        if self.skill_id not in plugins:
+            raise ValueError(f"unknown skill_id: {self.skill_id}")
+        skill_plugin = plugins[self.skill_id]
+        self.skill_loader = PluginSkillLoader(self.bus, self.skill_id)
+        try:
+            self.skill_loader.load(skill_plugin)
+        except Exception:
+            LOG.exception(f'Load of skill {self.skill_id} failed!')
 
-def launch_standalone_skill(skill_directory, skill_id):
-    """ run a skill standalone from a directory """
-
-    bus = _connect_to_core()
-
-    skill_loader = SkillLoader(bus, skill_directory,
-                               skill_id=skill_id)
-    try:
-        skill_loader.load()
-        wait_for_exit_signal()
-    except KeyboardInterrupt:
-        skill_loader.deactivate()
-    except Exception:
-        LOG.exception(f'Load of skill {skill_directory} failed!')
+    def _launch_standalone_skill(self):
+        """ run a skill standalone from a directory """
+        self.skill_loader = SkillLoader(self.bus, self.skill_directory,
+                                        skill_id=self.skill_id)
+        try:
+            self.skill_loader.load()
+        except Exception:
+            LOG.exception(f'Load of skill {self.skill_directory} failed!')
 
 
 def _launch_script():
@@ -533,24 +556,16 @@ def _launch_script():
     args_count = len(sys.argv)
     if args_count == 2:
         skill_id = sys.argv[1]
-
-        # preference to local skills
-        for p in get_skill_directories():
-            if isdir(f"{p}/{skill_id}"):
-                skill_directory = f"{p}/{skill_id}"
-                LOG.info(f"found local skill, loading {skill_directory}")
-                launch_standalone_skill(skill_directory, skill_id)
-                break
-        else:  # plugin skill
-            LOG.info(f"found plugin skill {skill_id}")
-            launch_plugin_skill(skill_id)
-
+        skill = SkillContainer(skill_id)
     elif args_count == 3:
         # user asked explicitly for a directory
         skill_id = sys.argv[1]
         skill_directory = sys.argv[2]
-        launch_standalone_skill(skill_directory, skill_id)
+        skill = SkillContainer(skill_id, skill_directory)
     else:
         print("USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]")
         raise SystemExit(2)
+
+    skill.run()
+
 
