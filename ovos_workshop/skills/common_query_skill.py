@@ -201,8 +201,10 @@ class CommonQuerySkill(OVOSSkill):
             if not core_speak:
                 try:
                     from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSIOM_ALPHA
-                    if OVOS_VERSION_MAJOR < 1 and OVOS_VERSION_MINOR < 1 and \
-                            OVOS_VERSION_BUILD <= 8 and OVOS_VERSIOM_ALPHA < 5:
+                    if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD < 8:
+                        core_speak = True
+                    elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD == 8 and \
+                            OVOS_VERSIOM_ALPHA < 5:
                         core_speak = True
                 except ImportError:
                     pass
