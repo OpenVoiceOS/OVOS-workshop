@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a10) (2023-04-21)
+## [0.0.12a11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a11) (2023-04-22)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a9...0.0.12a10)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a10...0.0.12a11)
+
+**Implemented enhancements:**
+
+- feat/auto\_tx\_skills\_continued [\#74](https://github.com/OpenVoiceOS/OVOS-workshop/pull/74) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a10) (2023-04-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a9...V0.0.12a10)
 
 **Fixed bugs:**
 
