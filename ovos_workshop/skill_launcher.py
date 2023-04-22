@@ -515,6 +515,7 @@ class SkillContainer:
             pass
 
     def run(self):
+        self._connect_to_core()
         try:
             wait_for_exit_signal()
         except KeyboardInterrupt:
