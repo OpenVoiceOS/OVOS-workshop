@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a15](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a15) (2023-04-22)
+## [0.0.12a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a16) (2023-04-22)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a14...0.0.12a15)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a15...0.0.12a16)
+
+**Implemented enhancements:**
+
+- feat/standalone\_skills [\#78](https://github.com/OpenVoiceOS/OVOS-workshop/pull/78) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a15](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a15) (2023-04-22)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a14...V0.0.12a15)
 
 **Merged pull requests:**
 
