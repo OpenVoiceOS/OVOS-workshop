@@ -62,11 +62,12 @@ class CommonQuerySkill(OVOSSkill):
         default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}/noise_words.list"
         noise_words_filename = resolve_resource_file(noise_words_filepath) or \
                                resolve_resource_file(default_res)
-        self.translated_noise_words = []
+
+        self._translated_noise_words = {}
         if noise_words_filename:
             with open(noise_words_filename) as f:
-                self.translated_noise_words = f.read().strip()
-            self.translated_noise_words = self.translated_noise_words.split()
+                translated_noise_words = f.read().strip()
+            self._translated_noise_words[self.lang] = translated_noise_words.split()
 
         # these should probably be configurable
         self.level_confidence = {
@@ -74,6 +75,16 @@ class CommonQuerySkill(OVOSSkill):
             CQSMatchLevel.CATEGORY: 0.6,
             CQSMatchLevel.GENERAL: 0.5
         }
+
+    @property
+    def translated_noise_words(self):
+        LOG.warning("self.translated_noise_words will become a private variable in next release")
+        return self._translated_noise_words.get(self.lang, [])
+
+    @translated_noise_words.setter
+    def translated_noise_words(self, val):
+        LOG.warning("self.translated_noise_words will become a private variable in next release")
+        self._translated_noise_words[self.lang] = val
 
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
@@ -95,20 +106,14 @@ class CommonQuerySkill(OVOSSkill):
                                         "skill_id": self.skill_id,
                                         "searching": True}))
 
-        # Now invoke the CQS handler to let the skill perform its search
-        try:
-            result = self.CQS_match_query_phrase(search_phrase)
-        except:
-            LOG.exception(f"error matching {search_phrase} with {self.skill_id}")
-            result = None
+        result = self.__get_cq(search_phrase)
 
         if result:
             match = result[0]
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else None
-            confidence = self.__calc_confidence(
-                match, search_phrase, level, answer)
+            confidence = self.__calc_confidence(match, search_phrase, level, answer)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
@@ -120,10 +125,20 @@ class CommonQuerySkill(OVOSSkill):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def remove_noise(self, phrase):
+    def __get_cq(self, search_phrase):
+        # Now invoke the CQS handler to let the skill perform its search
+        try:
+            result = self.CQS_match_query_phrase(search_phrase)
+        except:
+            LOG.exception(f"error matching {search_phrase} with {self.skill_id}")
+            result = None
+        return result
+
+    def remove_noise(self, phrase, lang=None):
         """remove noise to produce essence of question"""
+        lang = lang or self.lang
         phrase = ' ' + phrase + ' '
-        for word in self.translated_noise_words:
+        for word in self._translated_noise_words.get(lang, []):
             mtch = ' ' + word + ' '
             if phrase.find(mtch) > -1:
                 phrase = phrase.replace(mtch, " ")
@@ -183,7 +198,7 @@ class CommonQuerySkill(OVOSSkill):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase):
-        """Analyze phrase to see if it is a play-able phrase with this skill.
+        """Analyze phrase to see if it is a answer-able phrase with this skill.
 
         Needs to be implemented by the skill.
 
