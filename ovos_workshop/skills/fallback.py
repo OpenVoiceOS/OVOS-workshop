@@ -23,7 +23,7 @@ from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
 
 from ovos_workshop.permissions import FallbackMode
-from ovos_workshop.skills.ovos import OVOSSkill
+from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
 
 class _MutableFallback(type(OVOSSkill)):
@@ -37,16 +37,13 @@ class _MutableFallback(type(OVOSSkill)):
 
 class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
     def __new__(cls, *args, **kwargs):
-        is_old = False
-        try:
-            from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
-            if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD <= 8 and OVOS_VERSION_ALPHA < 5:
-                is_old = True
-        except ImportError:
+        is_old = is_classic_core()
+        if not is_old:
             try:
-                from mycroft.version import CORE_VERSION_MAJOR
-                is_old = True
-            except:
+                from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
+                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD <= 8 and OVOS_VERSION_ALPHA < 5:
+                    is_old = True
+            except ImportError:
                 pass
         if is_old:
             return FallbackSkillV1(*args, **kwargs)
