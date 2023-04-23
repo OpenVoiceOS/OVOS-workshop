@@ -30,9 +30,9 @@ class _MutableFallback(type(OVOSSkill)):
     """ To override isinstance checks we need to use a metaclass """
 
     def __instancecheck__(self, instance):
-        if isinstance(instance, (FallbackSkillV1, FallbackSkillV2, FallbackSkill)):
+        if isinstance(instance, (FallbackSkillV1, FallbackSkillV2)):
             return True
-        return False
+        return super().__instancecheck__(instance)
 
 
 class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
@@ -54,7 +54,16 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
         return FallbackSkillV2(*args, **kwargs)
 
 
-class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback):
+class _MutableFallback1(type(OVOSSkill)):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __instancecheck__(self, instance):
+        if isinstance(instance, (FallbackSkillV2, FallbackSkill)):
+            return True
+        return super().__instancecheck__(instance)
+
+
+class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback1):
     """Fallbacks come into play when no skill matches an Adapt or closely with
     a Padatious intent.  All Fallback skills work together to give them a
     view of the user's utterance.  Fallback handlers are called in an order
@@ -279,7 +288,16 @@ class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback):
                 self.register_fallback(method, method.fallback_priority)
 
 
-class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback):
+class _MutableFallback2(type(OVOSSkill)):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __instancecheck__(self, instance):
+        if isinstance(instance, (FallbackSkillV1, FallbackSkill)):
+            return True
+        return super().__instancecheck__(instance)
+
+
+class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
     """
     Fallbacks come into play when no skill matches an intent.
 
