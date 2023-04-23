@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from ovos_workshop.skills.fallback import FallbackSkill
+from ovos_workshop.skills.fallback import FallbackSkillV1 as FallbackSkill
 
 
 def setup_fallback(fb_class):
