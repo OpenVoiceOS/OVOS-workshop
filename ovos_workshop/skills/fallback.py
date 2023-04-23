@@ -41,7 +41,10 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
         if not is_old:
             try:
                 from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
-                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD <= 8 and OVOS_VERSION_ALPHA < 5:
+                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD < 8:
+                    is_old = True
+                elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD == 8 \
+                        and 0 < OVOS_VERSION_ALPHA < 5:
                     is_old = True
             except ImportError:
                 pass
