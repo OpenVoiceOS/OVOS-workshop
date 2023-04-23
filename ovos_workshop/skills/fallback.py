@@ -26,7 +26,7 @@ from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill
 
 
-class _MutableFallback(OVOSSkill):
+class _MutableFallback(type(OVOSSkill)):
     """ To override isinstance checks we need to use a metaclass """
 
     def __instancecheck__(self, instance):
