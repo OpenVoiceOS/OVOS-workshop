@@ -267,6 +267,10 @@ class ResourceFile:
 
 
 class QmlFile(ResourceFile):
+    def __init__(self, resource_name):
+        super().__init__(resource_type=SkillResourceTypes.qml,
+                         resource_name=resource_name)
+
     def _locate(self):
         """ QML files are special because we do not want to walk the directory """
         file_path = None
@@ -306,8 +310,8 @@ class QmlFile(ResourceFile):
 class DialogFile(ResourceFile):
     """Defines a dialog file, which is used instruct TTS what to speak."""
 
-    def __init__(self, resource_type, resource_name):
-        super().__init__(resource_type, resource_name)
+    def __init__(self, resource_name):
+        super().__init__(SkillResourceTypes.dialog, resource_name)
         self.data = None
 
     def load(self) -> List[str]:
@@ -342,6 +346,9 @@ class DialogFile(ResourceFile):
 class VocabularyFile(ResourceFile):
     """Defines a vocabulary file, which skill use to form intents."""
 
+    def __init__(self, resource_name):
+        super().__init__(SkillResourceTypes.vocabulary, resource_name)
+
     def load(self) -> List[List[str]]:
         """Loads a vocabulary file.
 
@@ -364,8 +371,8 @@ class VocabularyFile(ResourceFile):
 class NamedValueFile(ResourceFile):
     """Defines a named value file, which maps a variable to a values."""
 
-    def __init__(self, resource_type, resource_name):
-        super().__init__(resource_type, resource_name)
+    def __init__(self, resource_name):
+        super().__init__(SkillResourceTypes.named_value, resource_name)
         self.delimiter = ","
 
     def load(self) -> dict:
@@ -404,14 +411,21 @@ class NamedValueFile(ResourceFile):
 
 
 class ListFile(DialogFile):
-    pass
+    def __init__(self, resource_name):
+        ResourceFile.__init__(self, SkillResourceTypes.list, resource_name)
+        self.data = None
 
 
 class TemplateFile(DialogFile):
-    pass
+    def __init__(self, resource_name):
+        ResourceFile.__init__(self, SkillResourceTypes.template, resource_name)
+        self.data = None
 
 
 class RegexFile(ResourceFile):
+    def __init__(self, resource_name):
+        super().__init__(SkillResourceTypes.regex, resource_name)
+
     def load(self):
         regex_patterns = []
         if self.file_path:
@@ -422,6 +436,9 @@ class RegexFile(ResourceFile):
 
 class WordFile(ResourceFile):
     """Defines a word file, which defines a word in the configured language."""
+
+    def __init__(self, resource_name):
+        super().__init__(SkillResourceTypes.word, resource_name)
 
     def load(self) -> Optional[str]:
         """Load and lines from a file and populate the variables.
@@ -436,6 +453,36 @@ class WordFile(ResourceFile):
                 break
 
         return word
+
+
+class IntentFile(ResourceFile):
+    """Defines a .intent file, which is used to train example based intents"""
+
+    def __init__(self, resource_name):
+        super().__init__(resource_type=SkillResourceTypes.intent,
+                         resource_name=resource_name)
+
+    def load(self) -> List[str]:
+        """Load and lines from a file and populate the variables.
+
+        Returns:
+            Contents of the file with variables resolved.
+        """
+        samples = None
+        if self.file_path is not None:
+            samples = []
+            for line in self._read():
+                line = line.replace("{{", "{").replace("}}", "}")
+                samples += expand_options(line.lower())
+
+        return samples
+
+
+class EntityFile(VocabularyFile):
+    """Defines a entity file, which skill use to form intent slots."""
+
+    def __init__(self, resource_name):
+        ResourceFile.__init__(self, SkillResourceTypes.entity, resource_name)
 
 
 class SkillResources:
@@ -505,12 +552,12 @@ class SkillResources:
         Returns:
             A list of phrases with variables resolved
         """
-        dialog_file = DialogFile(self.types.dialog, name)
+        dialog_file = DialogFile(name)
         dialog_file.data = data
         return dialog_file.load()
 
     def locate_qml_file(self, name):
-        qml_file = QmlFile(self.types.qml, name)
+        qml_file = QmlFile(name)
         return qml_file.load()
 
     def load_list_file(self, name, data=None) -> List[str]:
@@ -544,7 +591,7 @@ class SkillResources:
         if name in self.static:
             named_values = self.static[name]
         else:
-            named_value_file = NamedValueFile(self.types.named_value, name)
+            named_value_file = NamedValueFile(name)
             if delimiter is not None:
                 named_value_file.delimiter = delimiter
             named_values = named_value_file.load()
@@ -564,7 +611,7 @@ class SkillResources:
         Returns:
             List representation of the regular expression file.
         """
-        regex_file = RegexFile(self.types.regex, name)
+        regex_file = RegexFile(name)
         return regex_file.load()
 
     def load_template_file(self, name, data=None) -> List[str]:
@@ -595,7 +642,7 @@ class SkillResources:
         Returns:
             List representation of the regular expression file.
         """
-        vocabulary_file = VocabularyFile(self.types.vocabulary, name)
+        vocabulary_file = VocabularyFile(name)
         return vocabulary_file.load()
 
     def load_word_file(self, name) -> Optional[str]:
@@ -606,7 +653,7 @@ class SkillResources:
         Returns:
             List representation of the regular expression file.
         """
-        word_file = WordFile(self.types.word, name)
+        word_file = WordFile(name)
         return word_file.load()
 
     def render_dialog(self, name, data=None) -> str:
@@ -618,7 +665,7 @@ class SkillResources:
         Returns:
             Random record from the file with variables resolved.
         """
-        resource_file = DialogFile(self.types.dialog, name)
+        resource_file = DialogFile(name)
         resource_file.data = data
         return resource_file.render(self.dialog_renderer)
 

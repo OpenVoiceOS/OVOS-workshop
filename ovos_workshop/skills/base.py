@@ -54,8 +54,8 @@ from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.decorators.killable import killable_event, \
     AbortQuestion
 from ovos_workshop.filesystem import FileSystemAccess
-from ovos_workshop.resource_files import ResourceFile, \
-    CoreResources, SkillResources, find_resource
+from ovos_workshop.resource_files import EntityFile, \
+    CoreResources, SkillResources, find_resource, IntentFile
 from ovos_workshop.settings import SkillSettingsManager
 
 
@@ -1463,11 +1463,12 @@ class BaseSkill:
         """
         for lang in self._native_langs:
             name = f'{self.skill_id}:{intent_file}'
-            resource_file = ResourceFile(self._resources.types.intent, intent_file)
+            resource_file = IntentFile(intent_file)
             if resource_file.file_path is None:
                 self.log.error(f'Unable to find "{intent_file}"')
                 continue
             filename = str(resource_file.file_path)
+            samples = resource_file.load()
             self.intent_service.register_padatious_intent(name, filename, lang)
             if handler:
                 self.add_event(name, handler, 'mycroft.skill.handler')
@@ -1490,7 +1491,7 @@ class BaseSkill:
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
         for lang in self._native_langs:
-            entity = ResourceFile(self._resources.types.entity, entity_file)
+            entity = EntityFile(entity_file)
             if entity.file_path is None:
                 self.log.error(f'Unable to find "{entity_file}"')
                 continue
