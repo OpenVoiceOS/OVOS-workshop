@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.0.12a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a16) (2023-04-22)
+## [V0.0.12a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a16) (2023-04-22)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a15...0.0.12a16)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a15...V0.0.12a16)
 
 **Implemented enhancements:**
 
