@@ -18,14 +18,52 @@ utterances not handled by the intent system.
 import operator
 
 from ovos_utils.log import LOG
-from ovos_utils.messagebus import get_handler_name
+from ovos_utils.messagebus import get_handler_name, Message
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
-from ovos_workshop.skills.ovos import OVOSSkill
+
 from ovos_workshop.permissions import FallbackMode
+from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
 
-class FallbackSkill(OVOSSkill):
+class _MutableFallback(type(OVOSSkill)):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __instancecheck__(self, instance):
+        if isinstance(instance, (FallbackSkillV1, FallbackSkillV2)):
+            return True
+        return super().__instancecheck__(instance)
+
+
+class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
+    def __new__(cls, *args, **kwargs):
+        is_old = is_classic_core()
+        if not is_old:
+            try:
+                from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
+                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD < 8:
+                    is_old = True
+                elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD == 8 \
+                        and 0 < OVOS_VERSION_ALPHA < 5:
+                    is_old = True
+            except ImportError:
+                pass
+        if is_old:
+            return FallbackSkillV1(*args, **kwargs)
+        # core supports fallback V2
+        return FallbackSkillV2(*args, **kwargs)
+
+
+class _MutableFallback1(type(OVOSSkill)):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __instancecheck__(self, instance):
+        if isinstance(instance, (FallbackSkillV2, FallbackSkill)):
+            return True
+        return super().__instancecheck__(instance)
+
+
+class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback1):
     """Fallbacks come into play when no skill matches an Adapt or closely with
     a Padatious intent.  All Fallback skills work together to give them a
     view of the user's utterance.  Fallback handlers are called in an order
@@ -233,7 +271,155 @@ class FallbackSkill(OVOSSkill):
     def default_shutdown(self):
         """Remove all registered handlers and perform skill shutdown."""
         self.remove_instance_handlers()
-        super(FallbackSkill, self).default_shutdown()
+        super().default_shutdown()
+
+    def _register_decorated(self):
+        """Register all intent handlers that are decorated with an intent.
+
+        Looks for all functions that have been marked by a decorator
+        and read the intent data from them.  The intent handlers aren't the
+        only decorators used.  Skip properties as calling getattr on them
+        executes the code which may have unintended side-effects
+        """
+        super()._register_decorated()
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'fallback_priority'):
+                self.register_fallback(method, method.fallback_priority)
+
+
+class _MutableFallback2(type(OVOSSkill)):
+    """ To override isinstance checks we need to use a metaclass """
+
+    def __instancecheck__(self, instance):
+        if isinstance(instance, (FallbackSkillV1, FallbackSkill)):
+            return True
+        return super().__instancecheck__(instance)
+
+
+class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
+    """
+    Fallbacks come into play when no skill matches an intent.
+
+    Fallback handlers are called in an order determined the
+    priority provided when the skill is registered.
+
+    ========   ========   ================================================
+    Priority   Who?       Purpose
+    ========   ========   ================================================
+       1-4     RESERVED   Unused for now, slot for pre-Padatious if needed
+         5     MYCROFT    Padatious near match (conf > 0.8)
+      6-88     USER       General
+        89     MYCROFT    Padatious loose match (conf > 0.5)
+     90-99     USER       Uncaught intents
+       100+    MYCROFT    Fallback Unknown or other future use
+    ========   ========   ================================================
+
+    Handlers with the numerically lowest priority are invoked first.
+    Multiple fallbacks can exist at the same priority, but no order is
+    guaranteed.
+
+    A Fallback can either observe or consume an utterance. A consumed
+    utterance will not be see by any other Fallback handlers.
+
+    A skill might register several handlers, the lowest priority will be reported to core
+    If a skill is selected by core then all handlers are checked by
+    their priority until one can handle the utterance
+
+    A skill may return False in the can_answer method to request
+    that core does not execute it's fallback handlers
+    """
+
+    def __init__(self, bus=None, skill_id=""):
+        super().__init__(bus=bus, skill_id=skill_id)
+        # "skill_id": priority (int)  overrides
+        self.fallback_config = self.config_core["skills"].get("fallbacks", {})
+        self._fallback_handlers = []
+
+    @property
+    def priority(self):
+        priority_overrides = self.fallback_config.get("fallback_priorities", {})
+        if self.skill_id in priority_overrides:
+            return priority_overrides.get(self.skill_id)
+        if len(self._fallback_handlers):
+            return min([p[0] for p in self._fallback_handlers])
+        return 101
+
+    def can_answer(self, utterances, lang):
+        """Check if the skill can answer the particular question.
+
+
+        Arguments:
+            utterances (list): list of possible transcriptions to parse
+            lang (str) : lang code
+        Returns:
+            (bool) True if skill can handle the query
+        """
+        return len(self._fallback_handlers) > 0
+
+    def _register_system_event_handlers(self):
+        """Add all events allowing the standard interaction with the Mycroft
+        system.
+        """
+        super()._register_system_event_handlers()
+        self.add_event('ovos.skills.fallback.ping', self._handle_fallback_ack, speak_errors=False)
+        self.add_event("ovos.skills.fallback.request", self._handle_fallback_request, speak_errors=False)
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id, "priority": self.priority}))
+
+    def _handle_fallback_ack(self, message):
+        """Inform skills service we can handle fallbacks."""
+        utts = message.data.get("utterances", [])
+        lang = message.data.get("lang")
+        self.bus.emit(message.reply(
+            "ovos.skills.fallback.pong",
+            data={"skill_id": self.skill_id,
+                  "can_handle": self.can_answer(utts, lang)},
+            context={"skill_id": self.skill_id}))
+
+    def _handle_fallback_request(self, message):
+        # indicate fallback handling start
+        self.bus.emit(message.forward(f"ovos.skills.fallback.{self.skill_id}.start"))
+
+        handler_name = None
+
+        # each skill can register multiple handlers with different priorities
+        sorted_handlers = sorted(self._fallback_handlers, key=operator.itemgetter(0))
+        for prio, handler in sorted_handlers:
+            try:
+                if handler(message):
+                    # indicate completion
+                    status = True
+                    handler_name = get_handler_name(handler)
+                    break
+            except Exception:
+                LOG.exception('Exception in fallback.')
+        else:
+            status = False
+
+        self.bus.emit(message.forward(f"ovos.skills.fallback.{self.skill_id}.response",
+                                      data={"result": status,
+                                            "fallback_handler": handler_name}))
+
+    def register_fallback(self, handler, priority):
+        """Register a fallback with the list of fallback handlers and with the
+        list of handlers registered by this instance
+        """
+
+        def wrapper(*args, **kwargs):
+            if handler(*args, **kwargs):
+                self.activate()
+                return True
+            return False
+
+        self._fallback_handlers.append((priority, wrapper))
+        self.bus.on(f"ovos.skills.fallback.{self.skill_id}", wrapper)
+
+    def default_shutdown(self):
+        """Remove all registered handlers and perform skill shutdown."""
+        self.bus.emit(Message("ovos.skills.fallback.deregister", {"skill_id": self.skill_id}))
+        self.bus.remove_all_listeners(f"ovos.skills.fallback.{self.skill_id}")
+        super().default_shutdown()
 
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
