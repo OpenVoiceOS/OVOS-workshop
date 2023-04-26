@@ -53,6 +53,11 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
         # core supports fallback V2
         return FallbackSkillV2(*args, **kwargs)
 
+    @classmethod
+    def make_intent_failure_handler(cls, bus):
+        """backwards compat, old version of ovos-core call this method to bind the bus to old class"""
+        return FallbackSkillV1.make_intent_failure_handler(bus)
+
 
 class _MutableFallback1(type(OVOSSkill)):
     """ To override isinstance checks we need to use a metaclass """
@@ -329,6 +334,11 @@ class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
     A skill may return False in the can_answer method to request
     that core does not execute it's fallback handlers
     """
+
+    @classmethod
+    def make_intent_failure_handler(cls, bus):
+        """backwards compat, old version of ovos-core call this method to bind the bus to old class"""
+        return FallbackSkillV1.make_intent_failure_handler(bus)
 
     def __init__(self, bus=None, skill_id=""):
         super().__init__(bus=bus, skill_id=skill_id)
