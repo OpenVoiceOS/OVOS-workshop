@@ -21,7 +21,7 @@ from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_handler_name, Message
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
-
+from ovos_config import Configuration
 from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
@@ -30,13 +30,21 @@ class _MutableFallback(type(OVOSSkill)):
     """ To override isinstance checks we need to use a metaclass """
 
     def __instancecheck__(self, instance):
-        if isinstance(instance, (FallbackSkillV1, FallbackSkillV2)):
+        if isinstance(instance, _MetaFB):
             return True
         return super().__instancecheck__(instance)
 
 
-class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
+class _MetaFB(OVOSSkill):
+    pass
+
+
+class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
     def __new__(cls, *args, **kwargs):
+        if cls is FallbackSkill:
+            # direct instantiation of class, dynamic wizardry or unittests going on
+            return super().__new__(cls)
+
         is_old = is_classic_core()
         if not is_old:
             try:
@@ -49,9 +57,10 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
             except ImportError:
                 pass
         if is_old:
-            return FallbackSkillV1(*args, **kwargs)
-        # core supports fallback V2
-        return FallbackSkillV2(*args, **kwargs)
+            cls.__bases__ = (FallbackSkillV1, _MetaFB)
+        else:
+            cls.__bases__ = (FallbackSkillV2, _MetaFB)
+        return super().__new__(cls, *args, **kwargs)
 
     @classmethod
     def make_intent_failure_handler(cls, bus):
@@ -59,16 +68,8 @@ class FallbackSkill(OVOSSkill, metaclass=_MutableFallback):
         return FallbackSkillV1.make_intent_failure_handler(bus)
 
 
-class _MutableFallback1(type(OVOSSkill)):
-    """ To override isinstance checks we need to use a metaclass """
 
-    def __instancecheck__(self, instance):
-        if isinstance(instance, (FallbackSkillV2, FallbackSkill)):
-            return True
-        return super().__instancecheck__(instance)
-
-
-class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback1):
+class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     """Fallbacks come into play when no skill matches an Adapt or closely with
     a Padatious intent.  All Fallback skills work together to give them a
     view of the user's utterance.  Fallback handlers are called in an order
@@ -293,16 +294,7 @@ class FallbackSkillV1(OVOSSkill, metaclass=_MutableFallback1):
                 self.register_fallback(method, method.fallback_priority)
 
 
-class _MutableFallback2(type(OVOSSkill)):
-    """ To override isinstance checks we need to use a metaclass """
-
-    def __instancecheck__(self, instance):
-        if isinstance(instance, (FallbackSkillV1, FallbackSkill)):
-            return True
-        return super().__instancecheck__(instance)
-
-
-class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
+class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
     """
     Fallbacks come into play when no skill matches an intent.
 
@@ -335,16 +327,17 @@ class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
     that core does not execute it's fallback handlers
     """
 
+    # "skill_id": priority (int)  overrides
+    fallback_config = Configuration().get("skills", {}).get("fallbacks", {})
+
     @classmethod
     def make_intent_failure_handler(cls, bus):
         """backwards compat, old version of ovos-core call this method to bind the bus to old class"""
         return FallbackSkillV1.make_intent_failure_handler(bus)
 
     def __init__(self, bus=None, skill_id=""):
-        super().__init__(bus=bus, skill_id=skill_id)
-        # "skill_id": priority (int)  overrides
-        self.fallback_config = self.config_core["skills"].get("fallbacks", {})
         self._fallback_handlers = []
+        super().__init__(bus=bus, skill_id=skill_id)
 
     @property
     def priority(self):
@@ -373,7 +366,7 @@ class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
         """
         super()._register_system_event_handlers()
         self.add_event('ovos.skills.fallback.ping', self._handle_fallback_ack, speak_errors=False)
-        self.add_event("ovos.skills.fallback.request", self._handle_fallback_request, speak_errors=False)
+        self.add_event(f"ovos.skills.fallback.{self.skill_id}.request", self._handle_fallback_request, speak_errors=False)
         self.bus.emit(Message("ovos.skills.fallback.register",
                               {"skill_id": self.skill_id, "priority": self.priority}))
 
@@ -415,6 +408,8 @@ class FallbackSkillV2(OVOSSkill, metaclass=_MutableFallback2):
         """Register a fallback with the list of fallback handlers and with the
         list of handlers registered by this instance
         """
+
+        LOG.info(f"registering fallback handler -> ovos.skills.fallback.{self.skill_id}")
 
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
