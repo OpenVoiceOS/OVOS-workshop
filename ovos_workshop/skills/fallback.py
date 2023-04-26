@@ -42,8 +42,9 @@ class _MetaFB(OVOSSkill):
 class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
     def __new__(cls, *args, **kwargs):
         if cls is FallbackSkill:
-            # direct instantiation of class, dynamic wizardry or unittests going on
-            return super().__new__(cls)
+            # direct instantiation of class, dynamic wizardry or unittests going on...
+            # return V2 as expected, V1 will eventually be dropped
+            return FallbackSkillV2(*args, **kwargs)
 
         is_old = is_classic_core()
         if not is_old:
