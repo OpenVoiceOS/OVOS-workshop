@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a18) (2023-04-25)
+## [0.0.12a19](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a19) (2023-04-26)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a17...0.0.12a18)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a18...0.0.12a19)
+
+**Fixed bugs:**
+
+- fix/fallback [\#80](https://github.com/OpenVoiceOS/OVOS-workshop/pull/80) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a18) (2023-04-25)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a17...V0.0.12a18)
 
 **Implemented enhancements:**
 
