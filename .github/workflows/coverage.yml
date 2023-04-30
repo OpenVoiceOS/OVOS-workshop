@@ -1,4 +1,4 @@
-name: Upload Code Coverage
+name: Run UnitTests
 on:
   push:
     branches:
@@ -7,23 +7,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    title: "Running codecov test"
-    type: "freestyle" # Run any command
-    image: "node:14.19.0" # The image in which command will be executed
-    working_directory: "${{clone}}" # Running command where code cloned
-    commands:
-      - "npm install --save-dev jest"
-      - "npx jest --coverage"
-    stage: "test"
-
-  upload_cov:
-    title: "Running coverage"
-    type: "freestyle" # Run any command
-    image: "node:14.19.0" # The image in which command will be executed
-    working_directory: "${{clone}}" # Running command where code cloned
-    commands:
-      - "ci_env=`curl -s https://codecov.io/env`"
-      - "npm install codecov -g"
-      - "codecov -t ${{CODECOV_TOKEN}} -f ./coverage/ovos_cov.xml"
-    stage: "upload"
+  run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHON: '3.10'
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup Python
+      uses: actions/setup-python@master
+      with:
+        python-version: 3.10
+    - name: Generate coverage report
+      run: |
+        pip install pytest
+        pip install pytest-cov
+        pytest --cov=./test/unittests --cov-report=xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./coverage/reports/
+        fail_ci_if_error: true
+        files: ./coverage.xml,!./cache
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
