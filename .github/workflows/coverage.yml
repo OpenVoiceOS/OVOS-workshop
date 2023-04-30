@@ -17,6 +17,14 @@ jobs:
       uses: actions/setup-python@master
       with:
         python-version: 3.9
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt install python3-dev
+        python -m pip install build wheel
+    - name: Install repo
+      run: |
+        pip install .
     - name: Generate coverage report
       run: |
         pip install pytest
