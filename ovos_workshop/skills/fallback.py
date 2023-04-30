@@ -58,9 +58,9 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
             except ImportError:
                 pass
         if is_old:
-            cls.__bases__ = (FallbackSkillV1, _MetaFB)
+            cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
         else:
-            cls.__bases__ = (FallbackSkillV2, _MetaFB)
+            cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
         return super().__new__(cls, *args, **kwargs)
 
     @classmethod
