@@ -1,8 +1,7 @@
-name: Run UnitTests
+name: Run CodeCov
 on:
   push:
     branches:
-      - master
       - dev
   workflow_dispatch:
 
@@ -22,6 +21,11 @@ jobs:
         sudo apt-get update
         sudo apt install python3-dev
         python -m pip install build wheel
+    - name: Install test dependencies
+      run: |
+        sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
+        pip install ovos-core[all]
+        pip install pytest pytest-timeout pytest-cov adapt-parser~=0.5
     - name: Install repo
       run: |
         pip install .
