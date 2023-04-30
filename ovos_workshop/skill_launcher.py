@@ -474,6 +474,10 @@ class PluginSkillLoader(SkillLoader):
         self._communicate_load_status()
         return self.loaded
 
+    def activate(self):
+        self.active = True
+        self.load(self._skill_class)
+
 
 class SkillContainer:
     def __init__(self, skill_id, skill_directory=None, bus=None):
