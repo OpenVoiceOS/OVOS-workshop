@@ -191,7 +191,7 @@ class BaseSkill:
         # skill loader was not used to create skill object, we are missing the kwargs
         # skill wont be fully inited, please move logic to initialize
         LOG.warning(f"{cls.__name__} not fully inited, self.bus and self.skill_id will only be available in self.initialize")
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     def __init__(self, name=None, bus=None, resources_dir=None,
                  settings: JsonStorage = None,
