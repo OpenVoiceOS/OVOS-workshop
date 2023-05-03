@@ -463,6 +463,9 @@ class PluginSkillLoader(SkillLoader):
     def load(self, skill_class):
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
         self._skill_class = skill_class
+        return self._load()
+
+    def _load(self):
         self._prepare_for_load()
         if self.is_blacklisted:
             self._skip_load()
