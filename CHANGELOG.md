@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a24](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a24) (2023-05-01)
+## [0.0.12a25](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a25) (2023-05-03)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a23...0.0.12a24)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a24...0.0.12a25)
+
+**Fixed bugs:**
+
+- fix/core\_reload in standalone launcher [\#88](https://github.com/OpenVoiceOS/OVOS-workshop/pull/88) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a24](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a24) (2023-05-01)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a23...V0.0.12a24)
 
 **Implemented enhancements:**
 
