@@ -48,7 +48,7 @@ jobs:
       - name: Install package
         run: |
           pip install .[all]
-      - uses: pypa/gh-action-pip-audit@v1.0.0
+      - uses: pypa/gh-action-pip-audit@v1.0.7
         with:
           # Ignore setuptools vulnerability we can't do much about
           ignore-vulns: |
