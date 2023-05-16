@@ -5,6 +5,8 @@ from os.path import isdir
 import sys
 from inspect import isclass
 from os import path, makedirs
+from typing import Optional
+
 from time import time
 
 from ovos_bus_client.client import MessageBusClient
@@ -24,7 +26,7 @@ from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill
 from ovos_workshop.skills.fallback import FallbackSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill, _SkillMetaclass
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
 
 SKILL_BASE_CLASSES = [
@@ -70,7 +72,7 @@ def get_skill_directories(conf=None):
     # we are still dependent on the mycroft-core structure of skill_id/__init__.py
 
     conf = conf or Configuration()
-    folder = conf["skills"].get("directory")
+    folder = conf["skills"].get("directory") or "skills"
 
     # load all valid XDG paths
     # NOTE: skills are actually code, but treated as user data!
@@ -87,7 +89,7 @@ def get_skill_directories(conf=None):
     return skill_locations
 
 
-def get_default_skills_directory():
+def get_default_skills_directory(conf=None):
     """ return default directory to scan for skills
 
     data_dir is always XDG_DATA_DIR
@@ -107,14 +109,15 @@ def get_default_skills_directory():
     Args:
         conf (dict): mycroft.conf dict, will be loaded automatically if None
     """
-    folder = Configuration()["skills"].get("directory")
+    conf = conf or Configuration()
+    folder = conf["skills"].get("directory") or "skills"
     skills_folder = os.path.join(get_xdg_data_save_path(), folder)
     # create folder if needed
     makedirs(skills_folder, exist_ok=True)
-    return path.expanduser(skills_folder)
+    return skills_folder
 
 
-def remove_submodule_refs(module_name):
+def remove_submodule_refs(module_name: str):
     """Ensure submodules are reloaded by removing the refs from sys.modules.
 
     Python import system puts a reference for each module in the sys.modules
@@ -136,7 +139,7 @@ def remove_submodule_refs(module_name):
         del sys.modules[m]
 
 
-def load_skill_module(path, skill_id):
+def load_skill_module(path: str, skill_id: str):
     """Load a skill module
 
     This function handles the differences between python 3.4 and 3.5+ as well
@@ -157,7 +160,7 @@ def load_skill_module(path, skill_id):
     return mod
 
 
-def get_skill_class(skill_module):
+def get_skill_class(skill_module) -> Optional[callable]:
     """Find MycroftSkill based class in skill module.
 
     Arguments:
@@ -193,7 +196,7 @@ def get_skill_class(skill_module):
     return None
 
 
-def get_create_skill_function(skill_module):
+def get_create_skill_function(skill_module) -> Optional[callable]:
     """Find create_skill function in skill module.
 
     Arguments:
@@ -558,7 +561,10 @@ class SkillContainer:
 
 
 def _launch_script():
-    """USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]"""
+    """
+    Console script entrypoint
+    USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]
+    """
     args_count = len(sys.argv)
     if args_count == 2:
         skill_id = sys.argv[1]

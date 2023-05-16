@@ -197,15 +197,17 @@ class BaseSkill:
             try:
                 # skill follows latest best practices, accepts kwargs and does its own init
                 return super().__new__(cls, skill_id=skill_id, bus=bus)
-            except:
+            except Exception as e:
+                LOG.warning(e)
                 # skill did not update its init method, let's do some magic to init it manually
                 skill = super().__new__(cls, *args, **kwargs)
                 skill._startup(bus, skill_id)
                 return skill
 
         # skill loader was not used to create skill object, we are missing the kwargs
-        # skill wont be fully inited, please move logic to initialize
-        LOG.warning(f"{cls.__name__} not fully inited, self.bus and self.skill_id will only be available in self.initialize")
+        # skill won't be fully inited, please move logic to initialize
+        LOG.warning(f"{cls.__name__} not fully inited, self.bus and "
+                    f"self.skill_id will only be available in self.initialize")
         return super().__new__(cls)
 
     def __init__(self, name=None, bus=None, resources_dir=None,

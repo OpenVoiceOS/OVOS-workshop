@@ -204,3 +204,23 @@ class TestKillableIntents(unittest.TestCase):
         self.bus.emitted_msgs = []
         sleep(2)
         self.assertTrue(self.bus.emitted_msgs == [])
+
+
+class TestConverse(unittest.TestCase):
+    # TODO
+    pass
+
+
+class TestFallbackHandler(unittest.TestCase):
+    # TODO
+    pass
+
+
+class TestLayers(unittest.TestCase):
+    # TODO
+    pass
+
+
+class TestOCP(unittest.TestCase):
+    # TODO
+    pass
