@@ -4,7 +4,7 @@ import os
 from os.path import isdir
 import sys
 from inspect import isclass
-from os import path, makedirs
+from os import makedirs
 from types import ModuleType
 from typing import Optional
 
@@ -232,26 +232,41 @@ class SkillLoader:
         self.skill_module = None
 
     @property
-    def loaded(self):
-        return self._loaded  # or self.instance is None
+    def loaded(self) -> bool:
+        """
+        Return True if skill is loaded
+        """
+        return self._loaded
 
     @loaded.setter
-    def loaded(self, val):
+    def loaded(self, val: bool):
+        """
+        Set the skill as loaded
+        """
         self._loaded = val
 
     @property
-    def skill_directory(self):
+    def skill_directory(self) -> Optional[str]:
+        """
+        Return the skill directory or `None` if unset and no instance exists
+        """
         skill_dir = self._skill_directory
         if self.instance and not skill_dir:
             skill_dir = self.instance.root_dir
         return skill_dir
 
     @skill_directory.setter
-    def skill_directory(self, val):
+    def skill_directory(self, val: str):
+        """
+        Set (override) the skill ID
+        """
         self._skill_directory = val
 
     @property
-    def skill_id(self):
+    def skill_id(self) -> Optional[str]:
+        """
+        Return the skill's reported Skill ID
+        """
         skill_id = self._skill_id
         if self.instance and not skill_id:
             skill_id = self.instance.skill_id
@@ -260,11 +275,17 @@ class SkillLoader:
         return skill_id
 
     @skill_id.setter
-    def skill_id(self, val):
+    def skill_id(self, val: str):
+        """
+        Set (override) the skill ID
+        """
         self._skill_id = val
 
     @property
-    def skill_class(self):
+    def skill_class(self) -> Optional[callable]:
+        """
+        Get the skill's class
+        """
         skill_class = self._skill_class
         if self.instance and not skill_class:
             skill_class = self.instance.__class__
@@ -273,18 +294,27 @@ class SkillLoader:
         return skill_class
 
     @skill_class.setter
-    def skill_class(self, val):
+    def skill_class(self, val: callable):
+        """
+        Set (override) the skill class
+        """
         self._skill_class = val
 
     @property
-    def runtime_requirements(self):
-        if not self.skill_class:
+    def runtime_requirements(self) -> RuntimeRequirements:
+        """
+        Return the skill's runtime requirements
+        """
+        if not self.skill_class or not hasattr(self.skill_class,
+                                               "runtime_requirements"):
             return RuntimeRequirements()
         return self.skill_class.runtime_requirements
 
     @property
-    def is_blacklisted(self):
-        """Boolean value representing whether or not a skill is blacklisted."""
+    def is_blacklisted(self) -> bool:
+        """
+        Return true if the skill is blacklisted in configuration
+        """
         blacklist = self.config['skills'].get('blacklisted_skills') or []
         if self.skill_id in blacklist:
             return True
@@ -292,10 +322,18 @@ class SkillLoader:
             return False
 
     @property
-    def reload_allowed(self):
-        return self.active and (self.instance is None or self.instance.reload_skill)
+    def reload_allowed(self) -> bool:
+        """
+        Return true if the skill can be reloaded
+        """
+        return self.active and (self.instance is None or
+                                self.instance.reload_skill)
 
-    def reload(self):
+    def reload(self) -> bool:
+        """
+        Request reload the skill
+        @return: True if skill was reloaded
+        """
         self.load_attempted = True
         LOG.info(f'ATTEMPTING TO RELOAD SKILL: {self.skill_id}')
         if self.instance:
@@ -305,12 +343,18 @@ class SkillLoader:
             self._unload()
         return self._load()
 
-    def load(self):
+    def load(self, _=None) -> bool:
+        """
+        Request to load the skill
+        @return: True if skill was loaded
+        """
         LOG.info(f'ATTEMPTING TO LOAD SKILL: {self.skill_id}')
         return self._load()
 
     def _unload(self):
-        """Remove listeners and stop threads before loading"""
+        """
+        Remove listeners and stop threads before loading
+        """
         if self._watchdog:
             self._watchdog.shutdown()
             self._watchdog = None
@@ -321,45 +365,67 @@ class SkillLoader:
         self._emit_skill_shutdown_event()
 
     def unload(self):
+        """
+        Shutdown and unload the skill instance
+        """
         if self.instance:
             self._execute_instance_shutdown()
 
     def activate(self):
+        """
+        Mark skill as active and (re)load the skill
+        """
         self.active = True
         self.load()
 
     def deactivate(self):
+        """
+        Mark skill as inactive and unload the skill
+        """
         self.active = False
         self.unload()
 
     def _execute_instance_shutdown(self):
-        """Call the shutdown method of the skill being reloaded."""
+        """
+        Call the shutdown method of the skill being reloaded.
+        """
         try:
             self.instance.default_shutdown()
         except Exception:
-            LOG.exception(f'An error occurred while shutting down {self.skill_id}')
+            LOG.exception(f'An error occurred while shutting down '
+                          f'{self.skill_id}')
         else:
             LOG.info(f'Skill {self.skill_id} shut down successfully')
         del self.instance
         self.instance = None
 
     def _garbage_collect(self):
-        """Invoke Python garbage collector to remove false references"""
+        """
+        Invoke Python garbage collector to remove false references
+        """
         gc.collect()
         # Remove two local references that are known
         refs = sys.getrefcount(self.instance) - 2
         if refs > 0:
             LOG.warning(
-                f"After shutdown of {self.skill_id} there are still {refs} references "
-                "remaining. The skill won't be cleaned from memory."
+                f"After shutdown of {self.skill_id} there are still {refs} "
+                f"references remaining. The skill won't be cleaned from memory."
             )
 
     def _emit_skill_shutdown_event(self):
+        """
+        Emit `mycroft.skills.shutdown` to notify the skill is being shutdown
+        """
         message = Message("mycroft.skills.shutdown",
                           {"path": self.skill_directory, "id": self.skill_id})
         self.bus.emit(message)
 
-    def _load(self):
+    def _load(self) -> bool:
+        """
+        Load the skill if it is not blacklisted, emit load status, start file
+        watchers, and return load status.
+        @return: True if skill was loaded
+        """
         self._prepare_for_load()
         if self.is_blacklisted:
             self._skip_load()
@@ -373,28 +439,45 @@ class SkillLoader:
         return self.loaded
 
     def _start_filewatcher(self):
+        """
+        Start a FileWatcher if one isn't already active
+        """
         if not self._watchdog:
             self._watchdog = FileWatcher([self.skill_directory],
                                          callback=self._handle_filechange,
                                          recursive=True)
 
     def _handle_filechange(self):
+        """
+        Handle a file change notification by reloading the skill
+        """
         LOG.info("Skill change detected!")
         try:
             if self.reload_allowed:
                 self.reload()
         except Exception:
-            LOG.exception(f'Unhandled exception occurred while reloading {self.skill_directory}')
+            LOG.exception(f'Unhandled exception occurred while reloading '
+                          f'{self.skill_directory}')
 
     def _prepare_for_load(self):
+        """
+        Prepare SkillLoader for skill load
+        """
         self.load_attempted = True
         self.instance = None
 
     def _skip_load(self):
-        LOG.info(f'Skill {self.skill_id} is blacklisted - it will not be loaded')
+        """
+        Log a warning when requested skill load is skipped
+        """
+        LOG.info(f'Skill {self.skill_id} is blacklisted - '
+                 f'it will not be loaded')
 
-    def _load_skill_source(self):
-        """Use Python's import library to load a skill's source code."""
+    def _load_skill_source(self) -> ModuleType:
+        """
+        Use Python's import library to load a skill's source code.
+        @return: Skill module to instantiate
+        """
         main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
         skill_module = None
         if not os.path.exists(main_file_path):
@@ -406,8 +489,11 @@ class SkillLoader:
                 LOG.exception(f'Failed to load skill: {self.skill_id} ({e})')
         return skill_module
 
-    def _create_skill_instance(self, skill_module=None):
-        """create the skill object.
+    def _create_skill_instance(self,
+                               skill_module: Optional[ModuleType] = None) -> \
+            bool:
+        """
+        Create the skill object.
 
         Arguments:
             skill_module (module): Module to load from
@@ -416,30 +502,43 @@ class SkillLoader:
             (bool): True if skill was loaded successfully.
         """
         skill_module = skill_module or self.skill_module
+
         try:
             # in skill classes __new__ should fully create the skill object
-            try:
-                skill_class = get_skill_class(skill_module)
-                self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
-            except:  # guess it wasnt subclassing from ovos_workshop (fail here ?)
+            skill_class = get_skill_class(skill_module)
+            self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
+            return self.instance is not None
+        except Exception as e:
+            LOG.warning(f"Skill load raised exception: {e}")
 
-                # attempt to use old style create_skill function entrypoint
-                skill_creator = get_create_skill_function(skill_module) or self.skill_class
+        try:
+            # attempt to use old style create_skill function entrypoint
+            skill_creator = get_create_skill_function(skill_module) or \
+                self.skill_class
+        except Exception as e:
+            LOG.exception(f"Failed to load skill creator: {e}")
+            self.instance = None
+            return False
 
-                # if the signature supports skill_id and bus pass them to fully initialize the skill in 1 go
-                try:
-                    # skills that do will have bus and skill_id available as soon as they call super()
-                    self.instance = skill_creator(bus=self.bus,
-                                                  skill_id=self.skill_id)
-                except:
-                    # most old skills do not expose bus/skill_id kwargs
-                    self.instance = skill_creator()
+        # if the signature supports skill_id and bus pass them
+        # to fully initialize the skill in 1 go
+        try:
+            # skills that do will have bus and skill_id available
+            # as soon as they call super()
+            self.instance = skill_creator(bus=self.bus,
+                                          skill_id=self.skill_id)
+        except Exception as e:
+            # most old skills do not expose bus/skill_id kwargs
+            LOG.warning(f"Legacy skill: {e}")
+            self.instance = skill_creator()
 
-            # finish initialization of skill if we didn't manage to inject skill_id and bus kwargs
-            # these skills only have skill_id and bus available in initialize, not in __init__
+        try:
+            # finish initialization of skill if we didn't manage to inject
+            # skill_id and bus kwargs.
+            # these skills only have skill_id and bus available in initialize,
+            # not in __init__
             if not self.instance._is_fully_initialized:
                 self.instance._startup(self.bus, self.skill_id)
-
         except Exception as e:
             LOG.exception(f'Skill __init__ failed with {e}')
             self.instance = None
@@ -447,6 +546,10 @@ class SkillLoader:
         return self.instance is not None
 
     def _communicate_load_status(self):
+        """
+        Check internal parameters and emit `mycroft.skills.loaded` or
+        `mycroft.skills.loading_failure` as appropriate
+        """
         if self.loaded:
             message = Message('mycroft.skills.loaded',
                               {"path": self.skill_directory,
@@ -456,7 +559,8 @@ class SkillLoader:
             LOG.info(f'Skill {self.skill_id} loaded successfully')
         else:
             message = Message('mycroft.skills.loading_failure',
-                              {"path": self.skill_directory, "id": self.skill_id})
+                              {"path": self.skill_directory,
+                               "id": self.skill_id})
             self.bus.emit(message)
             if not self.is_blacklisted:
                 LOG.error(f'Skill {self.skill_id} failed to load')
@@ -468,12 +572,24 @@ class PluginSkillLoader(SkillLoader):
     def __init__(self, bus, skill_id):
         super().__init__(bus, skill_id=skill_id)
 
-    def load(self, skill_class):
+    def load(self, skill_class: Optional[callable] = None) -> bool:
+        """
+        Load a skill plugin
+        @param skill_class: Skill class to instantiate
+        @return: True if skill was loaded
+        """
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
-        self._skill_class = skill_class
+        self._skill_class = self._skill_class or skill_class
+        if not self._skill_class:
+            raise RuntimeError(f"_skill_class not defined for {self.skill_id}")
         return self._load()
 
     def _load(self):
+        """
+        Load the skill if it is not blacklisted, emit load status,
+        and return load status.
+        @return: True if skill was loaded
+        """
         self._prepare_for_load()
         if self.is_blacklisted:
             self._skip_load()
@@ -483,10 +599,6 @@ class PluginSkillLoader(SkillLoader):
         self.last_loaded = time()
         self._communicate_load_status()
         return self.loaded
-
-    def activate(self):
-        self.active = True
-        self.load(self._skill_class)
 
 
 class SkillContainer:

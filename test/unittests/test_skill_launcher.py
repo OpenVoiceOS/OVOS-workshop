@@ -5,6 +5,8 @@ import sys
 from os import environ
 from os.path import basename, join, dirname, isdir
 
+from ovos_utils.messagebus import FakeBus
+
 
 class TestSkillLauncherFunctions(unittest.TestCase):
     test_data_path = join(dirname(__file__), "xdg_data")
@@ -104,13 +106,41 @@ class TestSkillLauncherFunctions(unittest.TestCase):
 
 
 class TestSkillLoader(unittest.TestCase):
-    # TODO
-    pass
+    bus = FakeBus()
+
+    def test_skill_loader_init(self):
+        from ovos_workshop.skill_launcher import SkillLoader
+        from ovos_utils.process_utils import RuntimeRequirements
+
+        loader = SkillLoader(self.bus)
+        self.assertEqual(loader.bus, self.bus)
+        self.assertIsNone(loader.loaded)
+        self.assertIsNone(loader.skill_directory)
+        self.assertIsNone(loader.skill_id)
+        self.assertIsNone(loader.skill_class)
+        self.assertEqual(loader.runtime_requirements, RuntimeRequirements())
+        self.assertFalse(loader.is_blacklisted)
+        self.assertTrue(loader.reload_allowed)
+
+    def test_skill_loader_load_skill(self):
+        from ovos_workshop.skill_launcher import SkillLoader
+        # TODO
 
 
 class TestPluginSkillLoader(unittest.TestCase):
-    # TODO
-    pass
+    bus = FakeBus()
+
+    def test_plugin_skill_loader_init(self):
+        from ovos_workshop.skill_launcher import PluginSkillLoader, SkillLoader
+        loader = PluginSkillLoader(self.bus, "test_skill.test")
+        self.assertIsInstance(loader, PluginSkillLoader)
+        self.assertIsInstance(loader, SkillLoader)
+        self.assertEqual(loader.bus, self.bus)
+        self.assertEqual(loader.skill_id, "test_skill.test")
+
+    def test_plugin_skill_loader_load_skill(self):
+        from ovos_workshop.skill_launcher import PluginSkillLoader
+        # TODO
 
 
 class TestSkillContainer(unittest.TestCase):

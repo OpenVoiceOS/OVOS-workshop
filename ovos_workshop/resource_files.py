@@ -47,9 +47,19 @@ SkillResourceTypes = namedtuple(
 )
 
 
-def locate_base_directories(skill_directory, resource_subdirectory=None):
-    base_dirs = [Path(skill_directory, resource_subdirectory)] if resource_subdirectory else []
-    base_dirs += [Path(skill_directory, "locale"), Path(skill_directory, "text")]
+def locate_base_directories(skill_directory: str,
+                            resource_subdirectory: Optional[str] = None) -> \
+        List[Path]:
+    """
+    Locate all possible resource directories found in the given skill_directory
+    @param skill_directory: skill base directory to search for resources
+    @param resource_subdirectory: optional extra resource directory to prepend
+    @return: list of existing skill resource directories
+    """
+    base_dirs = [Path(skill_directory, resource_subdirectory)] if \
+        resource_subdirectory else []
+    base_dirs += [Path(skill_directory, "locale"),
+                  Path(skill_directory, "text")]
     candidates = []
     for directory in base_dirs:
         if directory.exists():
@@ -57,7 +67,17 @@ def locate_base_directories(skill_directory, resource_subdirectory=None):
     return candidates
 
 
-def locate_lang_directories(lang, skill_directory, resource_subdirectory=None):
+def locate_lang_directories(lang: str, skill_directory: str,
+                            resource_subdirectory: Optional[str] = None) -> \
+        List[Path]:
+    """
+    Locate all possible resource directories found in the given skill_directory
+    for the specified language
+    @param lang: BCP-47 language code to get resources for
+    @param skill_directory: skill base directory to search for resources
+    @param resource_subdirectory: optional extra resource directory to prepend
+    @return: list of existing skill resource directories for the given lang
+    """
     base_lang = lang.split("-")[0]
     base_dirs = [Path(skill_directory, "locale"),
                  Path(skill_directory, "text")]
@@ -70,6 +90,112 @@ def locate_lang_directories(lang, skill_directory, resource_subdirectory=None):
                 if folder.name.startswith(base_lang):
                     candidates.append(folder)
     return candidates
+
+
+def resolve_resource_file(res_name: str) -> Optional[str]:
+    """Convert a resource into an absolute filename.
+
+    Resource names are in the form: 'filename.ext'
+    or 'path/filename.ext'
+
+    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
+    (defaults to ~/.local/share/mycroft/res_name), and if not found will
+    look at /opt/mycroft/res_name, then finally it will look for res_name
+    in the 'mycroft/res' folder of the source code package.
+
+    Example:
+        With mycroft running as the user 'bob', if you called
+        ``resolve_resource_file('snd/beep.wav')``
+        it would return either:
+        '$XDG_DATA_DIRS/mycroft/beep.wav',
+        '/home/bob/.mycroft/snd/beep.wav' or
+        '/opt/mycroft/snd/beep.wav' or
+        '.../mycroft/res/snd/beep.wav'
+        where the '...' is replaced by the path
+        where the package has been installed.
+
+    Args:
+        res_name (str): a resource path/name
+
+    Returns:
+        (str) path to resource or None if no resource found
+    """
+    config = Configuration()
+
+    # First look for fully qualified file (e.g. a user setting)
+    if os.path.isfile(res_name):
+        return res_name
+
+    # Now look for XDG_DATA_DIRS
+    for path in get_xdg_data_dirs():
+        filename = os.path.join(path, res_name)
+        if os.path.isfile(filename):
+            return filename
+
+    # Now look in the old user location
+    filename = os.path.join(os.path.expanduser('~'),
+                            f'.{get_xdg_base()}',
+                            res_name)
+    if os.path.isfile(filename):
+        return filename
+
+    # Next look for /opt/mycroft/res/res_name
+    data_dir = config.get('data_dir', get_xdg_data_save_path())
+    res_dir = os.path.join(data_dir, 'res')
+    filename = os.path.expanduser(os.path.join(res_dir, res_name))
+    if os.path.isfile(filename):
+        return filename
+
+    filename = f"{dirname(__file__)}/res"
+    if os.path.isfile(filename):
+        return filename
+
+    # Finally look for it in the ovos-core package
+    try:
+        from mycroft import MYCROFT_ROOT_PATH
+        filename = f"{MYCROFT_ROOT_PATH}/mycroft/res/{res_name}"
+        filename = os.path.abspath(os.path.normpath(filename))
+        if os.path.isfile(filename):
+            return filename
+    except ImportError:
+        pass
+
+    return None  # Resource cannot be resolved
+
+
+def find_resource(res_name: str, root_dir: str, res_dirname: str,
+                  lang: Optional[str] = None) -> Optional[Path]:
+    """
+    Find a resource file.
+
+    Searches for the given filename using this scheme:
+        1. Search the resource lang directory:
+            <skill>/<res_dirname>/<lang>/<res_name>
+        2. Search the resource directory:
+            <skill>/<res_dirname>/<res_name>
+        3. Search the locale lang directory or other subdirectory:
+            <skill>/locale/<lang>/<res_name> or
+            <skill>/locale/<lang>/.../<res_name>
+
+    Args:
+        res_name (string): The resource name to be found
+        root_dir (string): A skill root directory
+        res_dirname (string): A skill sub directory
+        lang (string): language folder to be used
+
+    Returns:
+        Path: The full path to the resource file or None if not found
+    """
+    if lang:
+        for directory in locate_lang_directories(lang, root_dir, res_dirname):
+            for x in directory.iterdir():
+                if x.is_file() and res_name == x.name:
+                    return x
+
+    for directory in locate_base_directories(root_dir, res_dirname):
+        for d, _, file_names in walk(directory):
+            if res_name in file_names:
+                return Path(directory, d, res_name)
 
 
 class ResourceType:
@@ -766,107 +892,3 @@ class RegexExtractor:
             LOG.info(f"No {self.group_name.lower()} extracted from utterance")
         else:
             LOG.info(f"{self.group_name} extracted from utterance: " + extract)
-
-
-def resolve_resource_file(res_name):
-    """Convert a resource into an absolute filename.
-
-    Resource names are in the form: 'filename.ext'
-    or 'path/filename.ext'
-
-    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
-    (defaults to ~/.local/share/mycroft/res_name), and if not found will
-    look at /opt/mycroft/res_name, then finally it will look for res_name
-    in the 'mycroft/res' folder of the source code package.
-
-    Example:
-        With mycroft running as the user 'bob', if you called
-        ``resolve_resource_file('snd/beep.wav')``
-        it would return either:
-        '$XDG_DATA_DIRS/mycroft/beep.wav',
-        '/home/bob/.mycroft/snd/beep.wav' or
-        '/opt/mycroft/snd/beep.wav' or
-        '.../mycroft/res/snd/beep.wav'
-        where the '...' is replaced by the path
-        where the package has been installed.
-
-    Args:
-        res_name (str): a resource path/name
-
-    Returns:
-        (str) path to resource or None if no resource found
-    """
-    config = Configuration()
-
-    # First look for fully qualified file (e.g. a user setting)
-    if os.path.isfile(res_name):
-        return res_name
-
-    # Now look for XDG_DATA_DIRS
-    for path in get_xdg_data_dirs():
-        filename = os.path.join(path, res_name)
-        if os.path.isfile(filename):
-            return filename
-
-    # Now look in the old user location
-    filename = os.path.join(os.path.expanduser('~'),
-                            f'.{get_xdg_base()}',
-                            res_name)
-    if os.path.isfile(filename):
-        return filename
-
-    # Next look for /opt/mycroft/res/res_name
-    data_dir = config.get('data_dir', get_xdg_data_save_path())
-    res_dir = os.path.join(data_dir, 'res')
-    filename = os.path.expanduser(os.path.join(res_dir, res_name))
-    if os.path.isfile(filename):
-        return filename
-
-    filename = f"{dirname(__file__)}/res"
-    if os.path.isfile(filename):
-        return filename
-
-    # Finally look for it in the ovos-core package
-    try:
-        from mycroft import MYCROFT_ROOT_PATH
-        filename = f"{MYCROFT_ROOT_PATH}/mycroft/res/{res_name}"
-        filename = os.path.abspath(os.path.normpath(filename))
-        if os.path.isfile(filename):
-            return filename
-    except ImportError:
-        pass
-
-    return None  # Resource cannot be resolved
-
-
-def find_resource(res_name, root_dir, res_dirname, lang=None):
-    """Find a resource file.
-
-    Searches for the given filename using this scheme:
-        1. Search the resource lang directory:
-            <skill>/<res_dirname>/<lang>/<res_name>
-        2. Search the resource directory:
-            <skill>/<res_dirname>/<res_name>
-        3. Search the locale lang directory or other subdirectory:
-            <skill>/locale/<lang>/<res_name> or
-            <skill>/locale/<lang>/.../<res_name>
-
-    Args:
-        res_name (string): The resource name to be found
-        root_dir (string): A skill root directory
-        res_dirname (string): A skill sub directory
-        lang (string): language folder to be used
-
-    Returns:
-        Path: The full path to the resource file or None if not found
-    """
-    if lang:
-        for directory in locate_lang_directories(lang, root_dir, res_dirname):
-            for x in directory.iterdir():
-                if x.is_file() and res_name == x.name:
-                    return x
-
-    for directory in locate_base_directories(root_dir, res_dirname):
-        for d, _, file_names in walk(directory):
-            if res_name in file_names:
-                return Path(directory, d, res_name)
