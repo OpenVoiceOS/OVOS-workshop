@@ -199,10 +199,13 @@ class BaseSkill:
                 return super().__new__(cls, skill_id=skill_id, bus=bus)
             except Exception as e:
                 LOG.warning(e)
+            try:
                 # skill did not update its init method, let's do some magic to init it manually
                 skill = super().__new__(cls, *args, **kwargs)
                 skill._startup(bus, skill_id)
                 return skill
+            except Exception as e:
+                LOG.exception(e)
 
         # skill loader was not used to create skill object, we are missing the kwargs
         # skill won't be fully inited, please move logic to initialize

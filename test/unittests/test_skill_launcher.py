@@ -83,6 +83,10 @@ class TestSkillLauncherFunctions(unittest.TestCase):
         self.assertIsNotNone(skill)
         self.assertEqual(skill.__class__, _SkillMetaclass, skill.__class__)
 
+        # Test invalid request
+        with self.assertRaises(ValueError):
+            get_skill_class(None)
+
     def test_get_create_skill_function(self):
         from ovos_workshop.skill_launcher import get_create_skill_function, \
             load_skill_module

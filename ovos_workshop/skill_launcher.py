@@ -5,6 +5,7 @@ from os.path import isdir
 import sys
 from inspect import isclass
 from os import path, makedirs
+from types import ModuleType
 from typing import Optional
 
 from time import time
@@ -139,7 +140,7 @@ def remove_submodule_refs(module_name: str):
         del sys.modules[m]
 
 
-def load_skill_module(path: str, skill_id: str):
+def load_skill_module(path: str, skill_id: str) -> ModuleType:
     """Load a skill module
 
     This function handles the differences between python 3.4 and 3.5+ as well
@@ -148,6 +149,8 @@ def load_skill_module(path: str, skill_id: str):
     Args:
         path: Path to the skill main file (__init__.py)
         skill_id: skill_id used as skill identifier in the module list
+    Returns:
+        loaded skill module
     """
     module_name = skill_id.replace('.', '_')
 
@@ -160,7 +163,7 @@ def load_skill_module(path: str, skill_id: str):
     return mod
 
 
-def get_skill_class(skill_module) -> Optional[callable]:
+def get_skill_class(skill_module: ModuleType) -> Optional[callable]:
     """Find MycroftSkill based class in skill module.
 
     Arguments:
@@ -169,6 +172,8 @@ def get_skill_class(skill_module) -> Optional[callable]:
     Returns:
         (MycroftSkill): Found subclass of MycroftSkill or None.
     """
+    if not skill_module:
+        raise ValueError("Expected module and got None")
     if callable(skill_module):
         # it's a skill plugin
         # either a func that returns the skill or the skill class itself
