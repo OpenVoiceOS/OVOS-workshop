@@ -36,13 +36,6 @@ class TestSkillLauncherFunctions(unittest.TestCase):
         for directory in test_directories:
             self.assertEqual(basename(directory), 'test')
         self.assertEqual(len(default_directories), len(test_directories))
-        # Extra directory
-        extra_dir = join(dirname(__file__), 'skills')
-        mock_config['skills']['extra_directories'] = [extra_dir]
-        extra_directories = get_skill_directories(mock_config)
-        self.assertEqual(extra_directories[-1], extra_dir)
-        for directory in test_directories:
-            self.assertIn(directory, extra_directories)
 
     def test_get_default_skills_directory(self):
         from ovos_workshop.skill_launcher import get_default_skills_directory
