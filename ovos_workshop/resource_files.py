@@ -120,47 +120,12 @@ def resolve_resource_file(res_name: str) -> Optional[str]:
     Returns:
         (str) path to resource or None if no resource found
     """
+    # TODO: Deprecate in 0.1.0
+    LOG.warning(f"This method has moved to `ovos_utils.file_utils` and will be"
+                f"removed in a future release.")
+    from ovos_utils.file_utils import resolve_resource_file
     config = Configuration()
-
-    # First look for fully qualified file (e.g. a user setting)
-    if os.path.isfile(res_name):
-        return res_name
-
-    # Now look for XDG_DATA_DIRS
-    for path in get_xdg_data_dirs():
-        filename = os.path.join(path, res_name)
-        if os.path.isfile(filename):
-            return filename
-
-    # Now look in the old user location
-    filename = os.path.join(os.path.expanduser('~'),
-                            f'.{get_xdg_base()}',
-                            res_name)
-    if os.path.isfile(filename):
-        return filename
-
-    # Next look for /opt/mycroft/res/res_name
-    data_dir = config.get('data_dir', get_xdg_data_save_path())
-    res_dir = os.path.join(data_dir, 'res')
-    filename = os.path.expanduser(os.path.join(res_dir, res_name))
-    if os.path.isfile(filename):
-        return filename
-
-    filename = f"{dirname(__file__)}/res"
-    if os.path.isfile(filename):
-        return filename
-
-    # Finally look for it in the ovos-core package
-    try:
-        from mycroft import MYCROFT_ROOT_PATH
-        filename = f"{MYCROFT_ROOT_PATH}/mycroft/res/{res_name}"
-        filename = os.path.abspath(os.path.normpath(filename))
-        if os.path.isfile(filename):
-            return filename
-    except ImportError:
-        pass
-
-    return None  # Resource cannot be resolved
+    return resolve_resource_file(res_name, config=config)
 
 
 def find_resource(res_name: str, root_dir: str, res_dirname: str,
