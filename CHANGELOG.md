@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a26](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a26) (2023-05-17)
+## [0.0.12a27](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a27) (2023-05-17)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a25...0.0.12a26)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a26...0.0.12a27)
+
+**Merged pull requests:**
+
+- Refactor to remove deprecated reference [\#90](https://github.com/OpenVoiceOS/OVOS-workshop/pull/90) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a26](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a26) (2023-05-17)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a25...V0.0.12a26)
 
 **Implemented enhancements:**
 
