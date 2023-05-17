@@ -22,7 +22,6 @@ on:
 jobs:
   build_tests:
     strategy:
-      max-parallel: 2
       matrix:
         python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11" ]
     runs-on: ubuntu-latest
@@ -48,7 +47,7 @@ jobs:
       - name: Install package
         run: |
           pip install .[all]
-      - uses: pypa/gh-action-pip-audit@v1.0.0
+      - uses: pypa/gh-action-pip-audit@v1.0.7
         with:
           # Ignore setuptools vulnerability we can't do much about
           ignore-vulns: |

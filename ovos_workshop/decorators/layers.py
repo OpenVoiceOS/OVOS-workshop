@@ -3,7 +3,6 @@ from functools import wraps
 from ovos_utils.log import LOG
 
 
-
 def dig_for_skill(max_records: int = 10):
     from ovos_workshop.app import OVOSAbstractApplication
     from ovos_workshop.skills import MycroftSkill

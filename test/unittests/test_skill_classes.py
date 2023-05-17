@@ -14,11 +14,11 @@ class OfflineSkill(OVOSSkill):
     @classproperty
     def runtime_requirements(self):
         return RuntimeRequirements(internet_before_load=False,
-                                        network_before_load=False,
-                                        requires_internet=False,
-                                        requires_network=False,
-                                        no_internet_fallback=True,
-                                        no_network_fallback=True)
+                                   network_before_load=False,
+                                   requires_internet=False,
+                                   requires_network=False,
+                                   no_internet_fallback=True,
+                                   no_network_fallback=True)
 
 
 class LANSkill(OVOSSkill):
@@ -26,11 +26,11 @@ class LANSkill(OVOSSkill):
     def runtime_requirements(self):
         scans_on_init = True
         return RuntimeRequirements(internet_before_load=False,
-                                        network_before_load=scans_on_init,
-                                        requires_internet=False,
-                                        requires_network=True,
-                                        no_internet_fallback=True,
-                                        no_network_fallback=False)
+                                   network_before_load=scans_on_init,
+                                   requires_internet=False,
+                                   requires_network=True,
+                                   no_internet_fallback=True,
+                                   no_network_fallback=False)
 
 
 class TestSkill(OVOSSkill):
@@ -77,19 +77,19 @@ class TestSkills(unittest.TestCase):
     def test_class_property(self):
         self.assertEqual(OfflineSkill.runtime_requirements,
                          RuntimeRequirements(internet_before_load=False,
-                                                  network_before_load=False,
-                                                  requires_internet=False,
-                                                  requires_network=False,
-                                                  no_internet_fallback=True,
-                                                  no_network_fallback=True)
+                                             network_before_load=False,
+                                             requires_internet=False,
+                                             requires_network=False,
+                                             no_internet_fallback=True,
+                                             no_network_fallback=True)
                          )
         self.assertEqual(LANSkill.runtime_requirements,
                          RuntimeRequirements(internet_before_load=False,
-                                                  network_before_load=True,
-                                                  requires_internet=False,
-                                                  requires_network=True,
-                                                  no_internet_fallback=True,
-                                                  no_network_fallback=False)
+                                             network_before_load=True,
+                                             requires_internet=False,
+                                             requires_network=True,
+                                             no_internet_fallback=True,
+                                             no_network_fallback=False)
                          )
         self.assertEqual(OVOSSkill.runtime_requirements,
                          RuntimeRequirements()

@@ -167,22 +167,32 @@ def simple_trace(stack_trace):
 
 
 class BaseSkill:
-    """Base class for mycroft skills providing common behaviour and parameters
-    to all Skill implementations. This base class does not require `mycroft` to be importable
+    """
+    Base class for mycroft skills providing common behaviour and parameters
+    to all Skill implementations. This base class does not require `mycroft` to
+    be importable
 
     skill_launcher.py used to be skill_loader-py in mycroft-core
 
-    for launching skills one can use skill_launcher.py to run them standalone (eg, docker),
-    but the main objective is to make skills work more like proper python objects and allow usage of the class directly
+    for launching skills one can use skill_launcher.py to run them standalone
+    (eg, docker), but the main objective is to make skills work more like proper
+    python objects and allow usage of the class directly
 
     the considerations are:
 
-    - most skills in the wild dont expose kwargs, so dont accept skill_id or bus
-    - most skills expect a loader class to set up the bus and skill_id after object creation
-    - skills can not do pythonic things in init, instead of doing things after super() devs are expected to use initialize() which is a mycroft invention and non-standard
-    - main concern is that anything depending on self.skill_id being set can not be used in init method (eg. self.settings and self.file_system)
-    - __new__ uncouples the skill init from a helper class, making skills work like regular python objects
-    - the magic in `__new__` is just so we dont break everything in the wild, since we cant start requiring skill_id and bus args
+    - most skills in the wild don't expose kwargs, so don't accept
+      skill_id or bus
+    - most skills expect a loader class to set up the bus and skill_id after
+      object creation
+    - skills can not do pythonic things in init, instead of doing things after
+      super() devs are expected to use initialize() which is a mycroft invention
+      and non-standard
+    - main concern is that anything depending on self.skill_id being set can not
+      be used in init method (eg. self.settings and self.file_system)
+    - __new__ uncouples the skill init from a helper class, making skills work
+      like regular python objects
+    - the magic in `__new__` is just so we don't break everything in the wild,
+      since we cant start requiring skill_id and bus args
 
     KwArgs:
         name (str): skill name - DEPRECATED
@@ -197,15 +207,21 @@ class BaseSkill:
             try:
                 # skill follows latest best practices, accepts kwargs and does its own init
                 return super().__new__(cls, skill_id=skill_id, bus=bus)
-            except:
+            except Exception as e:
+                LOG.info(e)
+            try:
                 # skill did not update its init method, let's do some magic to init it manually
                 skill = super().__new__(cls, *args, **kwargs)
                 skill._startup(bus, skill_id)
                 return skill
+            except Exception as e:
+                LOG.info(e)
 
-        # skill loader was not used to create skill object, we are missing the kwargs
-        # skill wont be fully inited, please move logic to initialize
-        LOG.warning(f"{cls.__name__} not fully inited, self.bus and self.skill_id will only be available in self.initialize")
+        # skill loader was not used to create skill object, log a warning and
+        # do the legacy init
+        LOG.warning(f"{cls.__name__} not fully inited, self.bus and "
+                    f"self.skill_id will only be available in self.initialize. "
+                    f"Pass kwargs `skill_id` and `bus` to resolve this.")
         return super().__new__(cls)
 
     def __init__(self, name=None, bus=None, resources_dir=None,
