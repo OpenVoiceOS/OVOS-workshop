@@ -18,6 +18,7 @@ from ovos_utils import wait_for_exit_signal
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.log import LOG
 from ovos_utils.process_utils import RuntimeRequirements
+from ovos_utils.skills.locations import get_skill_directories as _get_skill_dirs
 
 from ovos_workshop.skills.active import ActiveSkill
 from ovos_workshop.skills.auto_translatable import UniversalSkill, UniversalFallback
@@ -41,9 +42,8 @@ def get_skill_directories(conf=None):
     # TODO: Deprecate in 0.1.0
     LOG.warning(f"This method has moved to `ovos_utils.skills.locations` "
                 f"and will be removed in a future release.")
-    from ovos_utils.skills.locations import get_skill_directories
     conf = conf or Configuration()
-    return get_skill_directories(conf)
+    return _get_skill_dirs(conf)
 
 
 def get_default_skills_directory(conf=None):
@@ -544,7 +544,7 @@ class SkillContainer:
         self.bus = bus
         self.skill_id = skill_id
         if not skill_directory:  # preference to local skills instead of plugins
-            for p in get_skill_directories():
+            for p in _get_skill_dirs():
                 if isdir(f"{p}/{skill_id}"):
                     skill_directory = f"{p}/{skill_id}"
                     LOG.debug(f"found local skill {skill_id}: {skill_directory}")
