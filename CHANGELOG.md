@@ -1,8 +1,20 @@
 # Changelog
 
-## [0.0.12a25](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a25) (2023-05-03)
+## [0.0.12a26](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a26) (2023-05-17)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a24...0.0.12a25)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a25...0.0.12a26)
+
+**Implemented enhancements:**
+
+- Implement Unit Tests [\#89](https://github.com/OpenVoiceOS/OVOS-workshop/pull/89) ([NeonDaniel](https://github.com/NeonDaniel))
+
+**Closed issues:**
+
+- When core restart, the skill returns an error [\#82](https://github.com/OpenVoiceOS/OVOS-workshop/issues/82)
+
+## [V0.0.12a25](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a25) (2023-05-03)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a24...V0.0.12a25)
 
 **Fixed bugs:**
 
