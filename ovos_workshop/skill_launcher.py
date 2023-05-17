@@ -516,7 +516,7 @@ class PluginSkillLoader(SkillLoader):
         @return: True if skill was loaded
         """
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
-        self._skill_class = self._skill_class or skill_class
+        self._skill_class = skill_class or self._skill_class
         if not self._skill_class:
             raise RuntimeError(f"_skill_class not defined for {self.skill_id}")
         return self._load()

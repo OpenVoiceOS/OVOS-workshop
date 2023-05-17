@@ -221,7 +221,7 @@ class BaseSkill:
         # do the legacy init
         LOG.warning(f"{cls.__name__} not fully inited, self.bus and "
                     f"self.skill_id will only be available in self.initialize. "
-                    f"Add a `__new__` method to your skill to resolve this")
+                    f"Pass kwargs `skill_id` and `bus` to resolve this.")
         return super().__new__(cls)
 
     def __init__(self, name=None, bus=None, resources_dir=None,
