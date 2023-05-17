@@ -4,7 +4,6 @@ import os
 from os.path import isdir
 import sys
 from inspect import isclass
-from os import makedirs
 from types import ModuleType
 from typing import Optional
 
@@ -13,7 +12,6 @@ from time import time
 from ovos_bus_client.client import MessageBusClient
 from ovos_bus_client.message import Message
 from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_data_dirs, get_xdg_data_save_path
 from ovos_config.locale import setup_locale
 from ovos_plugin_manager.skills import find_skill_plugins
 from ovos_utils import wait_for_exit_signal
@@ -27,7 +25,7 @@ from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill
 from ovos_workshop.skills.fallback import FallbackSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill, _SkillMetaclass
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
 
 SKILL_BASE_CLASSES = [
@@ -40,82 +38,21 @@ SKILL_MAIN_MODULE = '__init__.py'
 
 
 def get_skill_directories(conf=None):
-    """ returns list of skill directories ordered by expected loading order
-
-    This corresponds to:
-    - XDG_DATA_DIRS
-    - user defined extra directories
-
-    Each directory contains individual skill folders to be loaded
-
-    If a skill exists in more than one directory (same folder name) previous instances will be ignored
-        ie. directories at the end of the list have priority over earlier directories
-
-    NOTE: empty folders are interpreted as disabled skills
-
-    new directories can be defined in mycroft.conf by specifying a full path
-    each extra directory is expected to contain individual skill folders to be loaded
-
-    the xdg folder name can also be changed, it defaults to "skills"
-        eg. ~/.local/share/mycroft/FOLDER_NAME
-
-    {
-        "skills": {
-            "directory": "skills",
-            "extra_directories": ["path/to/extra/dir/to/scan/for/skills"]
-        }
-    }
-
-    Args:
-        conf (dict): mycroft.conf dict, will be loaded automatically if None
-    """
-    # the contents of each skills directory must be individual skill folders
-    # we are still dependent on the mycroft-core structure of skill_id/__init__.py
-
+    # TODO: Deprecate in 0.1.0
+    LOG.warning(f"This method has moved to `ovos_utils.skills.locations` "
+                f"and will be removed in a future release.")
+    from ovos_utils.skills.locations import get_skill_directories
     conf = conf or Configuration()
-    folder = conf["skills"].get("directory") or "skills"
-
-    # load all valid XDG paths
-    # NOTE: skills are actually code, but treated as user data!
-    # they should be considered applets rather than full applications
-    skill_locations = list(reversed(
-        [os.path.join(p, folder) for p in get_xdg_data_dirs()]
-    ))
-
-    # load additional explicitly configured directories
-    conf = conf.get("skills") or {}
-    # extra_directories is a list of directories containing skill subdirectories
-    # NOT a list of individual skill folders
-    skill_locations += conf.get("extra_directories") or []
-    return skill_locations
+    return get_skill_directories(conf)
 
 
 def get_default_skills_directory(conf=None):
-    """ return default directory to scan for skills
-
-    data_dir is always XDG_DATA_DIR
-    If xdg is disabled then data_dir by default corresponds to /opt/mycroft
-
-    users can define the data directory in mycroft.conf
-    the skills folder name (relative to data_dir) can also be defined there
-
-    NOTE: folder name also impacts all XDG skill directories!
-
-    {
-        "skills": {
-            "directory_override": "/opt/mycroft/hardcoded_path/skills"
-        }
-    }
-
-    Args:
-        conf (dict): mycroft.conf dict, will be loaded automatically if None
-    """
+    # TODO: Deprecate in 0.1.0
+    LOG.warning(f"This method has moved to `ovos_utils.skills.locations` "
+                f"and will be removed in a future release.")
+    from ovos_utils.skills.locations import get_default_skills_directory
     conf = conf or Configuration()
-    folder = conf["skills"].get("directory") or "skills"
-    skills_folder = os.path.join(get_xdg_data_save_path(), folder)
-    # create folder if needed
-    makedirs(skills_folder, exist_ok=True)
-    return skills_folder
+    return get_default_skills_directory(conf)
 
 
 def remove_submodule_refs(module_name: str):
