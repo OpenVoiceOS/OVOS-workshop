@@ -531,7 +531,8 @@ class PluginSkillLoader(SkillLoader):
         if self.is_blacklisted:
             self._skip_load()
         else:
-            self.loaded = self._create_skill_instance()
+            self.skill_module = self._load_skill_source()
+            self.loaded = self._create_skill_instance(self.skill_module)
 
         self.last_loaded = time()
         self._communicate_load_status()
