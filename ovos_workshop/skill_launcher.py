@@ -442,7 +442,7 @@ class SkillLoader:
 
         try:
             # in skill classes __new__ should fully create the skill object
-            skill_class = get_skill_class(skill_module)
+            skill_class = self.skill_class or get_skill_class(skill_module)
             self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
             return self.instance is not None
         except Exception as e:
@@ -531,7 +531,6 @@ class PluginSkillLoader(SkillLoader):
         if self.is_blacklisted:
             self._skip_load()
         else:
-            self.skill_module = self._load_skill_source()
             self.loaded = self._create_skill_instance(self.skill_module)
 
         self.last_loaded = time()
