@@ -15,31 +15,55 @@ from ovos_workshop.skill_launcher import SkillLoader
 class LegacySkill(CoreSkill):
     def __init__(self, skill_name="LegacySkill", bus=None):
         super().__init__(skill_name, bus)
-        self.initialized = True
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
         # __new__ calls `_startup` so this should be defined in __init__
         assert self.skill_id is not None
 
+    def initialize(self):
+        self.initialized = True
+
     def _startup(self, bus, skill_id=""):
         self.startup_called = True
+        self.initialize()
+
+
+class BadLegacySkill(LegacySkill):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.bus)  # maybe not set, exeption in property
 
 
 class SpecificArgsSkill(OVOSSkill):
     def __init__(self, skill_id="SpecificArgsSkill", bus=None, **kwargs):
         super().__init__(skill_id=skill_id, bus=bus, **kwargs)
-        self.initialized = True
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
         self.kwargs = kwargs
+
+    def initialize(self):
+        self.initialized = True
 
     def _startup(self, bus, skill_id=""):
         self.startup_called = True
+        self.initialize()
 
 
 class KwargSkill(OVOSSkill):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
+
+    def initialize(self):
         self.initialized = True
 
     def _startup(self, bus, skill_id=""):
         self.startup_called = True
+        self.initialize()
 
 
 class TestSkill(unittest.TestCase):
@@ -137,14 +161,26 @@ class TestSkillNew(unittest.TestCase):
     def test_legacy(self):
         bus = FakeBus()
         legacy = LegacySkill("LegacyName", bus)
+        self.assertTrue(legacy.inited)
         self.assertTrue(legacy.initialized)
         self.assertTrue(legacy.startup_called)
         self.assertIsNotNone(legacy.skill_id)
         self.assertEqual(legacy.bus, bus)
 
+        legacynoargs = LegacySkill()
+        self.assertTrue(legacynoargs.inited)
+        self.assertFalse(legacynoargs.initialized)
+        self.assertFalse(legacynoargs.startup_called)
+
+        with self.assertRaises(Exception) as ctxt:
+            BadLegacySkill()
+
+        self.assertTrue("Accessed MycroftSkill.bus in __init__" in str(ctxt.exception))
+
     def test_load(self):
         bus = FakeBus()
         kwarg = KwargSkill(skill_id="kwarg", bus=bus)
+        self.assertTrue(kwarg.inited)
         self.assertTrue(kwarg.initialized)
         self.assertTrue(kwarg.startup_called)
         self.assertEqual(kwarg.skill_id, "kwarg")
@@ -152,6 +188,7 @@ class TestSkillNew(unittest.TestCase):
 
         gui = Mock()
         args = SpecificArgsSkill("args", bus, gui=gui)
+        self.assertTrue(args.inited)
         self.assertTrue(args.initialized)
         self.assertTrue(args.startup_called)
         self.assertEqual(args.skill_id, "args")

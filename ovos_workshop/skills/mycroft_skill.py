@@ -43,19 +43,22 @@ class _SkillMetaclass(ABCMeta):
         bus = None
         skill_id = None
 
-        if "skill_id" in kwargs:
-            skill_id = kwargs.pop("skill_id")
-        if "bus" in kwargs:
-            bus = kwargs.pop("bus")
-        if not bus:
+        if "bus" not in kwargs:
             for a in args:
                 if isinstance(a, MessageBusClient) or isinstance(a, FakeBus):
                     bus = a
                     LOG.warning(f"bus should be a kwarg, guessing {a} is the bus")
                     break
             else:
-                raise ValueError("bus is required to init a skill")
+                LOG.warning("skill initialized without bus!! this is legacy behaviour and"
+                            " requires you to call skill.bind(bus) or skill._startup(skill_id, bus)\n"
+                            "bus will be required starting on ovos-core 0.1.0")
+                return super().__call__(*args, **kwargs)
 
+        if "skill_id" in kwargs:
+            skill_id = kwargs.pop("skill_id")
+        if "bus" in kwargs:
+            bus = kwargs.pop("bus")
         if not skill_id:
             LOG.warning(f"skill_id should be a kwarg, please update {cls.__name__}")
             if args and isinstance(args[0], str):
