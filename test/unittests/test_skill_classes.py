@@ -48,10 +48,12 @@ class TestSkills(unittest.TestCase):
     def test_settings_manager_init(self):
         bus = FakeBus()
         skill_default = TestSkill(bus=bus)
-        skill_default._startup(bus)
+        self.assertTrue(skill_default._enable_settings_manager)
+        # skill_default._startup(bus)
         # This doesn't apply to `mycroft-core`, only `ovos-core`
         if not is_classic_core():
-            self.assertIsInstance(skill_default.settings_manager, SkillSettingsManager)
+            self.assertIsInstance(skill_default.settings_manager,
+                                  SkillSettingsManager)
 
             skill_disabled_settings = TestSkill(bus=bus,
                                                 enable_settings_manager=False)

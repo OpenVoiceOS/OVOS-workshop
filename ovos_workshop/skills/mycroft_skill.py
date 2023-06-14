@@ -121,7 +121,6 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
 
         self._initial_settings = {}
         self.settings_write_path = None
-        self.settings_manager = None
 
         # old kludge from fallback skills, unused according to grep
         if use_settings is False:
