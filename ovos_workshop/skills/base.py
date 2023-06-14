@@ -212,7 +212,7 @@ class BaseSkill:
             try:
                 # skill did not update its init method, let's do some magic to init it manually
                 LOG.warning("legacy skill signature detected, attempting to init skill manually, "
-                            f"self.bus and self.skill_id will only be available in self.initialize. + 
+                            f"self.bus and self.skill_id will only be available in self.initialize." + 
                             f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
                 skill = cls(*args, **kwargs)
                 skill._startup(bus, skill_id)
