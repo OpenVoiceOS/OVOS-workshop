@@ -206,12 +206,12 @@ class BaseSkill:
             bus = kwargs["bus"]
             try:
                 # skill follows latest best practices, accepts kwargs and does its own init
-                return super().__new__(cls, skill_id=skill_id, bus=bus)
+                return cls(skill_id=skill_id, bus=bus)
             except Exception as e:
                 LOG.info(e)
             try:
                 # skill did not update its init method, let's do some magic to init it manually
-                skill = super().__new__(cls, *args, **kwargs)
+                skill = cls() # simple init without args
                 skill._startup(bus, skill_id)
                 return skill
             except Exception as e:
