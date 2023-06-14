@@ -49,6 +49,9 @@ jobs:
           pip install .[all]
       - uses: pypa/gh-action-pip-audit@v1.0.7
         with:
-          # Ignore setuptools vulnerability we can't do much about
+          # Setuptools is limited by older supported Python versions
+          # Requests is a transient dependency
           ignore-vulns: |
             GHSA-r9hx-vwmv-q579
+            PYSEC-2023-74
+            PYSEC-2022-43012
