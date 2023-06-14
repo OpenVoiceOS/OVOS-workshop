@@ -14,10 +14,10 @@ from ovos_workshop.skill_launcher import SkillLoader
 
 class LegacySkill(CoreSkill):
     def __init__(self, skill_name="LegacySkill", bus=None):
-        super().__init__(skill_name, bus)
         self.inited = True
         self.initialized = False
         self.startup_called = False
+        super().__init__(skill_name, bus)
         # __new__ calls `_startup` so this should be defined in __init__
         assert self.skill_id is not None
 
@@ -43,10 +43,10 @@ class GoodLegacySkill(CoreSkill):
 
 class SpecificArgsSkill(OVOSSkill):
     def __init__(self, skill_id="SpecificArgsSkill", bus=None, **kwargs):
-        super().__init__(skill_id=skill_id, bus=bus, **kwargs)
         self.inited = True
         self.initialized = False
         self.startup_called = False
+        super().__init__(skill_id=skill_id, bus=bus, **kwargs)
         self.kwargs = kwargs
 
     def initialize(self):
@@ -59,10 +59,10 @@ class SpecificArgsSkill(OVOSSkill):
 
 class KwargSkill(OVOSSkill):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.inited = True
         self.initialized = False
         self.startup_called = False
+        super().__init__(**kwargs)
 
     def initialize(self):
         self.initialized = True
