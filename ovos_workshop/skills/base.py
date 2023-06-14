@@ -214,16 +214,18 @@ class BaseSkill:
                     return super().__new__(cls)
             except Exception as e:
                 LOG.warning(f"{skill_id}: {e}")
-        if "bus" in kwargs or len(args) > 1:
-            bus = kwargs.get("bus", args[1])
-            try:
+        try:
+            bus = kwargs.get('bus') if 'bus' in kwargs else \
+                args[1] if len(args) > 1 else None
+            if bus:
+
                 LOG.info("attempting initialized cls with _startup called")
                 # skill did not update its init method, let's do some magic to init it manually
                 skill = super().__new__(cls)
                 skill._startup(bus)
                 return skill
-            except Exception as e:
-                LOG.warning(e)
+        except Exception as e:
+            LOG.warning(e)
 
         # skill loader was not used to create skill object, log a warning and
         # do the legacy init
