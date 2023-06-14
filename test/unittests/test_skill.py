@@ -12,6 +12,36 @@ from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
 
 
+class LegacySkill(CoreSkill):
+    def __init__(self, skill_name="LegacySkill", bus=None):
+        super().__init__(skill_name, bus)
+        self.initialized = True
+        # __new__ calls `_startup` so this should be defined in __init__
+        assert self.skill_id is not None
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+
+
+class SpecificArgsSkill(OVOSSkill):
+    def __init__(self, skill_id="SpecificArgsSkill", bus=None, **kwargs):
+        super().__init__(skill_id=skill_id, bus=bus, **kwargs)
+        self.initialized = True
+        self.kwargs = kwargs
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+
+
+class KwargSkill(OVOSSkill):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.initialized = True
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+
+
 class TestSkill(unittest.TestCase):
     def setUp(self):
         self.bus = FakeBus()
@@ -101,3 +131,29 @@ class TestSkill(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.skill.unload()
+
+
+class TestSkillNew(unittest.TestCase):
+    def test_legacy(self):
+        bus = FakeBus()
+        legacy = LegacySkill("LegacyName", bus)
+        self.assertTrue(legacy.initialized)
+        self.assertTrue(legacy.startup_called)
+        self.assertIsNotNone(legacy.skill_id)
+        self.assertEqual(legacy.bus, bus)
+
+    def test_load(self):
+        bus = FakeBus()
+        kwarg = KwargSkill(skill_id="kwarg", bus=bus)
+        self.assertTrue(kwarg.initialized)
+        self.assertTrue(kwarg.startup_called)
+        self.assertEqual(kwarg.skill_id, "kwarg")
+        self.assertEqual(kwarg.bus, bus)
+
+        gui = Mock()
+        args = SpecificArgsSkill("args", bus, gui=gui)
+        self.assertTrue(args.initialized)
+        self.assertTrue(args.startup_called)
+        self.assertEqual(args.skill_id, "args")
+        self.assertEqual(args.bus, bus)
+        self.assertEqual(args.gui, gui)

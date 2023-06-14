@@ -14,11 +14,13 @@
 #
 """Common functionality relating to the implementation of mycroft skills."""
 
+import inspect
 import shutil
 from abc import ABCMeta
-from os.path import join, exists
+from os.path import join, exists, dirname
 
 from ovos_utils.log import LOG
+
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
@@ -36,30 +38,58 @@ class _SkillMetaclass(ABCMeta):
     """
 
     def __call__(cls, *args, **kwargs):
-        if "skill_id" in kwargs and "bus" in kwargs:
-            skill_id = kwargs.pop("skill_id")  # pop to remove from kwargs
+        from ovos_bus_client import MessageBusClient
+        from ovos_utils.messagebus import FakeBus
+        bus = None
+        skill_id = None
+
+        if "skill_id" in kwargs:
+            skill_id = kwargs.pop("skill_id")
+        if "bus" in kwargs:
             bus = kwargs.pop("bus")
+        if not bus:
+            for a in args:
+                if isinstance(a, MessageBusClient) or isinstance(a, FakeBus):
+                    bus = a
+                    LOG.warning(f"bus should be a kwarg, guessing {a} is the bus")
+                    break
+            else:
+                raise ValueError("bus is required to init a skill")
+
+        if not skill_id:
+            if args and isinstance(args[0], str):
+                a = args[0]
+                if a[0].isupper():  # in mycroft name is CamelCase by convention, not skill_id
+                    LOG.warning(f"ambiguous skill_id, ignoring {a} as it appears to be a CamelCase name")
+                else:
+                    LOG.warning(f"ambiguous skill_id, assuming folder name convention: {a}")
+                    skill_id = a
+
+            if not skill_id:
+                # by convention skill_id is the folder name
+                # usually repo.author
+                skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
+                LOG.warning(f"skill_id should be a kwarg, guessing {skill_id} is the skill_id")
+
+        if bus and skill_id:
             try:
                 # skill follows latest best practices, accepts kwargs and does its own init
-                return super().__call__(skill_id=skill_id, bus=bus)
-            except Exception as e:
-                LOG.info(e)  # no traceback to cut down on spam
-            try:
-                # skill did not update its init method, let's do some magic to init it manually
+                return super().__call__(skill_id=skill_id, bus=bus, **kwargs)
+            except TypeError:
                 LOG.warning("legacy skill signature detected, attempting to init skill manually, "
-                            f"self.bus and self.skill_id will only be available in self.initialize." +
+                            f"self.bus and self.skill_id will only be available in self.initialize.\n" +
                             f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
-                skill = super().__call__(*args, **kwargs)
-                skill._startup(bus, skill_id)
-                return skill
-            except Exception as e:
-                LOG.info(e)  # no traceback to cut down on spam
 
-            LOG.error(f"{cls.__name__} init failed, need to manually call self._startup")
+            # skill did not update its init method, let's do some magic to init it manually
+            # NOTE: no try: except because all skills must accept this initialization and we want exception
+            # this is what skill loader does internally
+            skill = super().__call__(*args, **kwargs)
+            skill._startup(bus, skill_id)
+            return skill
         else:
             # skill loader was not used to create skill object, log a warning and
             # do the legacy init
-            LOG.error(f"{cls.__name__} not fully inited, need to manually call self._startup"
+            LOG.error(f"{cls.__name__} not fully inited, need to manually call self._startup. "
                       f"Pass kwargs `skill_id` and `bus` to resolve this.")
 
         return super().__call__(*args, **kwargs)
