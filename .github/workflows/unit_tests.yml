@@ -61,18 +61,6 @@ jobs:
           # NOTE: additional pytest invocations should also add the --cov-append flag
           #       or they will overwrite previous invocations' coverage reports
           #       (for an example, see OVOS Skill Manager's workflow)
-      - name: Replace ovos-core with mycroft-core
-        run: |
-          pip uninstall ovos-core -y
-          pip uninstall ovos-lingua-franca -y
-          pip install git+https://github.com/MycroftAI/mycroft-core
-          pip install .
-      - name: Run mycroft unittests
-        run: |
-          pytest --cov-append --cov=ovos_workshop --cov-report xml test/unittests
-          # NOTE: additional pytest invocations should also add the --cov-append flag
-          #       or they will overwrite previous invocations' coverage reports
-          #       (for an example, see OVOS Skill Manager's workflow)
       - name: Upload coverage
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
