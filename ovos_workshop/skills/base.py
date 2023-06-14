@@ -201,31 +201,48 @@ class BaseSkill:
     """
 
     def __new__(cls, *args, **kwargs):
-        if "skill_id" in kwargs and "bus" in kwargs:
-            skill_id = kwargs["skill_id"]
+        skill_id = kwargs.get('skill_id')
+        try:
+            # Support legacy positional params
+            bus = kwargs.get('bus', args[1])
+            kwargs.setdefault('bus', bus)
+        except IndexError:
+            bus = None
+        if skill_id and bus:
             sig = signature(cls.__init__).parameters
-            LOG.info(sig)
+            LOG.debug(sig)
             try:
                 if 'kwargs' in sig or all((x in sig for x in ('skill_id',
                                                               'bus'))):
-                    LOG.info("attempting initialized cls")
                     # skill follows latest best practices, accepts kwargs
                     # and does its own init
-                    return super().__new__(cls)
+                    LOG.info("attempting initialized cls")
+                    return cls(**kwargs)
             except Exception as e:
-                LOG.warning(f"{skill_id}: {e}")
-        try:
-            bus = kwargs.get('bus') if 'bus' in kwargs else \
-                args[1] if len(args) > 1 else None
-            if bus:
+                LOG.info(f"{skill_id}: {e}")
 
-                LOG.info("attempting initialized cls with _startup called")
-                # skill did not update its init method, let's do some magic to init it manually
-                skill = super().__new__(cls)
-                skill._startup(bus)
-                return skill
-        except Exception as e:
-            LOG.warning(e)
+            try:
+                valid_kwargs = {kw: val for kw, val in kwargs.items()
+                                if kw in sig}
+                LOG.info(f'valid_kwargs={valid_kwargs}')
+                if all((x in sig for x in ('skill_id', 'bus'))):
+                    # Skill accepts enough kwargs to try initializing it
+                    valid_kwargs = {kw: val for kw, val in kwargs.items()
+                                    if kw in sig}
+                    return cls(**valid_kwargs)
+            except Exception as e:
+                LOG.info(f"{skill_id}: {e}")
+
+            # TODO: Below doesn't
+            # try:
+            #     # skill did not update its init method, let's try to init it and
+            #     # call _startup
+            #     LOG.info("attempting initialized cls with _startup called")
+            #     skill = cls()
+            #     skill._startup(bus, skill_id)
+            #     return skill
+            # except Exception as e:
+            #     LOG.warning(f"{skill_id}: {e}")
 
         # skill loader was not used to create skill object, log a warning and
         # do the legacy init
