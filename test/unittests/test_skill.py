@@ -32,7 +32,13 @@ class LegacySkill(CoreSkill):
 class BadLegacySkill(LegacySkill):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(self.bus)  # maybe not set, exeption in property
+        print(self.bus)  # not set, exception in property
+
+
+class GoodLegacySkill(CoreSkill):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.bus)  # maybe not set, exception in property
 
 
 class SpecificArgsSkill(OVOSSkill):
@@ -160,6 +166,8 @@ class TestSkill(unittest.TestCase):
 class TestSkillNew(unittest.TestCase):
     def test_legacy(self):
         bus = FakeBus()
+
+        # a legacy skill accepts args, but not the current ones
         legacy = LegacySkill("LegacyName", bus)
         self.assertTrue(legacy.inited)
         self.assertTrue(legacy.initialized)
@@ -167,15 +175,20 @@ class TestSkillNew(unittest.TestCase):
         self.assertIsNotNone(legacy.skill_id)
         self.assertEqual(legacy.bus, bus)
 
-        legacynoargs = LegacySkill()
+        # a legacy skill not accepting args at all
+        with self.assertRaises(Exception) as ctxt:
+            BadLegacySkill()  # accesses self.bus in __init__
+        self.assertTrue("Accessed MycroftSkill.bus in __init__" in str(ctxt.exception))
+
+        legacynoargs = LegacySkill()  # no exception this time because bus is not used in init
         self.assertTrue(legacynoargs.inited)
         self.assertFalse(legacynoargs.initialized)
         self.assertFalse(legacynoargs.startup_called)
 
-        with self.assertRaises(Exception) as ctxt:
-            BadLegacySkill()
-
-        self.assertTrue("Accessed MycroftSkill.bus in __init__" in str(ctxt.exception))
+        # a legacy skill fully inited at once
+        legacy = GoodLegacySkill(skill_id="legacy", bus=bus)  # accesses self.bus in __init__
+        self.assertEqual(legacy.skill_id, "legacy")
+        self.assertEqual(legacy.bus, bus)
 
     def test_load(self):
         bus = FakeBus()
