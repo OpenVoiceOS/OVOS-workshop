@@ -14,16 +14,87 @@
 #
 """Common functionality relating to the implementation of mycroft skills."""
 
+import inspect
 import shutil
 from abc import ABCMeta
-from os.path import join, exists
+from os.path import join, exists, dirname
 
 from ovos_utils.log import LOG
+
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
 class _SkillMetaclass(ABCMeta):
-    """ To override isinstance checks we need to use a metaclass """
+    """
+    this metaclass ensures we can load skills like regular python objects
+    mycroft-core required a skill loader helper class, which created the skill and then finished object init
+    this means skill_id and bus are not available in init method, mycroft introduced a method named initialize meant for this
+
+    to make skills pythonic and standalone, this metaclass is used to auto init old skills and help in migrating to new standards
+
+    To override isinstance checks we also need to use a metaclass
+
+    TODO: remove compat ovos-core 0.2.0, including MycroftSkill class
+    """
+
+    def __call__(cls, *args, **kwargs):
+        from ovos_bus_client import MessageBusClient
+        from ovos_utils.messagebus import FakeBus
+        bus = None
+        skill_id = None
+
+        if "bus" not in kwargs:
+            for a in args:
+                if isinstance(a, MessageBusClient) or isinstance(a, FakeBus):
+                    bus = a
+                    LOG.warning(f"bus should be a kwarg, guessing {a} is the bus")
+                    break
+            else:
+                LOG.warning("skill initialized without bus!! this is legacy behaviour and"
+                            " requires you to call skill.bind(bus) or skill._startup(skill_id, bus)\n"
+                            "bus will be required starting on ovos-core 0.1.0")
+                return super().__call__(*args, **kwargs)
+
+        if "skill_id" in kwargs:
+            skill_id = kwargs.pop("skill_id")
+        if "bus" in kwargs:
+            bus = kwargs.pop("bus")
+        if not skill_id:
+            LOG.warning(f"skill_id should be a kwarg, please update {cls.__name__}")
+            if args and isinstance(args[0], str):
+                a = args[0]
+                if a[0].isupper():  # in mycroft name is CamelCase by convention, not skill_id
+                    LOG.debug(f"ambiguous skill_id, ignoring {a} as it appears to be a CamelCase name")
+                else:
+                    LOG.warning(f"ambiguous skill_id, assuming positional argument: {a}")
+                    skill_id = a
+
+            if not skill_id:
+                LOG.warning("skill initialized without skill_id!! this is legacy behaviour and"
+                            " requires you to call skill._startup(skill_id, bus)\n"
+                            "skill_id will be required starting on ovos-core 0.1.0")
+                return super().__call__(*args, **kwargs)
+
+                # by convention skill_id is the folder name
+                # usually repo.author
+                # TODO - uncomment once above is deprecated
+                #skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
+                #LOG.warning(f"missing skill_id, assuming folder name convention: {skill_id}")
+
+        try:
+            # skill follows latest best practices, accepts kwargs and does its own init
+            return super().__call__(skill_id=skill_id, bus=bus, **kwargs)
+        except TypeError:
+            LOG.warning("legacy skill signature detected, attempting to init skill manually, "
+                        f"self.bus and self.skill_id will only be available in self.initialize.\n" +
+                        f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
+
+        # skill did not update its init method, let's do some magic to init it manually
+        # NOTE: no try: except because all skills must accept this initialization and we want exception
+        # this is what skill loader does internally
+        skill = super().__call__(*args, **kwargs)
+        skill._startup(bus, skill_id)
+        return skill
 
     def __instancecheck__(self, instance):
         if is_classic_core():
