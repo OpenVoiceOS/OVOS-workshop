@@ -202,26 +202,30 @@ class BaseSkill:
 
     def __new__(cls, *args, **kwargs):
         if "skill_id" in kwargs and "bus" in kwargs:
-            skill_id = kwargs["skill_id"]
-            bus = kwargs["bus"]
+            skill_id = kwargs.pop("skill_id")  # pop to remove from kwargs 
+            bus = kwargs.pop("bus")
             try:
                 # skill follows latest best practices, accepts kwargs and does its own init
                 return cls(skill_id=skill_id, bus=bus)
             except Exception as e:
-                LOG.info(e)
+                LOG.info(e)  # no traceback to cut down on spam
             try:
                 # skill did not update its init method, let's do some magic to init it manually
-                skill = cls() # simple init without args
+                LOG.warning("legacy skill signature detected, attempting to init skill manually, "
+                            f"self.bus and self.skill_id will only be available in self.initialize. + 
+                            f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
+                skill = cls(*args, **kwargs)
                 skill._startup(bus, skill_id)
                 return skill
             except Exception as e:
-                LOG.info(e)
-
-        # skill loader was not used to create skill object, log a warning and
-        # do the legacy init
-        LOG.warning(f"{cls.__name__} not fully inited, self.bus and "
-                    f"self.skill_id will only be available in self.initialize. "
-                    f"Pass kwargs `skill_id` and `bus` to resolve this.")
+                LOG.info(e)  # no traceback to cut down on spam
+               
+            LOG.error(f"{cls.__name__} init failed, need to manually call self._startup")
+        else:
+            # skill loader was not used to create skill object, log a warning and
+            # do the legacy init
+            LOG.error(f"{cls.__name__} not fully inited, need to manually call self._startup"
+                        f"Pass kwargs `skill_id` and `bus` to resolve this.")
         return super().__new__(cls)
 
     def __init__(self, name=None, bus=None, resources_dir=None,
