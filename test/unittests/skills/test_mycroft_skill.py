@@ -20,8 +20,8 @@ from datetime import datetime
 from os.path import join, dirname, abspath
 from unittest.mock import MagicMock, patch
 
-import pytest
-from adapt.intent import IntentBuilder
+#import pytest
+from ovos_utils.intents import IntentBuilder
 from ovos_bus_client import Message
 from ovos_config.config import Configuration
 
@@ -247,7 +247,7 @@ class TestMycroftSkill(unittest.TestCase):
                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
-    @pytest.mark.skip
+    #@pytest.mark.skip
     def test_register_decorators(self):
         """ Test decorated intents """
         path_orig = sys.path
