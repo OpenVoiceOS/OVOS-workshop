@@ -216,7 +216,6 @@ class BaseSkill:
                                                               'bus'))):
                     # skill follows latest best practices, accepts kwargs
                     # and does its own init
-                    LOG.info("attempting initialized cls")
                     return cls(**kwargs)
             except Exception as e:
                 LOG.info(f"{skill_id}: {e}")
@@ -224,7 +223,7 @@ class BaseSkill:
             try:
                 valid_kwargs = {kw: val for kw, val in kwargs.items()
                                 if kw in sig}
-                LOG.info(f'valid_kwargs={valid_kwargs}')
+                LOG.debug(f'valid_kwargs={valid_kwargs}')
                 if all((x in sig for x in ('skill_id', 'bus'))):
                     # Skill accepts enough kwargs to try initializing it
                     valid_kwargs = {kw: val for kw, val in kwargs.items()
