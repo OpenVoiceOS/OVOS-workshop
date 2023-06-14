@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import Mock
 
 from ovos_bus_client import Message
+from ovos_workshop.skills.base import BaseSkill
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
@@ -10,6 +11,36 @@ from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
+
+
+class LegacySkill(BaseSkill):
+    def __init__(self, skill_name, bus):
+        BaseSkill.__init__(self, skill_name, bus)
+        self.initialized = True
+        # __new__ calls `_startup` so this should be defined in __init__
+        assert self.skill_id is not None
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+
+
+class SpecificArgsSkill(BaseSkill):
+    def __init__(self, skill_id, bus, **kwargs):
+        BaseSkill.__init__(self, skill_id=skill_id, bus=bus, **kwargs)
+        self.initialized = True
+        self.kwargs = kwargs
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+
+
+class KwargSkill(BaseSkill):
+    def __init__(self, **kwargs):
+        BaseSkill.__init__(self, **kwargs)
+        self.initialized = True
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
 
 
 class TestSkill(unittest.TestCase):
@@ -101,3 +132,27 @@ class TestSkill(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.skill.unload()
+
+
+class TestSkillNew(unittest.TestCase):
+    def test_skill_create(self):
+        bus = FakeBus()
+        legacy = LegacySkill("legacy", bus)
+        self.assertTrue(legacy.initialized)
+        self.assertTrue(legacy.startup_called)
+        self.assertIsNotNone(legacy.skill_id)
+        self.assertEqual(legacy.bus, bus)
+
+        kwarg = KwargSkill(skill_id="kwarg", bus=bus)
+        self.assertTrue(kwarg.initialized)
+        self.assertTrue(kwarg.startup_called)
+        self.assertEqual(kwarg.skill_id, "kwarg")
+        self.assertEqual(kwarg.bus, bus)
+
+        gui = Mock()
+        args = SpecificArgsSkill("args", bus, gui=gui)
+        self.assertTrue(args.initialized)
+        self.assertTrue(args.startup_called)
+        self.assertEqual(args.skill_id, "args")
+        self.assertEqual(args.bus, bus)
+        self.assertEqual(args.gui, gui)

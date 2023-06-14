@@ -172,7 +172,7 @@ class BaseSkill:
     to all Skill implementations. This base class does not require `mycroft` to
     be importable
 
-    skill_launcher.py used to be skill_loader-py in mycroft-core
+    skill_launcher.py used to be skill_loader.py in mycroft-core
 
     for launching skills one can use skill_launcher.py to run them standalone
     (eg, docker), but the main objective is to make skills work more like proper
@@ -203,19 +203,27 @@ class BaseSkill:
     def __new__(cls, *args, **kwargs):
         if "skill_id" in kwargs and "bus" in kwargs:
             skill_id = kwargs["skill_id"]
-            bus = kwargs["bus"]
+            sig = signature(cls.__init__).parameters
+            LOG.info(sig)
             try:
-                # skill follows latest best practices, accepts kwargs and does its own init
-                return super().__new__(cls, skill_id=skill_id, bus=bus)
+                if 'kwargs' in sig or all((x in sig for x in ('skill_id',
+                                                              'bus'))):
+                    LOG.info("attempting initialized cls")
+                    # skill follows latest best practices, accepts kwargs
+                    # and does its own init
+                    return super().__new__(cls)
             except Exception as e:
-                LOG.info(f"{skill_id}: {e}")
+                LOG.warning(f"{skill_id}: {e}")
+        if "bus" in kwargs or len(args) > 1:
+            bus = kwargs.get("bus", args[1])
             try:
+                LOG.info("attempting initialized cls with _startup called")
                 # skill did not update its init method, let's do some magic to init it manually
-                skill = super().__new__(cls, *args, **kwargs)
-                skill._startup(bus, skill_id)
+                skill = super().__new__(cls)
+                skill._startup(bus)
                 return skill
             except Exception as e:
-                LOG.info(f"{skill_id}: {e}")
+                LOG.warning(e)
 
         # skill loader was not used to create skill object, log a warning and
         # do the legacy init
@@ -228,7 +236,6 @@ class BaseSkill:
                  settings: JsonStorage = None,
                  gui=None, enable_settings_manager=True,
                  skill_id=""):
-
         self.log = LOG  # a dedicated namespace will be assigned in _startup
         self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
