@@ -57,19 +57,20 @@ class _SkillMetaclass(ABCMeta):
                 raise ValueError("bus is required to init a skill")
 
         if not skill_id:
+            LOG.warning(f"skill_id should be a kwarg, please update {cls.__name__}")
             if args and isinstance(args[0], str):
                 a = args[0]
                 if a[0].isupper():  # in mycroft name is CamelCase by convention, not skill_id
-                    LOG.warning(f"ambiguous skill_id, ignoring {a} as it appears to be a CamelCase name")
+                    LOG.debug(f"ambiguous skill_id, ignoring {a} as it appears to be a CamelCase name")
                 else:
-                    LOG.warning(f"ambiguous skill_id, assuming folder name convention: {a}")
+                    LOG.warning(f"ambiguous skill_id, assuming positional argument: {a}")
                     skill_id = a
 
             if not skill_id:
                 # by convention skill_id is the folder name
                 # usually repo.author
                 skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
-                LOG.warning(f"skill_id should be a kwarg, guessing {skill_id} is the skill_id")
+                LOG.warning(f"ambiguous skill_id, assuming folder name convention: {skill_id}")
 
         if bus and skill_id:
             try:
