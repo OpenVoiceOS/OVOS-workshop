@@ -72,28 +72,20 @@ class _SkillMetaclass(ABCMeta):
                 skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
                 LOG.warning(f"ambiguous skill_id, assuming folder name convention: {skill_id}")
 
-        if bus and skill_id:
-            try:
-                # skill follows latest best practices, accepts kwargs and does its own init
-                return super().__call__(skill_id=skill_id, bus=bus, **kwargs)
-            except TypeError:
-                LOG.warning("legacy skill signature detected, attempting to init skill manually, "
-                            f"self.bus and self.skill_id will only be available in self.initialize.\n" +
-                            f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
+        try:
+            # skill follows latest best practices, accepts kwargs and does its own init
+            return super().__call__(skill_id=skill_id, bus=bus, **kwargs)
+        except TypeError:
+            LOG.warning("legacy skill signature detected, attempting to init skill manually, "
+                        f"self.bus and self.skill_id will only be available in self.initialize.\n" +
+                        f"__init__ method needs to accept `skill_id` and `bus` to resolve this.")
 
-            # skill did not update its init method, let's do some magic to init it manually
-            # NOTE: no try: except because all skills must accept this initialization and we want exception
-            # this is what skill loader does internally
-            skill = super().__call__(*args, **kwargs)
-            skill._startup(bus, skill_id)
-            return skill
-        else:
-            # skill loader was not used to create skill object, log a warning and
-            # do the legacy init
-            LOG.error(f"{cls.__name__} not fully inited, need to manually call self._startup. "
-                      f"Pass kwargs `skill_id` and `bus` to resolve this.")
-
-        return super().__call__(*args, **kwargs)
+        # skill did not update its init method, let's do some magic to init it manually
+        # NOTE: no try: except because all skills must accept this initialization and we want exception
+        # this is what skill loader does internally
+        skill = super().__call__(*args, **kwargs)
+        skill._startup(bus, skill_id)
+        return skill
 
     def __instancecheck__(self, instance):
         if is_classic_core():
