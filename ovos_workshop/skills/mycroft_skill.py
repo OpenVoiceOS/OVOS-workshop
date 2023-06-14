@@ -70,10 +70,15 @@ class _SkillMetaclass(ABCMeta):
                     skill_id = a
 
             if not skill_id:
+                LOG.warning("skill initialized without bus!! this is legacy behaviour and"
+                            " requires you to call skill.bind(bus) or skill._startup(skill_id, bus)\n"
+                            "bus will be required starting on ovos-core 0.1.0")
+                return super().__call__(*args, **kwargs)
+
                 # by convention skill_id is the folder name
                 # usually repo.author
-                skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
-                LOG.warning(f"ambiguous skill_id, assuming folder name convention: {skill_id}")
+                #skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
+                #LOG.warning(f"missing skill_id, assuming folder name convention: {skill_id}")
 
         try:
             # skill follows latest best practices, accepts kwargs and does its own init

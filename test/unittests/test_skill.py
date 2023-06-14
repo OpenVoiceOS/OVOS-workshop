@@ -13,11 +13,11 @@ from ovos_workshop.skill_launcher import SkillLoader
 
 
 class LegacySkill(CoreSkill):
-    def __init__(self, skill_name="LegacySkill", bus=None):
+    def __init__(self, skill_name="LegacySkill", bus=None, **kwargs):
         self.inited = True
         self.initialized = False
         self.startup_called = False
-        super().__init__(skill_name, bus)
+        super().__init__(skill_name, bus, **kwargs)
         # __new__ calls `_startup` so this should be defined in __init__
         assert self.skill_id is not None
 
@@ -167,8 +167,8 @@ class TestSkillNew(unittest.TestCase):
     def test_legacy(self):
         bus = FakeBus()
 
-        # a legacy skill accepts args, but not the current ones
-        legacy = LegacySkill("LegacyName", bus)
+        # a legacy skill accepts wrong args, but accepts kwargs
+        legacy = LegacySkill("LegacyName", bus, skill_id="legacy.mycroft")
         self.assertTrue(legacy.inited)
         self.assertTrue(legacy.initialized)
         self.assertTrue(legacy.startup_called)
@@ -186,8 +186,8 @@ class TestSkillNew(unittest.TestCase):
         self.assertFalse(legacynoargs.startup_called)
 
         # a legacy skill fully inited at once
-        legacy = GoodLegacySkill(skill_id="legacy", bus=bus)  # accesses self.bus in __init__
-        self.assertEqual(legacy.skill_id, "legacy")
+        legacy = GoodLegacySkill(skill_id="legacy.mycroft", bus=bus)  # accesses self.bus in __init__
+        self.assertEqual(legacy.skill_id, "legacy.mycroft")
         self.assertEqual(legacy.bus, bus)
 
     def test_load(self):
