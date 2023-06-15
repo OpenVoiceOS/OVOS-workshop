@@ -6,7 +6,7 @@ from ovos_utils.intents import IntentBuilder, Intent
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message, dig_for_message
 from ovos_utils.skills import get_non_properties
-from ovos_utils.skills.audioservice import AudioServiceInterface
+from ovos_utils.skills.audioservice import OCPInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
 
@@ -40,7 +40,7 @@ class OVOSSkill(MycroftSkill):
             # here to ensure self.skill_id is populated
             self.private_settings = PrivateSettings(self.skill_id)
             self.intent_layers.bind(self)
-            self.audio_service = AudioServiceInterface(self.bus)
+            self.audio_service = OCPInterface(self.bus)
 
     # new public api, these are not available in MycroftSkill
     @property
