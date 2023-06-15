@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a28](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a28) (2023-06-14)
+## [0.0.12a29](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a29) (2023-06-15)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a27...0.0.12a28)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a28...0.0.12a29)
+
+**Merged pull requests:**
+
+- Update AudioInterface reference to resolve deprecation warning [\#98](https://github.com/OpenVoiceOS/OVOS-workshop/pull/98) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a28](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a28) (2023-06-14)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a27...V0.0.12a28)
 
 **Fixed bugs:**
 
