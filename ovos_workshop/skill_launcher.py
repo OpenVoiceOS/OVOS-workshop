@@ -441,8 +441,9 @@ class SkillLoader:
         skill_module = skill_module or self.skill_module
 
         try:
+            LOG.info(f"loading skill: {skill_module}")
             # in skill classes __new__ should fully create the skill object
-            skill_class = get_skill_class(skill_module)
+            skill_class = self._skill_class or get_skill_class(skill_module)
             self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
             return self.instance is not None
         except Exception as e:
