@@ -384,11 +384,11 @@ class SkillLoader:
                                          callback=self._handle_filechange,
                                          recursive=True)
 
-    def _handle_filechange(self):
+    def _handle_filechange(self, path):
         """
         Handle a file change notification by reloading the skill
         """
-        LOG.info("Skill change detected!")
+        LOG.info(f'Skill change detected! {path}')
         try:
             if self.reload_allowed:
                 self.reload()
