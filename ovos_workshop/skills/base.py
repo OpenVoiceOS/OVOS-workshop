@@ -42,7 +42,7 @@ from ovos_utils.intents import ConverseTracker
 from ovos_utils.intents import Intent, IntentBuilder
 from ovos_utils.intents.intent_service_interface import munge_regex, munge_intent_parser, IntentServiceInterface
 from ovos_utils.json_helper import merge_dict
-from ovos_utils.log import LOG
+from ovos_utils.log import LOG, log_deprecation
 from ovos_utils.messagebus import get_handler_name, create_wrapper, EventContainer, get_message_lang
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
@@ -1270,6 +1270,9 @@ class BaseSkill:
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
             if hasattr(method, 'resting_handler'):
+                log_deprecation(f"{method} is using a depreacted decorator. "
+                                f"Homescreen skills should extend "
+                                f"`IdleDisplaySkill`", "0.1.0")
                 self.resting_name = method.resting_handler
                 self.log.info(f'Registering resting screen {method} for {self.resting_name}.')
 
