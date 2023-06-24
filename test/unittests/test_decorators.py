@@ -117,7 +117,8 @@ class TestKillableIntents(unittest.TestCase):
         confirm only get_response is aborted, speech after is still spoken"""
         self.bus.emitted_msgs = []
         # skill will enter a infinite loop unless aborted
-        self.bus.emit(Message(f"{self.skill.skill_id}:test2.intent"))
+        self.bus.emit(Message(f"{self.skill.skill_id}:test2.intent",
+                              context={"session": {"session_id": "123"}}))
         sleep(2)
         # check that intent triggered
         start_msg = {'type': 'mycroft.skill.handler.start',
@@ -127,10 +128,12 @@ class TestKillableIntents(unittest.TestCase):
                               'expect_response': True,
                               'meta': {'dialog': 'question', 'data': {}, 'skill': 'abort.test'},
                               'lang': 'en-us'}}
-        if not is_classic_core():
-            activate_msg = {'type': 'intent.service.skills.activate', 'data': {'skill_id': 'abort.test'}}
-        else:
-            activate_msg = {'type': 'active_skill_request', 'data': {'skill_id': 'abort.test'}}
+        activate_msg = {'type': 'intent.service.skills.activate', 'data': {'skill_id': 'abort.test'}}
+
+        sleep(0.5)  # fake wait_while_speaking
+        self.bus.emit(Message(f"recognizer_loop:audio_output_end",
+                              context={"session": {"session_id": "123"}}))
+        sleep(0.5)  # get_response is in a thread so it can be killed, let it capture msg above
 
         self.assertIn(start_msg, self.bus.emitted_msgs)
         self.assertIn(speak_msg, self.bus.emitted_msgs)

@@ -839,11 +839,14 @@ class BaseSkill:
         msg = dig_for_message() or Message("")
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
-        self.bus.emit(msg.forward("intent.service.skills.activate",
-                                  data={"skill_id": self.skill_id}))
+
+        m1 = msg.forward("intent.service.skills.activate", data={"skill_id": self.skill_id})
+        self.bus.emit(m1)
+
         # backwards compat with mycroft-core
-        self.bus.emit(msg.forward("active_skill_request",
-                                  data={"skill_id": self.skill_id}))
+        # TODO - remove soon
+        m2 = msg.forward("active_skill_request", data={"skill_id": self.skill_id})
+        self.bus.emit(m2)
 
     # method not present in mycroft-core
     def _deactivate(self):
