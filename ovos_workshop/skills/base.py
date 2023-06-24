@@ -1712,6 +1712,7 @@ class BaseSkill:
 
             self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
             event.wait(timeout=15)
+            self.bus.remove("recognizer_loop:audio_output_end", handle_output_end)
 
     def speak_dialog(self, key, data=None, expect_response=False, wait=False):
         """ Speak a random sentence from a dialog file.
