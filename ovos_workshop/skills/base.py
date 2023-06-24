@@ -25,6 +25,7 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event
 from typing import List
 
+from ovos_bus_client.session import SessionManager
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
@@ -47,7 +48,7 @@ from ovos_utils.messagebus import get_handler_name, create_wrapper, EventContain
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_utils.sound import play_acknowledge_sound, wait_while_speaking
+from ovos_utils.sound import play_acknowledge_sound
 
 from ovos_workshop.decorators import classproperty
 from ovos_workshop.decorators.killable import AbortEvent
@@ -838,11 +839,14 @@ class BaseSkill:
         msg = dig_for_message() or Message("")
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
-        self.bus.emit(msg.forward("intent.service.skills.activate",
-                                  data={"skill_id": self.skill_id}))
+
+        m1 = msg.forward("intent.service.skills.activate", data={"skill_id": self.skill_id})
+        self.bus.emit(m1)
+
         # backwards compat with mycroft-core
-        self.bus.emit(msg.forward("active_skill_request",
-                                  data={"skill_id": self.skill_id}))
+        # TODO - remove soon
+        m2 = msg.forward("active_skill_request", data={"skill_id": self.skill_id})
+        self.bus.emit(m2)
 
     # method not present in mycroft-core
     def _deactivate(self):
@@ -1701,7 +1705,17 @@ class BaseSkill:
         self.bus.emit(m)
 
         if wait:
-            wait_while_speaking()
+            sessid = SessionManager.get(m).session_id
+            event = Event()
+
+            def handle_output_end(msg):
+                sess = SessionManager.get(msg)
+                if sessid == sess.session_id:
+                    event.set()
+
+            self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
+            event.wait(timeout=15)
+            self.bus.remove("recognizer_loop:audio_output_end", handle_output_end)
 
     def speak_dialog(self, key, data=None, expect_response=False, wait=False):
         """ Speak a random sentence from a dialog file.
