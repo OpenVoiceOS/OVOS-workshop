@@ -133,7 +133,7 @@ class TestKillableIntents(unittest.TestCase):
         sleep(0.5)  # fake wait_while_speaking
         self.bus.emit(Message(f"recognizer_loop:audio_output_end",
                               context={"session": {"session_id": "123"}}))
-        sleep(0.5)  # get_response is in a thread so it can be killed, let it capture msg above
+        sleep(1)  # get_response is in a thread so it can be killed, let it capture msg above
 
         self.assertIn(start_msg, self.bus.emitted_msgs)
         self.assertIn(speak_msg, self.bus.emitted_msgs)
