@@ -21,7 +21,7 @@ from copy import copy
 from hashlib import md5
 from inspect import signature
 from itertools import chain
-from os.path import join, abspath, dirname, basename, isfile
+from os.path import join, abspath, dirname, basename, isfile, isdir
 from threading import Event
 from typing import List
 
@@ -95,7 +95,13 @@ class SkillGUI(GUIInterface):
 
     def __init__(self, skill):
         self.skill = skill
-        super().__init__(skill.skill_id, config=Configuration())
+        ui_dir = join(self.skill.root_dir, "ui")
+        ui_directories = dict()
+        if isdir(ui_dir):
+            ui_directories["ui"] = ui_dir
+        # TODO: Support other UI resource directories
+        super().__init__(skill.skill_id, config=Configuration(),
+                         ui_directories=ui_directories)
 
     @property
     def bus(self):
@@ -105,11 +111,6 @@ class SkillGUI(GUIInterface):
     @property
     def skill_id(self):
         return self.skill.skill_id
-
-    def setup_default_handlers(self):
-        """Sets the handlers for the default messages."""
-        msg_type = self.build_message_type('set')
-        self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
         """Register a handler for GUI events.
