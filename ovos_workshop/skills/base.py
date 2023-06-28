@@ -95,14 +95,11 @@ class SkillGUI(GUIInterface):
 
     def __init__(self, skill):
         self.skill = skill
-        ui_dir = join(self.skill.root_dir, "ui")  # shared resources, qml for qt5 (backwards compat)
-        qt5_dir = join(self.skill.root_dir, "qt5_ui")  # qml for qt5  (migration WIP)
+        qt5_dir = join(self.skill.root_dir, "ui")  # qml for qt5  (backwards compat)
         qt6_dir = join(self.skill.root_dir, "qt6_ui")  # qml for qt6  (WIP)
         qt6_dir = join(self.skill.root_dir, "gtk_ui")  # gtk files  (reserved namespace, unimplemented)
         web_dir = join(self.skill.root_dir, "web_ui")  # html/javascript  (several react/js/html guis)
         ui_directories = dict()
-        if isdir(ui_dir):
-            ui_directories["ui"] = ui_dir
         if isdir(qt5_dir):
             ui_directories["qt5"] = qt5_dir
         if isdir(qt6_dir):
