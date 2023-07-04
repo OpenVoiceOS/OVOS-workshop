@@ -71,19 +71,23 @@ class OVOSSkill(MycroftSkill):
         self._deactivate()
 
     def play_audio(self, filename):
+        core_supported = False
         if not is_classic_core():
             try:
                 from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
                 if OVOS_VERSION_MAJOR >= 1 or \
                         OVOS_VERSION_MINOR > 0 or \
                         OVOS_VERSION_BUILD >= 4:
-                    self.bus.emit(Message("mycroft.audio.queue",
-                                          {"filename": filename}))
-                    return
-            except:
-                pass
-        LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
-        play_audio(filename).wait()
+                    core_supported = True  # min version of ovos-core
+            except ImportError: # skills don't require core anymore, running standalone
+                core_supported = True 
+
+        if core_supported:
+            message = dig_for_message() or Message("")
+            self.bus.emit(message.forward("mycroft.audio.queue", {"filename": filename}))
+        else:
+            LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
+            play_audio(filename).wait()
 
     @property
     def core_lang(self):
