@@ -21,7 +21,7 @@ from copy import copy
 from hashlib import md5
 from inspect import signature
 from itertools import chain
-from os.path import join, abspath, dirname, basename, isfile
+from os.path import join, abspath, dirname, basename, isfile, isdir
 from threading import Event
 from typing import List
 
@@ -43,7 +43,7 @@ from ovos_utils.intents import ConverseTracker
 from ovos_utils.intents import Intent, IntentBuilder
 from ovos_utils.intents.intent_service_interface import munge_regex, munge_intent_parser, IntentServiceInterface
 from ovos_utils.json_helper import merge_dict
-from ovos_utils.log import LOG
+from ovos_utils.log import LOG, deprecated
 from ovos_utils.messagebus import get_handler_name, create_wrapper, EventContainer, get_message_lang
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
@@ -79,76 +79,6 @@ def is_classic_core():
             return True  # mycroft-core
         except ImportError:
             return False  # standalone
-
-
-class SkillGUI(GUIInterface):
-    """SkillGUI - Interface to the Graphical User Interface
-
-    Values set in this class are synced to the GUI, accessible within QML
-    via the built-in sessionData mechanism.  For example, in Python you can
-    write in a skill:
-        self.gui['temp'] = 33
-        self.gui.show_page('Weather.qml')
-    Then in the Weather.qml you'd access the temp via code such as:
-        text: sessionData.time
-    """
-
-    def __init__(self, skill):
-        self.skill = skill
-        super().__init__(skill.skill_id, config=Configuration())
-
-    @property
-    def bus(self):
-        if self.skill:
-            return self.skill.bus
-
-    @property
-    def skill_id(self):
-        return self.skill.skill_id
-
-    def setup_default_handlers(self):
-        """Sets the handlers for the default messages."""
-        msg_type = self.build_message_type('set')
-        self.skill.add_event(msg_type, self.gui_set)
-
-    def register_handler(self, event, handler):
-        """Register a handler for GUI events.
-
-        When using the triggerEvent method from Qt
-        triggerEvent("event", {"data": "cool"})
-
-        Args:
-            event (str):    event to catch
-            handler:        function to handle the event
-        """
-        msg_type = self.build_message_type(event)
-        self.skill.add_event(msg_type, handler)
-
-    def _pages2uri(self, page_names):
-        # Convert pages to full reference
-        page_urls = []
-        for name in page_names:
-            page = self.skill._resources.locate_qml_file(name)
-            if page:
-                if self.remote_url:
-                    page_urls.append(self.remote_url + "/" + page)
-                elif page.startswith("file://"):
-                    page_urls.append(page)
-                else:
-                    page_urls.append("file://" + page)
-            else:
-                raise FileNotFoundError(f"Unable to find page: {name}")
-
-        return page_urls
-
-    def shutdown(self):
-        """Shutdown gui interface.
-
-        Clear pages loaded through this interface and remove the skill
-        reference to make ref counting warning more precise.
-        """
-        self.release()
-        self.skill = None
 
 
 def simple_trace(stack_trace):
@@ -1954,3 +1884,44 @@ class BaseSkill:
     def cancel_all_repeating_events(self):
         """Cancel any repeating events started by the skill."""
         return self.event_scheduler.cancel_all_repeating_events()
+
+
+class SkillGUI(GUIInterface):
+    def __init__(self, skill: BaseSkill):
+        """
+        Wraps `GUIInterface` for use with a skill.
+        """
+        self._skill = skill
+        skill_id = skill.skill_id
+        bus = skill.bus
+        config = skill.config_core.get('gui')
+        ui_directories = self._get_ui_directories()
+        GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
+                              ui_directories=ui_directories)
+
+    @property
+    @deprecated("`skill` should not be referenced directly", "0.1.0")
+    def skill(self):
+        return self._skill
+
+    def _get_ui_directories(self) -> dict:
+        """
+        Get a dict of UI directories by GUI framework.
+        @return: Dict of framework name to UI resource directory
+        """
+        ui_directories = dict()
+        base_directory = self._skill.root_dir
+        if isdir(join(base_directory, "gui")):
+            LOG.debug("Skill implements resources in `gui` directory")
+            ui_directories["all"] = join(base_directory, "gui")
+            return ui_directories
+        LOG.info("Checking for legacy UI directories")
+        # TODO: Add deprecation log after ovos-gui is implemented
+        if isdir(join(base_directory, "ui5")):
+            ui_directories["qt5"] = join(base_directory, "ui5")
+        if isdir(join(base_directory, "ui6")):
+            ui_directories["qt6"] = join(base_directory, "ui6")
+        if isdir(join(base_directory, "ui")) and "qt5" not in ui_directories:
+            LOG.debug("Handling `ui` directory as `qt5`")
+            ui_directories["qt5"] = join(base_directory, "ui")
+        return ui_directories

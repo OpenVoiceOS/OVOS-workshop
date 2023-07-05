@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ovos_bus_client import Message
 
@@ -8,7 +8,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
-from os.path import dirname
+from os.path import dirname, join
 from ovos_workshop.skill_launcher import SkillLoader
 
 
@@ -207,3 +207,44 @@ class TestSkillNew(unittest.TestCase):
         self.assertEqual(args.skill_id, "args")
         self.assertEqual(args.bus, bus)
         self.assertEqual(args.gui, gui)
+
+
+class TestSkillGui(unittest.TestCase):
+    class LegacySkill(Mock):
+        skill_id = "old_skill"
+        bus = FakeBus()
+        config_core = {"gui": {"test": True,
+                               "legacy": True}}
+        root_dir = join(dirname(__file__), "skills", "gui")
+
+    class GuiSkill(Mock):
+        skill_id = "new_skill"
+        bus = FakeBus()
+        config_core = {"gui": {"test": True,
+                               "legacy": False}}
+        root_dir = join(dirname(__file__), "skills")
+
+    @patch("ovos_workshop.skills.base.GUIInterface.__init__")
+    def test_skill_gui(self, interface_init):
+        from ovos_utils.gui import GUIInterface
+        from ovos_workshop.skills.base import SkillGUI
+
+        # Old skill with `ui` directory in root
+        old_skill = self.LegacySkill()
+        old_gui = SkillGUI(old_skill)
+        self.assertEqual(old_gui.skill, old_skill)
+        self.assertIsInstance(old_gui, GUIInterface)
+        interface_init.assert_called_once_with(
+            old_gui, skill_id=old_skill.skill_id, bus=old_skill.bus,
+            config=old_skill.config_core['gui'],
+            ui_directories={"qt5": join(old_skill.root_dir, "ui")})
+
+        # New skill with `gui` directory in root
+        new_skill = self.GuiSkill()
+        new_gui = SkillGUI(new_skill)
+        self.assertEqual(new_gui.skill, new_skill)
+        self.assertIsInstance(new_gui, GUIInterface)
+        interface_init.assert_called_with(
+            new_gui, skill_id=new_skill.skill_id, bus=new_skill.bus,
+            config=new_skill.config_core['gui'],
+            ui_directories={"all": join(new_skill.root_dir, "gui")})
