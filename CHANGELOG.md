@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a33](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a33) (2023-07-04)
+## [0.0.12a34](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a34) (2023-07-06)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a32...0.0.12a33)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a33...0.0.12a34)
+
+**Merged pull requests:**
+
+- Refactor `SkillGUI` with unit tests [\#106](https://github.com/OpenVoiceOS/OVOS-workshop/pull/106) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a33](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a33) (2023-07-04)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a32...V0.0.12a33)
 
 **Fixed bugs:**
 
