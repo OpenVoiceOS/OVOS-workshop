@@ -38,7 +38,7 @@ from ovos_utils.dialog import get_dialog
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventSchedulerInterface
 from ovos_utils.file_utils import FileWatcher
-from ovos_utils.gui import GUIInterface
+from ovos_utils.gui import GUIInterface, get_ui_directories
 from ovos_utils.intents import ConverseTracker
 from ovos_utils.intents import Intent, IntentBuilder
 from ovos_utils.intents.intent_service_interface import munge_regex, munge_intent_parser, IntentServiceInterface
@@ -1895,7 +1895,7 @@ class SkillGUI(GUIInterface):
         skill_id = skill.skill_id
         bus = skill.bus
         config = skill.config_core.get('gui')
-        ui_directories = self._get_ui_directories()
+        ui_directories = get_ui_directories(skill.root_dir)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
 
@@ -1903,25 +1903,3 @@ class SkillGUI(GUIInterface):
     @deprecated("`skill` should not be referenced directly", "0.1.0")
     def skill(self):
         return self._skill
-
-    def _get_ui_directories(self) -> dict:
-        """
-        Get a dict of UI directories by GUI framework.
-        @return: Dict of framework name to UI resource directory
-        """
-        ui_directories = dict()
-        base_directory = self._skill.root_dir
-        if isdir(join(base_directory, "gui")):
-            LOG.debug("Skill implements resources in `gui` directory")
-            ui_directories["all"] = join(base_directory, "gui")
-            return ui_directories
-        LOG.info("Checking for legacy UI directories")
-        # TODO: Add deprecation log after ovos-gui is implemented
-        if isdir(join(base_directory, "ui5")):
-            ui_directories["qt5"] = join(base_directory, "ui5")
-        if isdir(join(base_directory, "ui6")):
-            ui_directories["qt6"] = join(base_directory, "ui6")
-        if isdir(join(base_directory, "ui")) and "qt5" not in ui_directories:
-            LOG.debug("Handling `ui` directory as `qt5`")
-            ui_directories["qt5"] = join(base_directory, "ui")
-        return ui_directories
