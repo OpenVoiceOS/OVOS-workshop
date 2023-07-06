@@ -1,5 +1,4 @@
-# ovos-utils < 0.1.0, >=0.0.34
-ovos-utils@git+https://github.com/openvoiceos/ovos-utils@FEAT_GuiSendPageIDs
+ovos-utils < 0.1.0, >=0.0.35a6
 ovos_config < 0.1.0,>=0.0.5
 ovos-lingua-franca~=0.4,>=0.4.6
 ovos-bus-client < 0.1.0, >=0.0.5a1
