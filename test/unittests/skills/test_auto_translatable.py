@@ -30,7 +30,12 @@ class TestUniversalFallbackSkill(unittest.TestCase):
 
 class TestUniversalCommonQuerySkill(unittest.TestCase):
     from ovos_workshop.skills.auto_translatable import UniversalCommonQuerySkill
-    test_skill = UniversalCommonQuerySkill()
+
+    class UniveralCommonQueryExample(UniversalCommonQuerySkill):
+        def CQS_match_query_phrase(self, phrase):
+            pass
+
+    test_skill = UniveralCommonQueryExample()
 
     def test_00_init(self):
         self.assertIsInstance(self.test_skill, self.UniversalCommonQuerySkill)
