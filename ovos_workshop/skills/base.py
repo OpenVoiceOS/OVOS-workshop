@@ -481,8 +481,7 @@ class BaseSkill:
     @property
     def location(self):
         """Get the JSON data struction holding location information."""
-        # TODO: Allow Enclosure to override this for devices that
-        # contain a GPS.
+        # PHAL plugins can update location live, such as GPS
         return self.config_core.get('location')
 
     @property
@@ -598,6 +597,9 @@ class BaseSkill:
             self._register_system_event_handlers()
             self._register_public_api()
 
+            # tell ovos-gui we are ready to upload UI files
+            self.bus.emit(Message("ovos.gui.upload.announce", {"skill_id": self.skill_id}))
+
             if is_classic_core():
                 # inject ovos exclusive features in vanila mycroft-core if possible
                 ## limited support for missing skill deactivated event
@@ -605,6 +607,14 @@ class BaseSkill:
                 ConverseTracker.connect_bus(self.bus)  # pull/1468
                 self.add_event("converse.skill.deactivated",
                                self._handle_skill_deactivated, speak_errors=False)
+
+    # method not in mycroft-core
+    def handle_upload_gui_pages(self, message):
+        """ once ovos-gui requests it, upload our ui files
+        usually happens when ovos-gui (re)starts"""
+        skill_id = message.data.get("skill_id")
+        if not skill_id or skill_id == self.skill_id:
+            self.gui.upload_gui_pages(message)
 
     def _register_public_api(self):
         """ Find and register api methods.
@@ -683,6 +693,7 @@ class BaseSkill:
         self.add_event('mycroft.skill.set_cross_context', self.handle_set_cross_context, speak_errors=False)
         self.add_event('mycroft.skill.remove_cross_context', self.handle_remove_cross_context, speak_errors=False)
         self.add_event('mycroft.skills.settings.changed', self.handle_settings_change, speak_errors=False)
+        self.add_event("ovos.gui.upload.ready", self.handle_upload_gui_pages, speak_errors=False)
 
     def handle_settings_change(self, message):
         """Update settings if the remote settings changes apply to this skill.
