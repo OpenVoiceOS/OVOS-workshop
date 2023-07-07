@@ -13,21 +13,17 @@ def dig_for_skill(max_records: int = 10) -> Optional[object]:
     @param max_records: maximum number of records in the stack to check
     @return: Skill or AbstractApplication instance if found
     """
-    from ovos_workshop.app import OVOSAbstractApplication
-    from ovos_workshop.skills import MycroftSkill
     stack = inspect.stack()[1:]  # First frame will be this function call
     stack = stack if len(stack) <= max_records else stack[:max_records]
     for record in stack:
         args = inspect.getargvalues(record.frame)
         if args.locals.get("self"):
             obj = args.locals["self"]
-            if isinstance(obj, MycroftSkill) or \
-                    isinstance(obj, OVOSAbstractApplication):
+            if isinstance(obj, BaseSkill):
                 return obj
         elif args.locals.get("args"):
             for obj in args.locals["args"]:
-                if isinstance(obj, MycroftSkill) or \
-                        isinstance(obj, OVOSAbstractApplication):
+                if isinstance(obj, BaseSkill):
                     return obj
     return None
 
