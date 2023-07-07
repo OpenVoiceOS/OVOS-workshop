@@ -3,7 +3,7 @@ import time
 from typing import List
 
 from ovos_utils.intents import IntentBuilder, Intent
-from ovos_utils.log import LOG
+from ovos_utils.log import LOG, log_deprecation
 from ovos_utils.messagebus import Message, dig_for_message
 from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
@@ -222,5 +222,8 @@ class OVOSSkill(MycroftSkill):
 # backwards compat alias, no functional difference
 class OVOSFallbackSkill(OVOSSkill):
     def __new__(cls, *args, **kwargs):
+        log_deprecation("Implement "
+                        "`ovos_workshop.skills.fallback.FallbackSkill`",
+                        "0.1.0")
         from ovos_workshop.skills.fallback import FallbackSkill
         return FallbackSkill(*args, **kwargs)

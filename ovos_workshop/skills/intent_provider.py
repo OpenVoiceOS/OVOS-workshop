@@ -2,7 +2,7 @@ from threading import Event
 from time import time as get_time, sleep
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import Message
-from ovos_workshop.skills.ovos import OVOSFallbackSkill
+from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_config.config import read_mycroft_config, update_mycroft_config
 
 
@@ -49,7 +49,8 @@ class BaseIntentEngine:
         return data
 
 
-class IntentEngineSkill(OVOSFallbackSkill):
+# TODO: Finish implementation or deprecate
+class IntentEngineSkill(FallbackSkill):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.engine = None
