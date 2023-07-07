@@ -1,9 +1,16 @@
 import inspect
 from functools import wraps
+from typing import Optional, List
+
 from ovos_utils.log import LOG
 
 
-def dig_for_skill(max_records: int = 10):
+def dig_for_skill(max_records: int = 10) -> Optional[object]:
+    """
+    Dig through the call stack to locate a Skill object
+    @param max_records: maximum number of records in the stack to check
+    @return: Skill or AbstractApplication instance if found
+    """
     from ovos_workshop.app import OVOSAbstractApplication
     from ovos_workshop.skills import MycroftSkill
     stack = inspect.stack()[1:]  # First frame will be this function call
@@ -23,13 +30,17 @@ def dig_for_skill(max_records: int = 10):
     return None
 
 
-def enables_layer(layer_name):
+def enables_layer(layer_name: str):
+    """
+    Decorator to enable an intent layer when a method is called
+    @param layer_name: name of intent layer to enable
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.activate_layer(layer_name)
 
@@ -38,13 +49,17 @@ def enables_layer(layer_name):
     return layer_handler
 
 
-def disables_layer(layer_name):
+def disables_layer(layer_name: str):
+    """
+    Decorator to disable an intent layer when a method is called
+    @param layer_name: name of intent layer to disable
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.deactivate_layer(layer_name)
 
@@ -53,13 +68,18 @@ def disables_layer(layer_name):
     return layer_handler
 
 
-def replaces_layer(layer_name, intent_list):
+def replaces_layer(layer_name: str, intent_list: Optional[List[str]]):
+    """
+    Replaces intents at the specified layer
+    @param layer_name: name of intent layer to replace
+    @param intent_list: list of new intents for the specified layer
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.replace_layer(layer_name, intent_list)
 

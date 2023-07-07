@@ -30,7 +30,9 @@ def ocp_search():
 
 
 def ocp_play():
-    """Decorator for adding a method as an common play search handler."""
+    """
+    Decorator for adding a method to handle media playback.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -44,7 +46,9 @@ def ocp_play():
 
 
 def ocp_previous():
-    """Decorator for adding a method as an common play prev handler."""
+    """
+    Decorator for adding a method to handle requests to skip backward.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -58,7 +62,9 @@ def ocp_previous():
 
 
 def ocp_next():
-    """Decorator for adding a method as an common play  next handler."""
+    """
+    Decorator for adding a method to handle requests to skip forward.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -72,7 +78,9 @@ def ocp_next():
 
 
 def ocp_pause():
-    """Decorator for adding a method as an common play pause handler."""
+    """
+    Decorator for adding a method to handle requests to pause playback.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -86,7 +94,9 @@ def ocp_pause():
 
 
 def ocp_resume():
-    """Decorator for adding a method as an common play resume handler."""
+    """
+    Decorator for adding a method to handle requests to resume playback.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -100,7 +110,9 @@ def ocp_resume():
 
 
 def ocp_featured_media():
-    """Decorator for adding a method as an common play search handler."""
+    """
+    Decorator for adding a method to handle requests to provide featured media.
+    """
 
     def real_decorator(func):
         # Store the flag inside the function
@@ -114,8 +126,9 @@ def ocp_featured_media():
 
 
 try:
-    from ovos_plugin_common_play.ocp.status import MediaType, PlayerState, MediaState, MatchConfidence, \
-        PlaybackType, PlaybackMode, LoopState, TrackState
+    from ovos_plugin_common_play.ocp.status import MediaType, PlayerState, \
+        MediaState, MatchConfidence, PlaybackType, PlaybackMode, LoopState, \
+        TrackState
 except ImportError:
 
     # TODO - manually keep these in sync as needed
