@@ -49,8 +49,8 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_acknowledge_sound
+from ovos_utils import classproperty
 
-from ovos_workshop.decorators import classproperty
 from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.decorators.killable import killable_event, \
     AbortQuestion

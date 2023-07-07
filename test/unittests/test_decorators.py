@@ -1,12 +1,89 @@
 import json
 import unittest
 from os.path import dirname
+from unittest.mock import Mock
 from time import sleep
 
 from ovos_workshop.skill_launcher import SkillLoader
 from ovos_utils.messagebus import FakeBus, Message
 
-from ovos_workshop.skills.mycroft_skill import is_classic_core
+
+class TestDecorators(unittest.TestCase):
+    def test_adds_context(self):
+        from ovos_workshop.decorators import adds_context
+        # TODO
+
+    def test_removes_context(self):
+        from ovos_workshop.decorators import removes_context
+        # TODO
+
+    def test_intent_handler(self):
+        from ovos_workshop.decorators import intent_handler
+        mock_intent = Mock()
+        called = False
+
+        @intent_handler(mock_intent)
+        @intent_handler("test_intent")
+        def test_handler():
+            nonlocal called
+            called = True
+
+        self.assertEqual(test_handler.intents, ["test_intent", mock_intent])
+        self.assertFalse(called)
+
+    def test_resting_screen_handler(self):
+        from ovos_workshop.decorators import resting_screen_handler
+        called = False
+
+        @resting_screen_handler("test_homescreen")
+        def show_homescreen():
+            nonlocal called
+            called = True
+
+        self.assertEqual(show_homescreen.resting_handler, "test_homescreen")
+        self.assertFalse(called)
+
+    def test_skill_api_method(self):
+        from ovos_workshop.decorators import skill_api_method
+        called = False
+
+        @skill_api_method
+        def api_method():
+            nonlocal called
+            called = True
+
+        self.assertTrue(api_method.api_method)
+        self.assertFalse(called)
+
+    def test_converse_handler(self):
+        from ovos_workshop.decorators import converse_handler
+        called = False
+
+        @converse_handler
+        def handle_converse():
+            nonlocal called
+            called = True
+
+        self.assertTrue(handle_converse.converse)
+        self.assertFalse(called)
+
+    def test_fallback_handler(self):
+        from ovos_workshop.decorators import fallback_handler
+        called = False
+
+        @fallback_handler()
+        def medium_prio_fallback():
+            nonlocal called
+            called = True
+
+        @fallback_handler(1)
+        def high_prio_fallback():
+            nonlocal called
+            called = True
+
+        self.assertEqual(medium_prio_fallback.fallback_priority, 50)
+        self.assertEqual(high_prio_fallback.fallback_priority, 1)
+        self.assertFalse(called)
 
 
 class TestKillableIntents(unittest.TestCase):
@@ -208,22 +285,126 @@ class TestKillableIntents(unittest.TestCase):
         sleep(2)
         self.assertTrue(self.bus.emitted_msgs == [])
 
-
-class TestConverse(unittest.TestCase):
-    # TODO
-    pass
-
-
-class TestFallbackHandler(unittest.TestCase):
-    # TODO
-    pass
+    def test_killable_event(self):
+        from ovos_workshop.decorators.killable import killable_event
+        # TODO
 
 
 class TestLayers(unittest.TestCase):
-    # TODO
-    pass
+    def test_dig_for_skill(self):
+        from ovos_workshop.decorators.layers import dig_for_skill
+        # TODO
+
+    def test_enables_layer(self):
+        from ovos_workshop.decorators.layers import enables_layer
+        # TODO
+
+    def test_disables_layer(self):
+        from ovos_workshop.decorators.layers import disables_layer
+        # TODO
+
+    def test_replaces_layer(self):
+        from ovos_workshop.decorators.layers import replaces_layer
+        # TODO
+
+    def test_removes_layer(self):
+        from ovos_workshop.decorators.layers import removes_layer
+        # TODO
+
+    def test_resets_layers(self):
+        from ovos_workshop.decorators.layers import resets_layers
+        # TODO
+
+    def test_layer_intent(self):
+        from ovos_workshop.decorators.layers import layer_intent
+        # TODO
+
+    def test_intent_layers(self):
+        from ovos_workshop.decorators.layers import IntentLayers
+        # TODO
 
 
 class TestOCP(unittest.TestCase):
-    # TODO
-    pass
+    def test_ocp_search(self):
+        from ovos_workshop.decorators.ocp import ocp_search
+        called = False
+
+        @ocp_search()
+        def test_search():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_search.is_ocp_search_handler)
+        self.assertFalse(called)
+
+    def test_ocp_play(self):
+        from ovos_workshop.decorators.ocp import ocp_play
+        called = False
+
+        @ocp_play()
+        def test_play():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_play.is_ocp_playback_handler)
+        self.assertFalse(called)
+
+    def test_ocp_previous(self):
+        from ovos_workshop.decorators.ocp import ocp_previous
+        called = False
+
+        @ocp_previous()
+        def test_previous():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_previous.is_ocp_prev_handler)
+        self.assertFalse(called)
+
+    def test_ocp_next(self):
+        from ovos_workshop.decorators.ocp import ocp_next
+        called = False
+
+        @ocp_next()
+        def test_next():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_next.is_ocp_next_handler)
+        self.assertFalse(called)
+
+    def test_ocp_pause(self):
+        from ovos_workshop.decorators.ocp import ocp_pause
+        called = False
+
+        @ocp_pause()
+        def test_pause():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_pause.is_ocp_pause_handler)
+        self.assertFalse(called)
+
+    def test_ocp_resume(self):
+        from ovos_workshop.decorators.ocp import ocp_resume
+        called = False
+
+        @ocp_resume()
+        def test_resume():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_resume.is_ocp_resume_handler)
+        self.assertFalse(called)
+
+    def test_ocp_featured_media(self):
+        from ovos_workshop.decorators.ocp import ocp_featured_media
+        called = False
+
+        @ocp_featured_media()
+        def test_featured_media():
+            nonlocal called
+            called = True
+
+        self.assertTrue(test_featured_media.is_ocp_featured_handler)
+        self.assertFalse(called)

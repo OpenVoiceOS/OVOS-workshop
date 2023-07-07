@@ -1,35 +1,44 @@
 import inspect
 from functools import wraps
+from typing import Optional, List
+
+from ovos_bus_client import MessageBusClient
 from ovos_utils.log import LOG
+from ovos_workshop.skills.base import BaseSkill
 
 
-def dig_for_skill(max_records: int = 10):
-    from ovos_workshop.app import OVOSAbstractApplication
-    from ovos_workshop.skills import MycroftSkill
+def dig_for_skill(max_records: int = 10) -> Optional[object]:
+    """
+    Dig through the call stack to locate a Skill object
+    @param max_records: maximum number of records in the stack to check
+    @return: Skill or AbstractApplication instance if found
+    """
     stack = inspect.stack()[1:]  # First frame will be this function call
     stack = stack if len(stack) <= max_records else stack[:max_records]
     for record in stack:
         args = inspect.getargvalues(record.frame)
         if args.locals.get("self"):
             obj = args.locals["self"]
-            if isinstance(obj, MycroftSkill) or \
-                    isinstance(obj, OVOSAbstractApplication):
+            if isinstance(obj, BaseSkill):
                 return obj
         elif args.locals.get("args"):
             for obj in args.locals["args"]:
-                if isinstance(obj, MycroftSkill) or \
-                        isinstance(obj, OVOSAbstractApplication):
+                if isinstance(obj, BaseSkill):
                     return obj
     return None
 
 
-def enables_layer(layer_name):
+def enables_layer(layer_name: str):
+    """
+    Decorator to enable an intent layer when a method is called
+    @param layer_name: name of intent layer to enable
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.activate_layer(layer_name)
 
@@ -38,13 +47,17 @@ def enables_layer(layer_name):
     return layer_handler
 
 
-def disables_layer(layer_name):
+def disables_layer(layer_name: str):
+    """
+    Decorator to disable an intent layer when a method is called
+    @param layer_name: name of intent layer to disable
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.deactivate_layer(layer_name)
 
@@ -53,13 +66,18 @@ def disables_layer(layer_name):
     return layer_handler
 
 
-def replaces_layer(layer_name, intent_list):
+def replaces_layer(layer_name: str, intent_list: Optional[List[str]]):
+    """
+    Replaces intents at the specified layer
+    @param layer_name: name of intent layer to replace
+    @param intent_list: list of new intents for the specified layer
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.replace_layer(layer_name, intent_list)
 
@@ -68,15 +86,19 @@ def replaces_layer(layer_name, intent_list):
     return layer_handler
 
 
-def removes_layer(layer_name, intent_list):
+def removes_layer(layer_name: str):
+    """
+    Decorator to remove an intent layer when a method is called
+    @param layer_name: name of intent layer to remove
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
-            skill.intent_layers.replace_layer(layer_name, intent_list)
+            skill.intent_layers.remove_layer(layer_name)
 
         return call_function
 
@@ -84,12 +106,15 @@ def removes_layer(layer_name, intent_list):
 
 
 def resets_layers():
+    """
+    Decorator to reset and disable intent layers
+    """
     def layer_handler(func):
         @wraps(func)
         def call_function(*args, **kwargs):
             skill = dig_for_skill()
             skill.intent_layers = skill.intent_layers or \
-                                  IntentLayers().bind(skill)
+                IntentLayers().bind(skill)
             func(*args, **kwargs)
             skill.intent_layers.disable()
 
@@ -98,9 +123,13 @@ def resets_layers():
     return layer_handler
 
 
-def layer_intent(intent_parser, layer_name):
-    """Decorator for adding a method as an intent handler belonging to an
-    intent layer."""
+def layer_intent(intent_parser: callable, layer_name: str):
+    """
+    Decorator for adding a method as an intent handler belonging to an
+    intent layer.
+    @param intent_parser: intent parser method
+    @param layer_name: name of intent layer intent is associated with
+    """
 
     def real_decorator(func):
         # Store the intent_parser inside the function
@@ -135,25 +164,25 @@ class IntentLayers:
         self._layers = {}
         self._active_layers = []
 
-    def bind(self, skill):
+    def bind(self, skill: object):
         if skill:
             self._skill = skill
         return self
 
     @property
-    def skill(self):
+    def skill(self) -> BaseSkill:
         return self._skill
 
     @property
-    def bus(self):
+    def bus(self) -> Optional[MessageBusClient]:
         return self._skill.bus if self._skill else None
 
     @property
-    def skill_id(self):
+    def skill_id(self) -> str:
         return self._skill.skill_id if self._skill else "IntentLayers"
 
     @property
-    def active_layers(self):
+    def active_layers(self) -> List[str]:
         return self._active_layers
 
     def disable(self):
@@ -162,7 +191,8 @@ class IntentLayers:
         for layer_name, intents in self._layers.items():
             self.deactivate_layer(layer_name)
 
-    def update_layer(self, layer_name, intent_list=None):
+    def update_layer(self, layer_name: str,
+                     intent_list: Optional[List[str]] = None):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         intent_list = intent_list or []
@@ -171,7 +201,7 @@ class IntentLayers:
         self._layers[layer_name] += intent_list or []
         LOG.info(f"Adding {intent_list} to {layer_name}")
 
-    def activate_layer(self, layer_name):
+    def activate_layer(self, layer_name: str):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
@@ -183,7 +213,7 @@ class IntentLayers:
         else:
             LOG.debug("no layer named: " + layer_name)
 
-    def deactivate_layer(self, layer_name):
+    def deactivate_layer(self, layer_name: str):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
@@ -195,7 +225,7 @@ class IntentLayers:
         else:
             LOG.debug("no layer named: " + layer_name)
 
-    def remove_layer(self, layer_name):
+    def remove_layer(self, layer_name: str):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
@@ -205,7 +235,8 @@ class IntentLayers:
         else:
             LOG.debug("no layer named: " + layer_name)
 
-    def replace_layer(self, layer_name, intent_list=None):
+    def replace_layer(self, layer_name: str,
+                      intent_list: Optional[List[str]] = None):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         if layer_name in self._layers:
@@ -214,7 +245,7 @@ class IntentLayers:
         else:
             self.update_layer(layer_name, intent_list)
 
-    def is_active(self, layer_name):
+    def is_active(self, layer_name: str):
         if not layer_name.startswith(f"{self.skill_id}:"):
             layer_name = f"{self.skill_id}:{layer_name}"
         return layer_name in self.active_layers
