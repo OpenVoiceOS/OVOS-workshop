@@ -2,7 +2,6 @@ import json
 import unittest
 from os.path import dirname
 from unittest.mock import Mock
-
 from time import sleep
 
 from ovos_workshop.skill_launcher import SkillLoader

@@ -6,6 +6,9 @@ from ovos_workshop.decorators.ocp import ocp_play, ocp_pause, ocp_resume, \
     ocp_search, ocp_previous, ocp_featured_media
 from functools import wraps
 
+# TODO: Deprecate unused import retained for backwards-compat.
+from ovos_utils import classproperty
+
 
 def adds_context(context: str, words: str = ''):
     """
