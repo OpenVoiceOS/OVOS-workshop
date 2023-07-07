@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a34](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a34) (2023-07-06)
+## [0.0.12a35](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a35) (2023-07-07)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a33...0.0.12a34)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a34...0.0.12a35)
+
+**Merged pull requests:**
+
+- Decorator module tests, docstrings, and annotations [\#107](https://github.com/OpenVoiceOS/OVOS-workshop/pull/107) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a34](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a34) (2023-07-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a33...V0.0.12a34)
 
 **Merged pull requests:**
 
