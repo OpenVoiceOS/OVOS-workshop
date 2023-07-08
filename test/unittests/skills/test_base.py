@@ -372,14 +372,14 @@ class TestSkillGui(unittest.TestCase):
         bus = FakeBus()
         config_core = {"gui": {"test": True,
                                "legacy": True}}
-        root_dir = join(dirname(__file__), "skills", "gui")
+        root_dir = join(dirname(__file__), "test_gui/gui")
 
     class GuiSkill(Mock):
         skill_id = "new_skill"
         bus = FakeBus()
         config_core = {"gui": {"test": True,
                                "legacy": False}}
-        root_dir = join(dirname(__file__), "skills")
+        root_dir = join(dirname(__file__), "test_gui")
 
     @patch("ovos_workshop.skills.base.GUIInterface.__init__")
     def test_skill_gui(self, interface_init):
