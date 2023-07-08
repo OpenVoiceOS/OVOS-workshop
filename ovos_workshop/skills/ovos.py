@@ -1,17 +1,17 @@
 import re
 import time
-from typing import List
+from typing import List, Optional, Union
 
+from ovos_bus_client import MessageBusClient
+from ovos_bus_client.message import Message, dig_for_message
 from ovos_utils.intents import IntentBuilder, Intent
 from ovos_utils.log import LOG, log_deprecation
-from ovos_utils.messagebus import Message, dig_for_message
 from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
+from ovos_workshop.resource_files import SkillResources
 
-from ovos_workshop.decorators.killable import killable_event, \
-    AbortQuestion
 from ovos_workshop.skills.layers import IntentLayers
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 
@@ -34,7 +34,7 @@ class OVOSSkill(MycroftSkill):
         self.audio_service = None
         super(OVOSSkill, self).__init__(*args, **kwargs)
 
-    def bind(self, bus):
+    def bind(self, bus: MessageBusClient):
         super().bind(bus)
         if bus:
             # here to ensure self.skill_id is populated
@@ -44,17 +44,17 @@ class OVOSSkill(MycroftSkill):
 
     # new public api, these are not available in MycroftSkill
     @property
-    def is_fully_initialized(self):
+    def is_fully_initialized(self) -> bool:
         """Determines if the skill has been fully loaded and setup.
         When True all data has been loaded and all internal state and events setup"""
         return self._is_fully_initialized
 
     @property
-    def stop_is_implemented(self):
+    def stop_is_implemented(self) -> bool:
         return self._stop_is_implemented
 
     @property
-    def converse_is_implemented(self):
+    def converse_is_implemented(self) -> bool:
         return self._converse_is_implemented
 
     def activate(self):
@@ -70,46 +70,50 @@ class OVOSSkill(MycroftSkill):
         """
         self._deactivate()
 
-    def play_audio(self, filename):
+    def play_audio(self, filename: str):
         core_supported = False
         if not is_classic_core():
             try:
-                from mycroft.version import OVOS_VERSION_BUILD, OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+                from mycroft.version import OVOS_VERSION_BUILD, \
+                    OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
                 if OVOS_VERSION_MAJOR >= 1 or \
                         OVOS_VERSION_MINOR > 0 or \
                         OVOS_VERSION_BUILD >= 4:
                     core_supported = True  # min version of ovos-core
-            except ImportError: # skills don't require core anymore, running standalone
+            except ImportError:
+                # skills don't require core anymore, running standalone
                 core_supported = True 
 
         if core_supported:
             message = dig_for_message() or Message("")
-            self.bus.emit(message.forward("mycroft.audio.queue", {"filename": filename}))
+            self.bus.emit(message.forward("mycroft.audio.queue",
+                                          {"filename": filename}))
         else:
-            LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, falling back to local skill playback")
+            LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, "
+                        "falling back to local skill playback")
             play_audio(filename).wait()
 
     @property
-    def core_lang(self):
+    def core_lang(self) -> str:
         """Get the configured default language."""
         return self._core_lang
 
     @property
-    def secondary_langs(self):
+    def secondary_langs(self) -> List[str]:
         """Get the configured secondary languages, mycroft is not
         considered to be in these languages but i will load it's resource
         files. This provides initial support for multilingual input"""
         return self._secondary_langs
 
     @property
-    def native_langs(self):
+    def native_langs(self) -> List[str]:
         """Languages natively supported by core
         ie, resource files available and explicitly supported
         """
         return self._native_langs
 
     @property
-    def alphanumeric_skill_id(self):
+    def alphanumeric_skill_id(self) -> str:
         """skill id converted to only alphanumeric characters
          Non alpha-numeric characters are converted to "_"
 
@@ -119,14 +123,15 @@ class OVOSSkill(MycroftSkill):
         return self._alphanumeric_skill_id
 
     @property
-    def resources(self):
+    def resources(self) -> SkillResources:
         """Instantiates a ResourceFileLocator instance when needed.
         a new instance is always created to ensure self.lang
         reflects the active language and not the default core language
         """
         return self._resources
 
-    def load_lang(self, root_directory=None, lang=None):
+    def load_lang(self, root_directory: Optional[str] = None,
+                  lang: Optional[str] = None):
         """Instantiates a ResourceFileLocator instance when needed.
         a new instance is always created to ensure lang
         reflects the active language and not the default core language
@@ -139,7 +144,8 @@ class OVOSSkill(MycroftSkill):
         except FileNotFoundError:
             return False
 
-    def voc_list(self, voc_filename, lang=None) -> List[str]:
+    def voc_list(self, voc_filename: str,
+                 lang: Optional[str] = None) -> List[str]:
         """
         Get vocabulary list and cache the results
 
@@ -153,7 +159,8 @@ class OVOSSkill(MycroftSkill):
         """
         return self._voc_list(voc_filename, lang)
 
-    def remove_voc(self, utt, voc_filename, lang=None):
+    def remove_voc(self, utt: str, voc_filename: str,
+                   lang: Optional[str] = None) -> str:
         """ removes any entry in .voc file from the utterance """
         if utt:
             # Check for matches against complete words
@@ -164,7 +171,8 @@ class OVOSSkill(MycroftSkill):
         return utt
 
     def _register_decorated(self):
-        """Register all intent handlers that are decorated with an intent.
+        """
+        Register all intent handlers that are decorated with an intent.
 
         Looks for all functions that have been marked by a decorator
         and read the intent data from them.  The intent handlers aren't the
@@ -183,7 +191,9 @@ class OVOSSkill(MycroftSkill):
             if hasattr(method, 'converse'):
                 self.converse = method
 
-    def register_intent_layer(self, layer_name, intent_list):
+    def register_intent_layer(self, layer_name: str,
+                              intent_list: List[Union[IntentBuilder, Intent,
+                                                str]]):
         for intent_file in intent_list:
             if IntentBuilder is not None and isinstance(intent_file, IntentBuilder):
                 intent = intent_file.build()
@@ -195,7 +205,7 @@ class OVOSSkill(MycroftSkill):
             self.intent_layers.update_layer(layer_name, [name])
 
     # killable_events support
-    def send_stop_signal(self, stop_event=None):
+    def send_stop_signal(self, stop_event: Optional[str] = None):
         msg = dig_for_message() or Message("mycroft.stop")
         # stop event execution
         if stop_event:
@@ -212,9 +222,11 @@ class OVOSSkill(MycroftSkill):
             # NOTE: mycroft does not have an event to stop recording
             # this attempts to force a stop by sending silence to end STT step
             self.bus.emit(Message('mycroft.mic.mute'))
+            # TODO: Refactor sleep
             time.sleep(1.5)  # the silence from muting should make STT stop recording
             self.bus.emit(Message('mycroft.mic.unmute'))
 
+        # TODO: Refactor sleep
         time.sleep(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
 
