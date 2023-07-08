@@ -43,7 +43,7 @@ class TestOVOSSkill(unittest.TestCase):
     skill = OVOSSkill(bus=bus, skill_id="test_ovos_skill")
 
     def test_00_skill_init(self):
-        self.assertIsNone(self.skill.private_settings)
+        self.assertIsInstance(self.skill.private_settings, dict)
         self.assertIsInstance(self.skill._threads, list)
         self.assertIsNotNone(self.skill._original_converse)
         self.assertIsInstance(self.skill.intent_layers, IntentLayers)
