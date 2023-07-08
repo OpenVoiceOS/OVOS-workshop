@@ -1,10 +1,11 @@
-from unittest import TestCase, mock
+from unittest import TestCase
 from unittest.mock import patch
 
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.decorators import fallback_handler
 from ovos_workshop.skills.base import BaseSkill
-from ovos_workshop.skills.fallback import FallbackSkillV1, FallbackSkillV2, FallbackSkill
+from ovos_workshop.skills.fallback import FallbackSkillV1, FallbackSkillV2, \
+    FallbackSkill
 
 
 class SimpleFallback(FallbackSkillV1):
@@ -33,6 +34,17 @@ class TestFallbackSkill(TestCase):
     # TODO: Test `__new__` logic
     pass
 
+    def test_class_inheritance(self):
+        from ovos_workshop.skills.ovos import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        fallback = FallbackSkill("test")
+        self.assertIsInstance(fallback, BaseSkill)
+        self.assertIsInstance(fallback, OVOSSkill)
+        self.assertIsInstance(fallback, MycroftSkill)
+        self.assertIsInstance(fallback, FallbackSkillV1)
+        self.assertIsInstance(fallback, FallbackSkillV2)
+        self.assertIsInstance(fallback, FallbackSkill)
+
 
 class TestFallbackSkillV1(TestCase):
     @staticmethod
@@ -41,6 +53,17 @@ class TestFallbackSkillV1(TestCase):
         fb_skill.bind(FakeBus())
         fb_skill.initialize()
         return fb_skill
+
+    def test_inheritance(self):
+        from ovos_workshop.skills.ovos import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        fallback = FallbackSkillV1("test")
+        self.assertIsInstance(fallback, BaseSkill)
+        self.assertIsInstance(fallback, OVOSSkill)
+        self.assertIsInstance(fallback, MycroftSkill)
+        self.assertIsInstance(fallback, FallbackSkillV1)
+        self.assertIsInstance(fallback, FallbackSkillV2)
+        self.assertIsInstance(fallback, FallbackSkill)
 
     def test_make_intent_failure_handler(self):
         # TODO
@@ -146,6 +169,16 @@ class TestFallbackSkillV1(TestCase):
 
 class TestFallbackSkillV2(TestCase):
     fallback_skill = FallbackSkillV2(FakeBus(), "test_fallback_v2")
+
+    def test_class_inheritance(self):
+        from ovos_workshop.skills.ovos import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        self.assertIsInstance(self.fallback_skill, BaseSkill)
+        self.assertIsInstance(self.fallback_skill, OVOSSkill)
+        self.assertIsInstance(self.fallback_skill, MycroftSkill)
+        self.assertIsInstance(self.fallback_skill, FallbackSkillV1)
+        self.assertIsInstance(self.fallback_skill, FallbackSkillV2)
+        self.assertIsInstance(self.fallback_skill, FallbackSkill)
 
     def test_00_init(self):
         self.assertIsInstance(self.fallback_skill, FallbackSkillV2)
