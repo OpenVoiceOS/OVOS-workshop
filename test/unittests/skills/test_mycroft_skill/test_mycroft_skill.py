@@ -220,8 +220,7 @@ class TestMycroftSkill(unittest.TestCase):
 
         expected_types = [
             'padatious:register_intent',
-            'padatious:register_entity',
-            'gui.volunteer_page_upload'
+            'padatious:register_entity'
         ]
 
         expected_results = [
@@ -238,8 +237,7 @@ class TestMycroftSkill(unittest.TestCase):
                 'lang': 'en-us',
                 'name': str(s.skill_id) + ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c',
                 'samples': []
-            },
-            {'skill_id': 'A'}  # TODO: What is this? Found in test failures
+            }
         ]
         self.check_register_object_file(expected_types, expected_results)
 
@@ -267,8 +265,7 @@ class TestMycroftSkill(unittest.TestCase):
                                           'vocab', 'en-us', 'test.intent'),
                         'lang': 'en-us',
                         'samples': [],
-                        'name': str(s.skill_id) + ':test.intent'},
-                    {'skill_id': 'A'}  # TODO: What is this? Found in test failures
+                        'name': str(s.skill_id) + ':test.intent'}
                     ]
 
         self.check_register_decorators(expected)
