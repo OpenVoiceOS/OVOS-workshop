@@ -2,6 +2,7 @@ import unittest
 
 from os.path import join, dirname
 from os import remove
+from unittest.mock import Mock, patch
 
 from ovos_utils.gui import GUIInterface
 from ovos_utils.messagebus import FakeBus
@@ -83,6 +84,28 @@ class TestApp(unittest.TestCase):
         # Cleanup test files
         remove(test_app._settings_path)
         remove(test_skill._settings_path)
+
+    @patch("ovos_workshop.app.OVOSSkill.default_shutdown")
+    def test_default_shutdown(self, skill_shutdown):
+        real_clear_intents = self.app.clear_intents
+        real_bus_close = self.app.bus.close
+        self.app.bus.close = Mock()
+        self.app.clear_intents = Mock()
+        self.app.default_shutdown()
+        self.app.clear_intents.assert_called_once()
+        self.app.bus.close.assert_called_once()
+        skill_shutdown.assert_called_once()
+
+        self.app.bus.close = real_bus_close
+        self.app.clear_intents = real_clear_intents
+
+    def test_get_language_dir(self):
+        # TODO
+        pass
+
+    def test_clear_intents(self):
+        # TODO
+        pass
 
     def test_class_inheritance(self):
         from ovos_workshop.skills.base import BaseSkill
