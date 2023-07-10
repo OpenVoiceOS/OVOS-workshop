@@ -18,10 +18,8 @@ class TestSkillLauncherFunctions(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         data_path = environ.pop('XDG_DATA_HOME')
-        try:
+        if isdir(data_path):
             shutil.rmtree(data_path)
-        except:
-            pass
 
     def test_get_skill_directories(self):
         from ovos_workshop.skill_launcher import get_skill_directories
@@ -115,9 +113,73 @@ class TestSkillLoader(unittest.TestCase):
         self.assertFalse(loader.is_blacklisted)
         self.assertTrue(loader.reload_allowed)
 
-    def test_skill_loader_load_skill(self):
+    def test_skill_loader_reload(self):
         from ovos_workshop.skill_launcher import SkillLoader
         # TODO
+
+    def test_skill_loader_load(self):
+        from ovos_workshop.skill_launcher import SkillLoader
+        # TODO
+
+    def test__unload(self):
+        # TODO
+        pass
+
+    def test_unload(self):
+        # TODO
+        pass
+
+    def test_activate(self):
+        # TODO
+        pass
+
+    def test_deactivate(self):
+        # TODO
+        pass
+
+    def test_execute_instance_shutdown(self):
+        # TODO
+        pass
+
+    def test_garbage_collect(self):
+        # TODO
+        pass
+
+    def test_emit_skill_shutdown_event(self):
+        # TODO
+        pass
+
+    def test__load(self):
+        # TODO
+        pass
+
+    def test_start_filewatcher(self):
+        # TODO
+        pass
+
+    def test_handle_filechange(self):
+        # TODO
+        pass
+
+    def test_prepare_for_load(self):
+        # TODO
+        pass
+
+    def test_skip_load(self):
+        # TODO
+        pass
+
+    def test_load_skill_source(self):
+        # TODO
+        pass
+
+    def test_create_skill_instance(self):
+        # TODO
+        pass
+
+    def test_communicate_load_status(self):
+        # TODO
+        pass
 
 
 class TestPluginSkillLoader(unittest.TestCase):
@@ -131,7 +193,7 @@ class TestPluginSkillLoader(unittest.TestCase):
         self.assertEqual(loader.bus, self.bus)
         self.assertEqual(loader.skill_id, "test_skill.test")
 
-    def test_plugin_skill_loader_load_skill(self):
+    def test_plugin_skill_loader_load(self):
         from ovos_workshop.skill_launcher import PluginSkillLoader
         # TODO
 

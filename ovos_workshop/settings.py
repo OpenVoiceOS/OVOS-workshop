@@ -1,24 +1,27 @@
 import json
-from os.path import isfile
-from threading import Timer
-
 import yaml
+
+from os.path import isfile
+from typing import Optional
+from threading import Timer
 from ovos_backend_client.api import DeviceApi
 from ovos_backend_client.pairing import is_paired, requires_backend
 from ovos_backend_client.settings import RemoteSkillSettings, get_display_name
+from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_utils.log import LOG
+from ovos_workshop.skills.base import BaseSkill
 
 
 class SkillSettingsManager:
-    def __init__(self, skill):
-        self.download_timer = None
+    def __init__(self, skill: BaseSkill):
+        self.download_timer: Optional[Timer] = None
         self.skill = skill
         self.api = DeviceApi()
-        self.remote_settings = RemoteSkillSettings(self.skill_id,
-                                                   settings=dict(self.skill.settings),
-                                                   meta=self.load_meta(),
-                                                   remote_id=self.skill_gid)
+        self.remote_settings = \
+            RemoteSkillSettings(self.skill_id,
+                                settings=dict(self.skill.settings),
+                                meta=self.load_meta(), remote_id=self.skill_gid)
         self.register_bus_handlers()
 
     def start(self):
@@ -44,23 +47,23 @@ class SkillSettingsManager:
             self.download_timer.cancel()
 
     @property
-    def bus(self):
+    def bus(self) -> MessageBusClient:
         return self.skill.bus
 
     @property
-    def skill_id(self):
+    def skill_id(self) -> str:
         return self.skill.skill_id
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return get_display_name(self.skill_id)
 
     @property
-    def skill_gid(self):
+    def skill_gid(self) -> str:
         return f"@{self.api.uuid}|{self.skill_id}"
 
     @property
-    def skill_meta(self):
+    def skill_meta(self) -> dict:
         return self.remote_settings.meta
 
     def register_bus_handlers(self):
@@ -75,7 +78,7 @@ class SkillSettingsManager:
         self.skill.add_event('mycroft.paired',
                              self.handle_upload_local)
 
-    def load_meta(self):
+    def load_meta(self) -> dict:
         json_path = f"{self.skill.root_dir}/settingsmeta.json"
         yaml_path = f"{self.skill.root_dir}/settingsmeta.yaml"
         if isfile(yaml_path):
@@ -86,7 +89,7 @@ class SkillSettingsManager:
                 return json.load(meta_file)
         return {}
 
-    def save_meta(self, generate=False):
+    def save_meta(self, generate: bool = False):
         # unset reload flag to avoid a reload on settingmeta change
         # TODO - support for settingsmeta XDG paths
         reload = self.skill.reload_skill
@@ -110,7 +113,7 @@ class SkillSettingsManager:
         self.skill.reload_skill = reload
 
     @requires_backend
-    def upload(self, generate=False):
+    def upload(self, generate: bool = False):
         if not is_paired():
             LOG.error("Device needs to be paired to upload settings")
             return
@@ -120,7 +123,7 @@ class SkillSettingsManager:
         self.remote_settings.upload()
 
     @requires_backend
-    def upload_meta(self, generate=False):
+    def upload_meta(self, generate: bool = False):
         if not is_paired():
             LOG.error("Device needs to be paired to upload settingsmeta")
             return
@@ -145,15 +148,15 @@ class SkillSettingsManager:
             msg.data[self.skill_id] = self.remote_settings.settings
             self.bus.emit(msg)
 
-    def handle_upload_meta(self, message):
+    def handle_upload_meta(self, message: Message):
         skill_id = message.data.get("skill_id")
         if skill_id == self.skill_id:
             self.upload_meta()
 
-    def handle_upload_local(self, message):
+    def handle_upload_local(self, message: Message):
         skill_id = message.data.get("skill_id")
         if skill_id == self.skill_id:
             self.upload()
 
-    def handle_download_remote(self, message):
+    def handle_download_remote(self, message: Message):
         self.download()

@@ -5,7 +5,7 @@ from os import environ
 from os.path import isdir, join, dirname
 
 
-class TestResourceFileMethods(unittest.TestCase):
+class TestResourceFiles(unittest.TestCase):
     def test_locate_base_directories(self):
         from ovos_workshop.resource_files import locate_base_directories
         # TODO
@@ -35,18 +35,22 @@ class TestResourceFile(unittest.TestCase):
     def test_qml_file(self):
         from ovos_workshop.resource_files import QmlFile, ResourceFile
         self.assertTrue(issubclass(QmlFile, ResourceFile))
+        # TODO: test locate/load
 
     def test_dialog_file(self):
         from ovos_workshop.resource_files import DialogFile, ResourceFile
         self.assertTrue(issubclass(DialogFile, ResourceFile))
+        # TODO: test load/render
 
     def test_vocab_file(self):
         from ovos_workshop.resource_files import VocabularyFile, ResourceFile
         self.assertTrue(issubclass(VocabularyFile, ResourceFile))
+        # TODO test load
 
     def test_named_value_file(self):
         from ovos_workshop.resource_files import NamedValueFile, ResourceFile
         self.assertTrue(issubclass(NamedValueFile, ResourceFile))
+        # TODO test load/_load_line
 
     def test_list_file(self):
         from ovos_workshop.resource_files import ListFile, ResourceFile
@@ -59,30 +63,91 @@ class TestResourceFile(unittest.TestCase):
     def test_regex_file(self):
         from ovos_workshop.resource_files import RegexFile, ResourceFile
         self.assertTrue(issubclass(RegexFile, ResourceFile))
+        # TODO: Test load
 
     def test_word_file(self):
         from ovos_workshop.resource_files import WordFile, ResourceFile
         self.assertTrue(issubclass(WordFile, ResourceFile))
+        # TODO: Test load
 
 
 class TestSkillResources(unittest.TestCase):
+    from ovos_workshop.resource_files import SkillResources
     test_data_path = join(dirname(__file__), "xdg_data")
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        environ['XDG_DATA_HOME'] = cls.test_data_path
+    environ['XDG_DATA_HOME'] = test_data_path
 
     @classmethod
     def tearDownClass(cls) -> None:
         data_path = environ.pop('XDG_DATA_HOME')
-        try:
+        if isdir(data_path):
             shutil.rmtree(data_path)
-        except:
-            pass
 
-    def test_skill_resources(self):
-        from ovos_workshop.resource_files import SkillResources
+    def test_load_dialog_renderer(self):
         # TODO
+        pass
+
+    def test_define_resource_types(self):
+        # TODO
+        pass
+
+    def test_load_dialog_file(self):
+        # TODO
+        pass
+
+    def test_locate_qml_file(self):
+        # TODO
+        pass
+
+    def test_load_list_file(self):
+        # TODO
+        pass
+
+    def test_load_named_value_file(self):
+        # TODO
+        pass
+
+    def test_load_regex_file(self):
+        # TODO
+        pass
+
+    def test_load_template_file(self):
+        # TODO
+        pass
+
+    def test_load_vocabulary_file(self):
+        # TODO
+        pass
+
+    def test_load_word_file(self):
+        # TODO
+        pass
+
+    def test_render_dialog(self):
+        # TODO
+        pass
+
+    def test_load_skill_vocabulary(self):
+        # TODO
+        pass
+
+    def test_load_skill_regex(self):
+        # TODO
+        pass
+
+    def test_make_unique_regex_group(self):
+        # TODO
+        pass
+
+
+class TestCoreResources(unittest.TestCase):
+    test_data_path = join(dirname(__file__), "xdg_data")
+    environ['XDG_DATA_HOME'] = test_data_path
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        data_path = environ.pop('XDG_DATA_HOME')
+        if isdir(data_path):
+            shutil.rmtree(data_path)
 
     def test_core_resources(self):
         from ovos_workshop.resource_files import CoreResources, SkillResources
@@ -90,6 +155,17 @@ class TestSkillResources(unittest.TestCase):
         self.assertIsInstance(core_res, SkillResources)
         self.assertEqual(core_res.language, "en-us")
         self.assertTrue(isdir(core_res.skill_directory))
+
+
+class TestUserResources(unittest.TestCase):
+    test_data_path = join(dirname(__file__), "xdg_data")
+    environ['XDG_DATA_HOME'] = test_data_path
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        data_path = environ.pop('XDG_DATA_HOME')
+        if isdir(data_path):
+            shutil.rmtree(data_path)
 
     def test_user_resources(self):
         from ovos_workshop.resource_files import UserResources, SkillResources

@@ -15,10 +15,8 @@ class TestFilesystem(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         data_path = environ.pop('XDG_DATA_HOME')
-        try:
+        if isdir(data_path):
             shutil.rmtree(data_path)
-        except:
-            pass
 
     def test_filesystem(self):
         fs = FileSystemAccess("test")
