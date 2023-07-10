@@ -10,13 +10,13 @@ from ovos_backend_client.settings import RemoteSkillSettings, get_display_name
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_utils.log import LOG
-from ovos_workshop.skills.base import BaseSkill
 
 
 class SkillSettingsManager:
-    def __init__(self, skill: BaseSkill):
+    def __init__(self, skill):
+        from ovos_workshop.skills.base import BaseSkill
         self.download_timer: Optional[Timer] = None
-        self.skill = skill
+        self.skill: BaseSkill = skill
         self.api = DeviceApi()
         self.remote_settings = \
             RemoteSkillSettings(self.skill_id,
