@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a35](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a35) (2023-07-07)
+## [0.0.12a36](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a36) (2023-07-10)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a34...0.0.12a35)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a35...0.0.12a36)
+
+**Implemented enhancements:**
+
+- Skills module tests, docstrings, and annotations [\#108](https://github.com/OpenVoiceOS/OVOS-workshop/pull/108) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a35](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a35) (2023-07-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a34...V0.0.12a35)
 
 **Merged pull requests:**
 
