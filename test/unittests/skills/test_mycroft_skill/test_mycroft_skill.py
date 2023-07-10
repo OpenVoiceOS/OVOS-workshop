@@ -20,12 +20,12 @@ from datetime import datetime
 from os.path import join, dirname, abspath
 from unittest.mock import MagicMock, patch
 
-#import pytest
 from ovos_utils.intents import IntentBuilder
 from ovos_bus_client import Message
 from ovos_config.config import Configuration
 
-from ovos_workshop.decorators import intent_handler, resting_screen_handler, intent_file_handler
+from ovos_workshop.decorators import intent_handler, resting_screen_handler, \
+    intent_file_handler
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from .mocks import base_config
 
@@ -247,7 +247,6 @@ class TestMycroftSkill(unittest.TestCase):
                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
-    #@pytest.mark.skip
     def test_register_decorators(self):
         """ Test decorated intents """
         path_orig = sys.path
@@ -266,7 +265,8 @@ class TestMycroftSkill(unittest.TestCase):
                                           'vocab', 'en-us', 'test.intent'),
                         'lang': 'en-us',
                         'samples': [],
-                        'name': str(s.skill_id) + ':test.intent'}]
+                        'name': str(s.skill_id) + ':test.intent'}
+                    ]
 
         self.check_register_decorators(expected)
         # Restore sys.path

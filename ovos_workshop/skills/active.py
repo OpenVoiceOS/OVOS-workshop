@@ -9,8 +9,9 @@ class ActiveSkill(OVOSSkill):
             self.make_active()
 
     def handle_skill_deactivated(self, message=None):
-        """ skill is always in active skill list,
-        ie, converse is always called """
+        """
+        skill is always in active skill list, ie, converse is always called
+        """
         self.make_active()
 
 

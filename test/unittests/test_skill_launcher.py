@@ -58,7 +58,7 @@ class TestSkillLauncherFunctions(unittest.TestCase):
 
     def test_load_skill_module(self):
         from ovos_workshop.skill_launcher import load_skill_module
-        test_path = join(dirname(__file__), "skills", "test_skill",
+        test_path = join(dirname(__file__), "ovos_tskill_abort",
                          "__init__.py")
         skill_id = "test_skill.test"
         module = load_skill_module(test_path, skill_id)
@@ -70,7 +70,7 @@ class TestSkillLauncherFunctions(unittest.TestCase):
         from ovos_workshop.skill_launcher import get_skill_class, \
             load_skill_module
         from ovos_workshop.skills.mycroft_skill import _SkillMetaclass
-        test_path = join(dirname(__file__), "skills", "test_skill",
+        test_path = join(dirname(__file__), "ovos_tskill_abort",
                          "__init__.py")
         skill_id = "test_skill.test"
         module = load_skill_module(test_path, skill_id)
@@ -85,7 +85,7 @@ class TestSkillLauncherFunctions(unittest.TestCase):
     def test_get_create_skill_function(self):
         from ovos_workshop.skill_launcher import get_create_skill_function, \
             load_skill_module
-        test_path = join(dirname(__file__), "skills", "test_skill",
+        test_path = join(dirname(__file__), "ovos_tskill_abort",
                          "__init__.py")
         skill_id = "test_skill.test"
         module = load_skill_module(test_path, skill_id)

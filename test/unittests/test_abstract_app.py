@@ -31,6 +31,9 @@ class TestApp(unittest.TestCase):
                               settings=cls.settings_obj, gui=cls.gui)
         cls.app._startup(cls.bus)
 
+    def test_settings_manager_init(self):
+        self.assertIsNone(self.app.settings_manager)
+
     def test_settings_init(self):
         self.assertNotEqual(self.app.settings, self.settings_obj)
         self.assertFalse(self.app.settings['__mycroft_skill_firstrun'])
@@ -80,3 +83,14 @@ class TestApp(unittest.TestCase):
         # Cleanup test files
         remove(test_app._settings_path)
         remove(test_skill._settings_path)
+
+    def test_class_inheritance(self):
+        from ovos_workshop.skills.base import BaseSkill
+        from ovos_workshop.skills.ovos import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
+        from ovos_workshop.app import OVOSAbstractApplication
+
+        self.assertIsInstance(self.app, BaseSkill)
+        self.assertIsInstance(self.app, OVOSSkill)
+        self.assertIsInstance(self.app, MycroftSkill)
+        self.assertIsInstance(self.app, OVOSAbstractApplication)
