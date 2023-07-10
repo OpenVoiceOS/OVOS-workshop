@@ -1,5 +1,6 @@
 import re
-import time
+from threading import Event
+
 from typing import List, Optional, Union
 
 from ovos_bus_client import MessageBusClient
@@ -45,32 +46,89 @@ class OVOSSkill(MycroftSkill):
     # new public api, these are not available in MycroftSkill
     @property
     def is_fully_initialized(self) -> bool:
-        """Determines if the skill has been fully loaded and setup.
-        When True all data has been loaded and all internal state and events setup"""
+        """
+        Determines if the skill has been fully loaded and setup.
+        When True, all data has been loaded and all internal state
+        and events set up.
+        """
         return self._is_fully_initialized
 
     @property
     def stop_is_implemented(self) -> bool:
+        """
+        True if this skill implements a `stop` method
+        """
         return self._stop_is_implemented
 
     @property
     def converse_is_implemented(self) -> bool:
+        """
+        True if this skill implements a `converse` method
+        """
         return self._converse_is_implemented
 
+    @property
+    def core_lang(self) -> str:
+        """
+        Get the configured default language as a BCP-47 language code.
+        """
+        return self._core_lang
+
+    @property
+    def secondary_langs(self) -> List[str]:
+        """
+        Get the configured secondary languages; resources will be loaded for
+        these languages to provide support for multilingual input, in addition
+        to `core_lang`. A skill may override this method to specify which
+        languages intents are registered in.
+        """
+        return self._secondary_langs
+
+    @property
+    def native_langs(self) -> List[str]:
+        """
+        Languages natively supported by this skill (ie, resource files available
+        and explicitly supported). This is equivalent to normalized
+        secondary_langs + core_lang.
+        """
+        return self._native_langs
+
+    @property
+    def alphanumeric_skill_id(self) -> str:
+        """
+        Skill id converted to only alphanumeric characters and "_".
+        Non alphanumeric characters are converted to "_"
+        """
+        return self._alphanumeric_skill_id
+
+    @property
+    def resources(self) -> SkillResources:
+        """
+        Get a SkillResources object for the current language. Objects are
+        initialized for the current language as needed.
+        """
+        return self._resources
+
     def activate(self):
-        """Bump skill to active_skill list in intent_service.
+        """
+        Mark this skill as active and push to the top of the active skills list.
         This enables converse method to be called even without skill being
         used in last 5 minutes.
         """
         self._activate()
 
     def deactivate(self):
-        """remove skill from active_skill list in intent_service.
-        This stops converse method from being called
+        """
+        Mark this skill as inactive and remove from the active skills list.
+        This stops converse method from being called.
         """
         self._deactivate()
 
     def play_audio(self, filename: str):
+        """
+        Queue and audio file for playback
+        @param filename: File to play
+        """
         core_supported = False
         if not is_classic_core():
             try:
@@ -93,52 +151,22 @@ class OVOSSkill(MycroftSkill):
                         "falling back to local skill playback")
             play_audio(filename).wait()
 
-    @property
-    def core_lang(self) -> str:
-        """Get the configured default language."""
-        return self._core_lang
-
-    @property
-    def secondary_langs(self) -> List[str]:
-        """Get the configured secondary languages, mycroft is not
-        considered to be in these languages but i will load it's resource
-        files. This provides initial support for multilingual input"""
-        return self._secondary_langs
-
-    @property
-    def native_langs(self) -> List[str]:
-        """Languages natively supported by core
-        ie, resource files available and explicitly supported
-        """
-        return self._native_langs
-
-    @property
-    def alphanumeric_skill_id(self) -> str:
-        """skill id converted to only alphanumeric characters
-         Non alpha-numeric characters are converted to "_"
-
-        Returns:
-            (str) String of letters
-        """
-        return self._alphanumeric_skill_id
-
-    @property
-    def resources(self) -> SkillResources:
-        """Instantiates a ResourceFileLocator instance when needed.
-        a new instance is always created to ensure self.lang
-        reflects the active language and not the default core language
-        """
-        return self._resources
-
     def load_lang(self, root_directory: Optional[str] = None,
                   lang: Optional[str] = None):
-        """Instantiates a ResourceFileLocator instance when needed.
-        a new instance is always created to ensure lang
-        reflects the active language and not the default core language
+        """
+        Get a SkillResources object for this skill in the requested `lang` for
+        resource files in the requested `root_directory`.
+        @param root_directory: root path to find resources (default res_dir)
+        @param lang: language to get resources for (default self.lang)
+        @return: SkillResources object
         """
         return self._load_lang(root_directory, lang)
 
-    def voc_match(self, *args, **kwargs):
+    def voc_match(self, *args, **kwargs) -> Union[str, bool]:
+        """
+        Wraps the default `voc_match` method, but returns `False` instead of
+        raising FileNotFoundError when a resource can't be resolved
+        """
         try:
             return super().voc_match(*args, **kwargs)
         except FileNotFoundError:
@@ -147,21 +175,23 @@ class OVOSSkill(MycroftSkill):
     def voc_list(self, voc_filename: str,
                  lang: Optional[str] = None) -> List[str]:
         """
-        Get vocabulary list and cache the results
-
-        Args:
-            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
-                                'res/text/en-us/yes.voc')
-            lang (str): Language code, defaults to self.lang
-
-        Returns:
-            list: List of vocabulary found in voc_filename
+        Get list of vocab options for the requested resource and cache the
+        results for future references.
+        @param voc_filename: Name of vocab resource to get options for
+        @param lang: language to get vocab for (default self.lang)
+        @return: list of string vocab options
         """
         return self._voc_list(voc_filename, lang)
 
     def remove_voc(self, utt: str, voc_filename: str,
                    lang: Optional[str] = None) -> str:
-        """ removes any entry in .voc file from the utterance """
+        """
+        Removes any vocab match from the utterance.
+        @param utt: Utterance to evaluate
+        @param voc_filename: vocab resource to remove from utt
+        @param lang: Optional language associated with vocab and utterance
+        @return: string with vocab removed
+        """
         if utt:
             # Check for matches against complete words
             for i in self.voc_list(voc_filename, lang):
@@ -194,6 +224,11 @@ class OVOSSkill(MycroftSkill):
     def register_intent_layer(self, layer_name: str,
                               intent_list: List[Union[IntentBuilder, Intent,
                                                 str]]):
+        """
+        Register a named intent layer.
+        @param layer_name: Name of intent layer to add
+        @param intent_list: List of intents associated with the intent layer
+        """
         for intent_file in intent_list:
             if IntentBuilder is not None and isinstance(intent_file, IntentBuilder):
                 intent = intent_file.build()
@@ -206,6 +241,11 @@ class OVOSSkill(MycroftSkill):
 
     # killable_events support
     def send_stop_signal(self, stop_event: Optional[str] = None):
+        """
+        Notify services to stop current execution
+        @param stop_event: optional `stop` event name to forward
+        """
+        waiter = Event()
         msg = dig_for_message() or Message("mycroft.stop")
         # stop event execution
         if stop_event:
@@ -222,12 +262,11 @@ class OVOSSkill(MycroftSkill):
             # NOTE: mycroft does not have an event to stop recording
             # this attempts to force a stop by sending silence to end STT step
             self.bus.emit(Message('mycroft.mic.mute'))
-            # TODO: Refactor sleep
-            time.sleep(1.5)  # the silence from muting should make STT stop recording
+            waiter.wait(1.5)  # the silence from muting should make STT stop recording
             self.bus.emit(Message('mycroft.mic.unmute'))
 
-        # TODO: Refactor sleep
-        time.sleep(0.5)  # if TTS had not yet started
+        # TODO: register TTS events to track state instead of guessing
+        waiter.wait(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
 
 

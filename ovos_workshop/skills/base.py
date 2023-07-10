@@ -469,7 +469,8 @@ class BaseSkill:
         languages intents are registered in.
 
         NOTE: this should be public, but since if a skill uses this it won't
-        work in regular mycroft-core it was made private!"""
+        work in regular mycroft-core it was made private!
+        """
         return [lang.lower() for lang in self.config_core.get(
                 'secondary_langs', []) if lang != self._core_lang]
 
@@ -493,7 +494,7 @@ class BaseSkill:
     def _alphanumeric_skill_id(self) -> str:
         """
         Skill id converted to only alphanumeric characters and "_".
-        Non alpha-numeric characters are converted to "_"
+        Non alphanumeric characters are converted to "_"
 
         NOTE: this should be public, but since if a skill uses this it won't
         work in regular mycroft-core it was made private!
@@ -1247,7 +1248,8 @@ class BaseSkill:
     def _voc_list(self, voc_filename: str,
                   lang: Optional[str] = None) -> List[str]:
         """
-        Get list of vocab options for the requested resource
+        Get list of vocab options for the requested resource and cache the
+        results for future references.
         @param voc_filename: Name of vocab resource to get options for
         @param lang: language to get vocab for (default self.lang)
         @return: list of string vocab options
