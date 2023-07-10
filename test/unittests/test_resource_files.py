@@ -74,7 +74,10 @@ class TestResourceFile(unittest.TestCase):
 class TestSkillResources(unittest.TestCase):
     from ovos_workshop.resource_files import SkillResources
     test_data_path = join(dirname(__file__), "xdg_data")
-    environ['XDG_DATA_HOME'] = test_data_path
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        environ['XDG_DATA_HOME'] = cls.test_data_path
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -141,8 +144,10 @@ class TestSkillResources(unittest.TestCase):
 
 class TestCoreResources(unittest.TestCase):
     test_data_path = join(dirname(__file__), "xdg_data")
-    environ['XDG_DATA_HOME'] = test_data_path
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        environ['XDG_DATA_HOME'] = cls.test_data_path
     @classmethod
     def tearDownClass(cls) -> None:
         data_path = environ.pop('XDG_DATA_HOME')
@@ -159,7 +164,10 @@ class TestCoreResources(unittest.TestCase):
 
 class TestUserResources(unittest.TestCase):
     test_data_path = join(dirname(__file__), "xdg_data")
-    environ['XDG_DATA_HOME'] = test_data_path
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        environ['XDG_DATA_HOME'] = cls.test_data_path
 
     @classmethod
     def tearDownClass(cls) -> None:
