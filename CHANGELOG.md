@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a36](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a36) (2023-07-10)
+## [0.0.12a37](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a37) (2023-07-10)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a35...0.0.12a36)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a36...0.0.12a37)
+
+**Merged pull requests:**
+
+- Add docstrings and unit tests for app.py [\#110](https://github.com/OpenVoiceOS/OVOS-workshop/pull/110) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a36](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a36) (2023-07-10)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a35...V0.0.12a36)
 
 **Implemented enhancements:**
 
