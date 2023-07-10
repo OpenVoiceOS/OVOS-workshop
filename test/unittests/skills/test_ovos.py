@@ -43,11 +43,12 @@ class TestOVOSSkill(unittest.TestCase):
     skill = OVOSSkill(bus=bus, skill_id="test_ovos_skill")
 
     def test_00_skill_init(self):
+        from ovos_utils.skills.audioservice import AudioServiceInterface
         self.assertIsInstance(self.skill.private_settings, dict)
         self.assertIsInstance(self.skill._threads, list)
         self.assertIsNotNone(self.skill._original_converse)
         self.assertIsInstance(self.skill.intent_layers, IntentLayers)
-        self.assertIsNone(self.skill.audio_service)
+        self.assertIsInstance(self.skill.audio_service, AudioServiceInterface)
         self.assertTrue(self.skill.is_fully_initialized)
         self.assertFalse(self.skill.stop_is_implemented)
         self.assertFalse(self.skill.converse_is_implemented)
