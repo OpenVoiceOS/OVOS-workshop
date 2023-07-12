@@ -386,8 +386,45 @@ class TestBaseSkill(unittest.TestCase):
         self.skill.shutdown()
 
     def test_default_shutdown(self):
-        # TODO
-        pass
+        test_skill_id = "test_shutdown.skill"
+        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        test_skill.settings["changed"] = True
+        test_skill.stop = Mock()
+        test_skill.shutdown = Mock()
+        test_skill.settings_change_callback = Mock()
+        test_skill.settings.store = Mock()
+        test_skill._settings_watchdog = Mock()
+        test_skill.gui.shutdown = Mock()
+        test_skill.event_scheduler = Mock()
+        test_skill.events = Mock()
+        message = None
+
+        def _handle_detach_skill(msg):
+            nonlocal message
+            message = msg
+
+        self.bus.on("detach_skill", _handle_detach_skill)
+
+        test_skill.default_shutdown()
+
+        test_skill.stop.assert_called_once()
+
+        self.assertIsNone(test_skill.settings_change_callback)
+        test_skill.settings.store.assert_called_once()
+        test_skill._settings_watchdog.shutdown.assert_called_once()
+
+        test_skill.gui.shutdown.assert_called_once()
+
+        test_skill.event_scheduler.shutdown.assert_called_once()
+        test_skill.events.clear.assert_called_once()
+
+        test_skill.shutdown.assert_called_once()
+
+        from ovos_bus_client import Message
+        self.assertIsInstance(message, Message)
+        self.assertEqual(message.msg_type, "detach_skill")
+        self.assertTrue(message.data["skill_id"].startswith(test_skill_id))
+        self.assertEqual(message.context["skill_id"], test_skill_id)
 
     def test_schedule_event(self):
         # TODO
