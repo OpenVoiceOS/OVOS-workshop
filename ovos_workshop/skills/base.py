@@ -679,6 +679,9 @@ class BaseSkill:
         changes if a backend is configured.
         @param path: Modified file path
         """
+        if path != self._settings.path:
+            LOG.debug(f"Ignoring non-settings change")
+            return
         if self._settings:
             with self._settings_lock:
                 self._settings.reload()
