@@ -1,8 +1,20 @@
 # Changelog
 
-## [0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a39) (2023-07-12)
+## [0.0.12a40](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a40) (2023-07-12)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a38...0.0.12a39)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a39...0.0.12a40)
+
+**Closed issues:**
+
+- When core restarts, I got this trace in the "wikipedia" and "weather" skills [\#94](https://github.com/OpenVoiceOS/OVOS-workshop/issues/94)
+
+**Merged pull requests:**
+
+- Update `default_shutdown` with unit tests [\#115](https://github.com/OpenVoiceOS/OVOS-workshop/pull/115) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a39) (2023-07-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a38...V0.0.12a39)
 
 **Closed issues:**
 
@@ -605,7 +617,6 @@
 - Add media service based video player and seek controls [\#9](https://github.com/OpenVoiceOS/OVOS-workshop/pull/9) ([AIIX](https://github.com/AIIX))
 - add a busy page for common play [\#8](https://github.com/OpenVoiceOS/OVOS-workshop/pull/8) ([AIIX](https://github.com/AIIX))
 - Add new work in progress audio player ui for media service [\#6](https://github.com/OpenVoiceOS/OVOS-workshop/pull/6) ([AIIX](https://github.com/AIIX))
-- Add next and previous buttons [\#4](https://github.com/OpenVoiceOS/OVOS-workshop/pull/4) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
@@ -613,7 +624,6 @@
 - remove forced focus event to allow page swipes [\#11](https://github.com/OpenVoiceOS/OVOS-workshop/pull/11) ([AIIX](https://github.com/AIIX))
 - fix end of media state [\#10](https://github.com/OpenVoiceOS/OVOS-workshop/pull/10) ([AIIX](https://github.com/AIIX))
 - fix icon paths and lower version [\#7](https://github.com/OpenVoiceOS/OVOS-workshop/pull/7) ([AIIX](https://github.com/AIIX))
-- fix AudioPlayer property name [\#5](https://github.com/OpenVoiceOS/OVOS-workshop/pull/5) ([AIIX](https://github.com/AIIX))
 
 **Merged pull requests:**
 
