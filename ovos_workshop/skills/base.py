@@ -1970,33 +1970,49 @@ class BaseSkill:
     def default_shutdown(self):
         """
         Parent function called internally to shut down everything.
-
-        Shuts down known entities and calls skill specific shutdown method.
+        1) Call skill.stop() to allow skill to clean up any active processes
+        2) Store skill settings and remove file watchers
+        3) Shutdown skill GUI to clear any active pages
+        4) Shutdown the event_scheduler and remove any pending events
+        5) Call skill.shutdown() to allow skill to do any other shutdown tasks
+        6) Emit `detach_skill` Message to notify skill is shut down
         """
-        self.settings_change_callback = None
-
-        # Store settings
-        if self.settings != self._initial_settings:
-            self.settings.store()
-        if self._settings_meta:
-            self._settings_meta.stop()
-        if self._settings_watchdog:
-            self._settings_watchdog.shutdown()
-
-        # Clear skill from gui
-        if self.gui:
-            self.gui.shutdown()
-
-        # removing events
-        if self.event_scheduler:
-            self.event_scheduler.shutdown()
-            self.events.clear()
 
         try:
+            # Allow skill to handle `stop` actions before shutting things down
             self.stop()
         except Exception as e:
             self.log.error(f'Failed to stop skill: {self.skill_id}: {e}',
                            exc_info=True)
+
+        try:
+            self.settings_change_callback = None
+
+            # Store settings
+            if self.settings != self._initial_settings:
+                self.settings.store()
+            if self._settings_meta:
+                self._settings_meta.stop()
+            if self._settings_watchdog:
+                self._settings_watchdog.shutdown()
+        except Exception as e:
+            self.log.error(f"Failed to store settings for {self.skill_id}: {e}")
+
+        try:
+            # Clear skill from gui
+            if self.gui:
+                self.gui.shutdown()
+        except Exception as e:
+            self.log.error(f"Failed to shutdown gui for {self.skill_id}: {e}")
+
+        try:
+            # removing events
+            if self.event_scheduler:
+                self.event_scheduler.shutdown()
+                self.events.clear()
+        except Exception as e:
+            self.log.error(f"Failed to remove events for {self.skill_id}: {e}")
+
         try:
             self.shutdown()
         except Exception as e:
@@ -2004,7 +2020,7 @@ class BaseSkill:
                            f'error: {e}')
 
         self.bus.emit(
-            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'},
+            Message('detach_skill', {'skill_id': f"{self.skill_id}:"},
                     {"skill_id": self.skill_id}))
 
     def schedule_event(self, handler: callable,
