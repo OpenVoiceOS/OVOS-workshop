@@ -26,7 +26,7 @@ from ovos_bus_client import Message
 from ovos_config.config import Configuration
 
 from ovos_workshop.decorators import intent_handler, resting_screen_handler, intent_file_handler
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
+from ovos_workshop.skills.ovos import OVOSSkill
 from .mocks import base_config
 
 BASE_CONF = base_config()
@@ -62,10 +62,7 @@ def vocab_base_path():
 
 class TestFunction(unittest.TestCase):
     def test_resting_screen_handler(self):
-        class T(MycroftSkill):
-            def __init__(self):
-                self.name = 'TestObject'
-
+        class T(OVOSSkill):
             @resting_screen_handler('humbug')
             def f(self):
                 pass
@@ -75,7 +72,7 @@ class TestFunction(unittest.TestCase):
         self.assertEqual(test_class.f.resting_handler, 'humbug')
 
 
-class TestMycroftSkill(unittest.TestCase):
+class TestOVOSSkill(unittest.TestCase):
     emitter = MockEmitter()
     regex_path = abspath(join(dirname(__file__), '../regex_test'))
     vocab_path = abspath(join(dirname(__file__), '../vocab_test'))
@@ -219,6 +216,7 @@ class TestMycroftSkill(unittest.TestCase):
         s._startup(self.emitter, "A")
 
         expected_types = [
+            'gui.volunteer_page_upload',
             'padatious:register_intent',
             'padatious:register_entity'
         ]
@@ -237,7 +235,8 @@ class TestMycroftSkill(unittest.TestCase):
                 'lang': 'en-us',
                 'name': str(s.skill_id) + ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c',
                 'samples': []
-            }
+            },
+            {'skill_id': 'A'}
         ]
         self.check_register_object_file(expected_types, expected_results)
 
@@ -266,7 +265,8 @@ class TestMycroftSkill(unittest.TestCase):
                                           'vocab', 'en-us', 'test.intent'),
                         'lang': 'en-us',
                         'samples': [],
-                        'name': str(s.skill_id) + ':test.intent'}]
+                        'name': str(s.skill_id) + ':test.intent'},
+                    {'skill_id': 'A'}]
 
         self.check_register_decorators(expected)
         # Restore sys.path
@@ -547,10 +547,8 @@ class TestIntentCollisions(unittest.TestCase):
         self.assertEqual(len(skill.intent_service.registered_intents), 2)
 
 
-class _TestSkill(MycroftSkill):
-    def __init__(self):
-        super().__init__()
-        self.skill_id = 'A'
+class _TestSkill(OVOSSkill):
+    pass
 
 
 class SimpleSkill1(_TestSkill):
@@ -602,7 +600,6 @@ class SimpleSkill3(_TestSkill):
 
 class SimpleSkill4(_TestSkill):
     """ Test skill for padatious intent """
-    skill_id = 'A'
 
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)
@@ -615,7 +612,7 @@ class SimpleSkill4(_TestSkill):
         pass
 
 
-class SimpleSkill5(MycroftSkill):
+class SimpleSkill5(OVOSSkill):
     """ Test skill for intent_handler decorator. """
 
     @intent_handler(IntentBuilder('a').require('Keyword').build())
@@ -632,7 +629,6 @@ class SimpleSkill5(MycroftSkill):
 
 class SimpleSkill6(_TestSkill):
     """ Test skill for padatious intent """
-    skill_id = 'A'
 
     def initialize(self):
         self.register_intent('test.intent', self.handler)
@@ -644,7 +640,6 @@ class SimpleSkill6(_TestSkill):
 
 class SameIntentNameSkill(_TestSkill):
     """Test skill for duplicate intent namesr."""
-    skill_id = 'A'
 
     def initialize(self):
         intent = IntentBuilder('TheName').require('Keyword')
@@ -658,7 +653,6 @@ class SameIntentNameSkill(_TestSkill):
 
 class SameAnonymousIntentDecoratorsSkill(_TestSkill):
     """Test skill for duplicate anonymous intent handlers."""
-    skill_id = 'A'
 
     @intent_handler(IntentBuilder('').require('Keyword'))
     @intent_handler(IntentBuilder('').require('OtherKeyword'))

@@ -104,6 +104,8 @@ class TestSkill(unittest.TestCase):
             for msg in self.bus.emitted_msgs:
                 if msg["type"] == 'mycroft.skills.loaded': # emitted by SkillLoader, not by skill
                     continue
+                if msg["type"] == 'ovos.gui.upload.announce':
+                    continue
                 self.assertEqual(msg["context"]["skill_id"], "abort.test")
 
     def test_intent_register(self):
