@@ -23,7 +23,7 @@ from hashlib import md5
 from inspect import signature
 from itertools import chain
 from os.path import join, abspath, dirname, basename, isfile
-from threading import Event
+from threading import Event, RLock
 from typing import List, Optional, Dict, Callable, Union
 
 from ovos_bus_client import MessageBusClient
@@ -182,6 +182,7 @@ class BaseSkill:
         self._settings = None
         self._initial_settings = settings or dict()
         self._settings_watchdog = None
+        self._settings_lock = RLock()
 
         # Override to register a callback method that will be called every time
         # the skill's settings are updated. The referenced method should
@@ -319,9 +320,10 @@ class BaseSkill:
         if self._settings is None:
             self._initial_settings = val
             return
-        # ensure self._settings remains a JsonDatabase
-        self._settings.clear()  # clear data
-        self._settings.merge(val, skip_empty=False)  # merge new data
+        with self._settings_lock:
+            # ensure self._settings remains a JsonDatabase
+            self._settings.clear()  # clear data
+            self._settings.merge(val, skip_empty=False)  # merge new data
 
     # not a property in mycroft-core
     @property
@@ -616,15 +618,16 @@ class BaseSkill:
         # NOTE: lock is disabled due to usage of deepcopy and to allow json
         # serialization
         self._settings = JsonStorage(self._settings_path, disable_lock=True)
-        if self._initial_settings and not self._is_fully_initialized:
-            self.log.warning("Copying default settings values defined in "
-                             "__init__ \nto correct this add kwargs "
-                             "__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
-            for k, v in self._initial_settings.items():
-                if k not in self._settings:
-                    self._settings[k] = v
-        self._initial_settings = copy(self.settings)
+        with self._settings_lock:
+            if self._initial_settings and not self._is_fully_initialized:
+                self.log.warning("Copying default settings values defined in "
+                                 "__init__ \nto correct this add kwargs "
+                                 "__init__(bus=None, skill_id='') "
+                                 f"to skill class {self.__class__.__name__}")
+                for k, v in self._initial_settings.items():
+                    if k not in self._settings:
+                        self._settings[k] = v
+            self._initial_settings = copy(self.settings)
 
         self._start_filewatcher()
 
@@ -677,7 +680,8 @@ class BaseSkill:
         @param path: Modified file path
         """
         if self._settings:
-            self._settings.reload()
+            with self._settings_lock:
+                self._settings.reload()
         if self.settings_change_callback:
             try:
                 self.settings_change_callback()
