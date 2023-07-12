@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.0.12a40](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a40) (2023-07-12)
+## [V0.0.12a40](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a40) (2023-07-12)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a39...0.0.12a40)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a39...V0.0.12a40)
 
 **Closed issues:**
 
@@ -11,6 +11,7 @@
 **Merged pull requests:**
 
 - Update `default_shutdown` with unit tests [\#115](https://github.com/OpenVoiceOS/OVOS-workshop/pull/115) ([NeonDaniel](https://github.com/NeonDaniel))
+- Docstrings, Annotation, and Outlined unit tests [\#111](https://github.com/OpenVoiceOS/OVOS-workshop/pull/111) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a39) (2023-07-12)
 
@@ -616,7 +617,6 @@
 - add idleDisplaySkill type [\#14](https://github.com/OpenVoiceOS/OVOS-workshop/pull/14) ([AIIX](https://github.com/AIIX))
 - Add media service based video player and seek controls [\#9](https://github.com/OpenVoiceOS/OVOS-workshop/pull/9) ([AIIX](https://github.com/AIIX))
 - add a busy page for common play [\#8](https://github.com/OpenVoiceOS/OVOS-workshop/pull/8) ([AIIX](https://github.com/AIIX))
-- Add new work in progress audio player ui for media service [\#6](https://github.com/OpenVoiceOS/OVOS-workshop/pull/6) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
