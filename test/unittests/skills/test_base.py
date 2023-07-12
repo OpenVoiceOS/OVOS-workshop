@@ -1,6 +1,10 @@
+import os
+import shutil
 import unittest
 
 from logging import Logger
+from threading import Event, Thread
+from time import time
 from unittest.mock import Mock, patch
 from os.path import join, dirname, isdir
 
@@ -19,10 +23,17 @@ class TestBase(unittest.TestCase):
 
 
 class TestBaseSkill(unittest.TestCase):
+    test_config_path = join(dirname(__file__), "temp_config")
+    os.environ["XDG_CONFIG_HOME"] = test_config_path
     from ovos_workshop.skills.base import BaseSkill
     bus = FakeBus()
     skill_id = "test_base_skill"
     skill = BaseSkill(bus=bus, skill_id=skill_id)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        os.environ.pop("XDG_CONFIG_HOME")
+        shutil.rmtree(cls.test_config_path)
 
     def test_00_skill_init(self):
         from ovos_workshop.settings import SkillSettingsManager
@@ -90,8 +101,45 @@ class TestBaseSkill(unittest.TestCase):
         pass
 
     def test_init_settings(self):
-        # TODO
-        pass
+        # Test initial settings defined and not fully initialized
+        test_settings = {"init": True}
+        self.skill._initial_settings = test_settings
+        self.skill._settings["init"] = False
+        self.skill._settings["test"] = "value"
+        self.skill._init_event.clear()
+        self.skill._init_settings()
+        self.assertEqual(dict(self.skill.settings),
+                         {**test_settings,
+                          **{"__mycroft_skill_firstrun": False}})
+        self.assertEqual(dict(self.skill._initial_settings),
+                         dict(self.skill.settings))
+
+        # Test settings changed during init
+        stop_event = Event()
+        setting_event = Event()
+
+        def _update_skill_settings():
+            while not stop_event.is_set():
+                self.skill.settings["test_val"] = time()
+                setting_event.set()
+
+        # Test this a few times since this handles a race condition
+        for i in range(8):
+            setting_event.clear()
+            stop_event.clear()
+            thread = Thread(target=_update_skill_settings, daemon=True)
+            thread.start()
+            setting_event.wait()  # settings have some value
+            self.skill._init_settings()
+            setting_event.clear()
+            setting_event.wait()  # settings updated since init
+            stop_time = time()
+            stop_event.set()
+            thread.join()
+            self.assertAlmostEquals(self.skill.settings["test_val"], stop_time,
+                                    0)
+            self.assertNotEqual(self.skill.settings["test_val"],
+                                self.skill._initial_settings["test_val"])
 
     def test_init_skill_gui(self):
         # TODO
