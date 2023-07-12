@@ -1,8 +1,20 @@
 # Changelog
 
-## [0.0.12a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a38) (2023-07-12)
+## [0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a39) (2023-07-12)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a37...0.0.12a38)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a38...0.0.12a39)
+
+**Closed issues:**
+
+- When core restarts, I got this trace in the "hello world" skill [\#93](https://github.com/OpenVoiceOS/OVOS-workshop/issues/93)
+
+**Merged pull requests:**
+
+- Add locking around skill settings changes [\#114](https://github.com/OpenVoiceOS/OVOS-workshop/pull/114) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a38) (2023-07-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a37...V0.0.12a38)
 
 **Merged pull requests:**
 
@@ -594,7 +606,6 @@
 - add a busy page for common play [\#8](https://github.com/OpenVoiceOS/OVOS-workshop/pull/8) ([AIIX](https://github.com/AIIX))
 - Add new work in progress audio player ui for media service [\#6](https://github.com/OpenVoiceOS/OVOS-workshop/pull/6) ([AIIX](https://github.com/AIIX))
 - Add next and previous buttons [\#4](https://github.com/OpenVoiceOS/OVOS-workshop/pull/4) ([AIIX](https://github.com/AIIX))
-- add player pos property and fix mycroft players for plugin [\#3](https://github.com/OpenVoiceOS/OVOS-workshop/pull/3) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
@@ -603,8 +614,6 @@
 - fix end of media state [\#10](https://github.com/OpenVoiceOS/OVOS-workshop/pull/10) ([AIIX](https://github.com/AIIX))
 - fix icon paths and lower version [\#7](https://github.com/OpenVoiceOS/OVOS-workshop/pull/7) ([AIIX](https://github.com/AIIX))
 - fix AudioPlayer property name [\#5](https://github.com/OpenVoiceOS/OVOS-workshop/pull/5) ([AIIX](https://github.com/AIIX))
-- fix condition in video player [\#2](https://github.com/OpenVoiceOS/OVOS-workshop/pull/2) ([AIIX](https://github.com/AIIX))
-- add a timeout to videoplayer when nothing is playing for more than 60 seconds [\#1](https://github.com/OpenVoiceOS/OVOS-workshop/pull/1) ([AIIX](https://github.com/AIIX))
 
 **Merged pull requests:**
 
