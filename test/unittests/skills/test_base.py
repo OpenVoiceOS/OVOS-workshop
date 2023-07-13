@@ -125,22 +125,31 @@ class TestBaseSkill(unittest.TestCase):
                 setting_event.set()
 
         # Test this a few times since this handles a race condition
-        for i in range(8):
+        for i in range(32):
+            # Reset to pre-initialized state
+            self.skill._init_event.clear()
+            self.skill._settings = None
             setting_event.clear()
             stop_event.clear()
             thread = Thread(target=_update_skill_settings, daemon=True)
             thread.start()
             setting_event.wait()  # settings have some value
+            self.assertIsNotNone(self.skill._initial_settings["test_val"],
+                                 f"run {i}")
             self.skill._init_settings()
+            self.assertIsNotNone(self.skill.settings["test_val"], f"run {i}")
+            self.assertIsNotNone(self.skill._initial_settings["test_val"],
+                                 f"run {i}")
             setting_event.clear()
             setting_event.wait()  # settings updated since init
             stop_time = time()
             stop_event.set()
             thread.join()
             self.assertAlmostEquals(self.skill.settings["test_val"], stop_time,
-                                    0)
+                                    0, f"run {i}")
             self.assertNotEqual(self.skill.settings["test_val"],
-                                self.skill._initial_settings["test_val"])
+                                self.skill._initial_settings["test_val"],
+                                f"run {i}")
 
     def test_init_skill_gui(self):
         # TODO
