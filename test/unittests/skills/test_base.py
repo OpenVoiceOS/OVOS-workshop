@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import unittest
@@ -124,22 +125,31 @@ class TestBaseSkill(unittest.TestCase):
                 setting_event.set()
 
         # Test this a few times since this handles a race condition
-        for i in range(8):
+        for i in range(32):
+            # Reset to pre-initialized state
+            self.skill._init_event.clear()
+            self.skill._settings = None
             setting_event.clear()
             stop_event.clear()
             thread = Thread(target=_update_skill_settings, daemon=True)
             thread.start()
             setting_event.wait()  # settings have some value
+            self.assertIsNotNone(self.skill._initial_settings["test_val"],
+                                 f"run {i}")
             self.skill._init_settings()
+            self.assertIsNotNone(self.skill.settings["test_val"], f"run {i}")
+            self.assertIsNotNone(self.skill._initial_settings["test_val"],
+                                 f"run {i}")
             setting_event.clear()
             setting_event.wait()  # settings updated since init
             stop_time = time()
             stop_event.set()
             thread.join()
             self.assertAlmostEquals(self.skill.settings["test_val"], stop_time,
-                                    0)
+                                    0, f"run {i}")
             self.assertNotEqual(self.skill.settings["test_val"],
-                                self.skill._initial_settings["test_val"])
+                                self.skill._initial_settings["test_val"],
+                                f"run {i}")
 
     def test_init_skill_gui(self):
         # TODO
@@ -150,16 +160,49 @@ class TestBaseSkill(unittest.TestCase):
         pass
 
     def test_start_filewatcher(self):
-        # TODO
-        pass
+        test_skill_id = "test_settingschanged.skill"
+        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        settings_changed = Event()
+        on_file_change = Mock(side_effect=lambda x: settings_changed.set())
+        test_skill._handle_settings_file_change = on_file_change
+        test_skill._settings_watchdog = None
+        test_skill._start_filewatcher()
+        self.assertIsNotNone(test_skill._settings_watchdog)
+        skill_settings = test_skill.settings
+        skill_settings["changed_on_disk"] = True
+        with open(test_skill.settings.path, 'w') as f:
+            json.dump(skill_settings, f, indent=2)
+
+        self.assertTrue(settings_changed.wait(5))
+        on_file_change.assert_called_once_with(test_skill.settings.path)
 
     def test_upload_settings(self):
         # TODO
         pass
 
     def test_handle_settings_file_change(self):
-        # TODO
-        pass
+        real_upload = self.skill._upload_settings
+        self.skill._upload_settings = Mock()
+        settings_file = self.skill.settings.path
+
+        # Handle change with no callback
+        self.skill._handle_settings_file_change(settings_file)
+        self.skill._upload_settings.assert_called_once()
+
+        # Handle change with callback
+        self.skill._upload_settings.reset_mock()
+        self.skill.settings_change_callback = Mock()
+        self.skill._handle_settings_file_change(settings_file)
+        self.skill._upload_settings.assert_called_once()
+        self.skill.settings_change_callback.assert_called_once()
+
+        # Handle non-settings file change
+        self.skill._handle_settings_file_change(join(dirname(settings_file),
+                                                     "test.file"))
+        self.skill._upload_settings.assert_called_once()
+        self.skill.settings_change_callback.assert_called_once()
+
+        self.skill._upload_settings = real_upload
 
     def test_load_lang(self):
         # TODO
