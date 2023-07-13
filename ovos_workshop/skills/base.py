@@ -1599,8 +1599,8 @@ class BaseSkill:
         """
         for lang in self._native_langs:
             name = f'{self.skill_id}:{intent_file}'
-            resource_file = ResourceFile(self._resources.types.intent,
-                                         intent_file)
+            resources = self._load_lang(self.res_dir, lang)
+            resource_file = ResourceFile(resources.types.intent, intent_file)
             if resource_file.file_path is None:
                 self.log.error(f'Unable to find "{intent_file}"')
                 continue
@@ -1628,12 +1628,14 @@ class BaseSkill:
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
         for lang in self._native_langs:
-            entity = ResourceFile(self._resources.types.entity, entity_file)
+            resources = self._load_lang(self.res_dir, lang)
+            entity = ResourceFile(resources.types.entity, entity_file)
             if entity.file_path is None:
                 self.log.error(f'Unable to find "{entity_file}"')
                 continue
             filename = str(entity.file_path)
-            name = f"{self.skill_id}:{basename(entity_file)}_{md5(entity_file.encode('utf-8')).hexdigest()}"
+            name = f"{self.skill_id}:{basename(entity_file)}_" \
+                   f"{md5(entity_file.encode('utf-8')).hexdigest()}"
             self.intent_service.register_padatious_entity(name, filename, lang)
 
     def handle_enable_intent(self, message: Message):
