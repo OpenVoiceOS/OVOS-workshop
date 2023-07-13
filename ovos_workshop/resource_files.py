@@ -297,7 +297,7 @@ class ResourceFile:
         file_path: absolute path to the file
     """
 
-    def __init__(self, resource_type, resource_name):
+    def __init__(self, resource_type: ResourceType, resource_name: str):
         self.resource_type = resource_type
         self.resource_name = resource_name
         self.file_path = self._locate()

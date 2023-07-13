@@ -550,6 +550,8 @@ class TestIntentCollisions(unittest.TestCase):
 class _TestSkill(MycroftSkill):
     def __init__(self):
         super().__init__()
+        self.config_core['lang'] = "en-us"
+        self.config_core['secondary_langs'] = []
         self.skill_id = 'A'
 
 
