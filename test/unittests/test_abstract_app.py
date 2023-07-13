@@ -26,11 +26,8 @@ class TestApp(unittest.TestCase):
 
     gui = GUIInterface("TestApplication")
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.app = Application(skill_id="TestApplication",
-                              settings=cls.settings_obj, gui=cls.gui)
-        cls.app._startup(cls.bus)
+    app = Application(skill_id="TestApplication", settings=settings_obj,
+                      gui=gui, bus=bus)
 
     def test_settings_manager_init(self):
         self.assertIsNone(self.app.settings_manager)
@@ -44,9 +41,8 @@ class TestApp(unittest.TestCase):
         self.assertFalse(self.app.settings['updated'])
 
     def test_settings_init_invalid_arg(self):
-        app = Application(skill_id="TestApplication",
+        app = Application(skill_id="TestApplication", bus=self.bus,
                           settings=self.settings)
-        app._startup(self.bus)
         self.assertNotEqual(app.settings, self.settings)
         self.assertFalse(app.settings['__mycroft_skill_firstrun'])
 
@@ -57,14 +53,10 @@ class TestApp(unittest.TestCase):
         self.assertIn("/apps/", self.app._settings_path)
 
         # Test settings path conflicts
-        test_app = OVOSAbstractApplication(skill_id="test")
+        test_app = OVOSAbstractApplication(skill_id="test", bus=self.bus)
         from ovos_workshop.skills import OVOSSkill, MycroftSkill
-        test_skill = OVOSSkill()
-        mycroft_skill = MycroftSkill()
-
-        test_app._startup(self.bus, "test")
-        test_skill._startup(self.bus, "test")
-        mycroft_skill._startup(self.bus, "test")
+        test_skill = OVOSSkill(skill_id="test", bus=self.bus)
+        mycroft_skill = MycroftSkill(skill_id="test", bus=self.bus)
 
         # Test app vs skill base directories
         self.assertIn("/apps/", test_app._settings_path)
@@ -93,7 +85,7 @@ class TestApp(unittest.TestCase):
         self.app.clear_intents = Mock()
         self.app.default_shutdown()
         self.app.clear_intents.assert_called_once()
-        self.app.bus.close.assert_called_once()
+        self.app.bus.close.assert_not_called()  # No dedicated bus here
         skill_shutdown.assert_called_once()
 
         self.app.bus.close = real_bus_close
