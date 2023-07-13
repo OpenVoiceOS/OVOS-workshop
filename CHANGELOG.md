@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a42](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a42) (2023-07-13)
+## [0.0.12a43](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a43) (2023-07-13)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a41...0.0.12a42)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a42...0.0.12a43)
+
+**Merged pull requests:**
+
+- Fix language handling in intent and entity file resolution [\#117](https://github.com/OpenVoiceOS/OVOS-workshop/pull/117) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a42](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a42) (2023-07-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a41...V0.0.12a42)
 
 **Closed issues:**
 
@@ -631,7 +639,6 @@
 **Implemented enhancements:**
 
 - add idleDisplaySkill type [\#14](https://github.com/OpenVoiceOS/OVOS-workshop/pull/14) ([AIIX](https://github.com/AIIX))
-- Add media service based video player and seek controls [\#9](https://github.com/OpenVoiceOS/OVOS-workshop/pull/9) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
