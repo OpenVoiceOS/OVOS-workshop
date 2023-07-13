@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.12a42](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a42) (2023-07-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a41...0.0.12a42)
+
+**Closed issues:**
+
+- Since version 0.0.12a26, settings are not reloaded with my skill [\#91](https://github.com/OpenVoiceOS/OVOS-workshop/issues/91)
+
+**Merged pull requests:**
+
+- Unit tests and improvements to settings change callback [\#116](https://github.com/OpenVoiceOS/OVOS-workshop/pull/116) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a41](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a41) (2023-07-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a40...V0.0.12a41)
+
 ## [V0.0.12a40](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a40) (2023-07-12)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a39...V0.0.12a40)
@@ -616,14 +632,12 @@
 
 - add idleDisplaySkill type [\#14](https://github.com/OpenVoiceOS/OVOS-workshop/pull/14) ([AIIX](https://github.com/AIIX))
 - Add media service based video player and seek controls [\#9](https://github.com/OpenVoiceOS/OVOS-workshop/pull/9) ([AIIX](https://github.com/AIIX))
-- add a busy page for common play [\#8](https://github.com/OpenVoiceOS/OVOS-workshop/pull/8) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
 - Fix/idleskill [\#15](https://github.com/OpenVoiceOS/OVOS-workshop/pull/15) ([NeonJarbas](https://github.com/NeonJarbas))
 - remove forced focus event to allow page swipes [\#11](https://github.com/OpenVoiceOS/OVOS-workshop/pull/11) ([AIIX](https://github.com/AIIX))
 - fix end of media state [\#10](https://github.com/OpenVoiceOS/OVOS-workshop/pull/10) ([AIIX](https://github.com/AIIX))
-- fix icon paths and lower version [\#7](https://github.com/OpenVoiceOS/OVOS-workshop/pull/7) ([AIIX](https://github.com/AIIX))
 
 **Merged pull requests:**
 
