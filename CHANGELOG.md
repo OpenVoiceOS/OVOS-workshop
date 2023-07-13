@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a43](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a43) (2023-07-13)
+## [0.0.12a44](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a44) (2023-07-13)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a42...0.0.12a43)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a43...0.0.12a44)
+
+**Merged pull requests:**
+
+- Update OVOSAbstractApplication and unit tests [\#118](https://github.com/OpenVoiceOS/OVOS-workshop/pull/118) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a43](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a43) (2023-07-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a42...V0.0.12a43)
 
 **Merged pull requests:**
 
@@ -644,7 +652,6 @@
 
 - Fix/idleskill [\#15](https://github.com/OpenVoiceOS/OVOS-workshop/pull/15) ([NeonJarbas](https://github.com/NeonJarbas))
 - remove forced focus event to allow page swipes [\#11](https://github.com/OpenVoiceOS/OVOS-workshop/pull/11) ([AIIX](https://github.com/AIIX))
-- fix end of media state [\#10](https://github.com/OpenVoiceOS/OVOS-workshop/pull/10) ([AIIX](https://github.com/AIIX))
 
 **Merged pull requests:**
 
