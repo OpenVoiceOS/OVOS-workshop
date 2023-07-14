@@ -212,8 +212,8 @@ class BaseSkill:
         self.__original_converse = self.converse
 
         # yay, following python best practices again!
-        if self.skill_id and self.bus:
-            self._startup(self.bus, self.skill_id)
+        if self.skill_id and bus:
+            self._startup(bus, self.skill_id)
 
     @classproperty
     def runtime_requirements(self) -> RuntimeRequirements:
