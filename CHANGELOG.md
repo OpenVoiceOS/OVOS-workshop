@@ -1,8 +1,17 @@
 # Changelog
 
-## [0.0.12a44](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a44) (2023-07-13)
+## [0.0.12a45](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a45) (2023-07-14)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a43...0.0.12a44)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a44...0.0.12a45)
+
+**Fixed bugs:**
+
+- PHAL and admin PHAL failures to successfully initialize started evening of Jul 13 [\#119](https://github.com/OpenVoiceOS/OVOS-workshop/issues/119)
+- fix init [\#120](https://github.com/OpenVoiceOS/OVOS-workshop/pull/120) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.0.12a44](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a44) (2023-07-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a43...V0.0.12a44)
 
 **Merged pull requests:**
 
@@ -651,12 +660,10 @@
 **Fixed bugs:**
 
 - Fix/idleskill [\#15](https://github.com/OpenVoiceOS/OVOS-workshop/pull/15) ([NeonJarbas](https://github.com/NeonJarbas))
-- remove forced focus event to allow page swipes [\#11](https://github.com/OpenVoiceOS/OVOS-workshop/pull/11) ([AIIX](https://github.com/AIIX))
 
 **Merged pull requests:**
 
 - Feat/workflows [\#16](https://github.com/OpenVoiceOS/OVOS-workshop/pull/16) ([JarbasAl](https://github.com/JarbasAl))
-- feat/pypi\_automation [\#13](https://github.com/OpenVoiceOS/OVOS-workshop/pull/13) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
