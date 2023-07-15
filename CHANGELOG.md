@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a45](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a45) (2023-07-14)
+## [0.0.12a46](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a46) (2023-07-15)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a44...0.0.12a45)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a45...0.0.12a46)
+
+**Merged pull requests:**
+
+- Loosen ovos-backend-client dependency to allow latest stable version [\#121](https://github.com/OpenVoiceOS/OVOS-workshop/pull/121) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a45](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a45) (2023-07-14)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a44...V0.0.12a45)
 
 **Fixed bugs:**
 
@@ -652,10 +660,6 @@
 ## [V0.0.5a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5a12) (2022-02-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/d9261b124f73a3e4d50c6edfcd9c2243b2bc3cf6...V0.0.5a12)
-
-**Implemented enhancements:**
-
-- add idleDisplaySkill type [\#14](https://github.com/OpenVoiceOS/OVOS-workshop/pull/14) ([AIIX](https://github.com/AIIX))
 
 **Fixed bugs:**
 
