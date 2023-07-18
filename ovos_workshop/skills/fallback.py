@@ -99,8 +99,8 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     fallback_handlers = {}
     wrapper_map: List[Tuple[callable, callable]] = []  # [(handler, wrapper)]
 
-    def __init__(self, name=None, bus=None, use_settings=True):
-        super().__init__(name, bus, use_settings)
+    def __init__(self, name=None, bus=None, use_settings=True, **kwargs):
+        super().__init__(name, bus, use_settings, **kwargs)
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
 
@@ -312,9 +312,9 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         """
         return FallbackSkillV1.make_intent_failure_handler(bus)
 
-    def __init__(self, bus=None, skill_id=""):
+    def __init__(self, bus=None, skill_id="", **kwargs):
         self._fallback_handlers = []
-        super().__init__(bus=bus, skill_id=skill_id)
+        super().__init__(bus=bus, skill_id=skill_id, **kwargs)
 
     @property
     def priority(self) -> int:

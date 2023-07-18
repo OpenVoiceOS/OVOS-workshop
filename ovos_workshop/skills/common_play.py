@@ -50,8 +50,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, name=None, bus=None):
-        super().__init__(name, bus)
+    def __init__(self, name=None, bus=None, **kwargs):
+        OVOSSkill.__init__(self, name, bus, **kwargs)
         # NOTE: derived skills will likely want to override this list
         self.supported_media = [MediaType.GENERIC,
                                 MediaType.AUDIO]

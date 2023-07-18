@@ -56,8 +56,8 @@ class CommonQuerySkill(OVOSSkill):
     answers from several skills presenting the best one available.
     """
 
-    def __init__(self, name=None, bus=None):
-        super().__init__(name, bus)
+    def __init__(self, name=None, bus=None, **kwargs):
+        OVOSSkill.__init__(self, name, bus, **kwargs)
         noise_words_filepath = f"text/{self.lang}/noise_words.list"
         default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}/noise_words.list"
         noise_words_filename = resolve_resource_file(noise_words_filepath) or \
