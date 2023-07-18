@@ -13,7 +13,7 @@ from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
 from ovos_workshop.resource_files import SkillResources
 
-from ovos_workshop.skills.layers import IntentLayers
+from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 
 
