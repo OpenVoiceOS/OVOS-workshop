@@ -61,6 +61,7 @@ jobs:
           #       or they will overwrite previous invocations' coverage reports
           #       (for an example, see OVOS Skill Manager's workflow)
       - name: Upload coverage
+        if: "${{ matrix.python-version == '3.9' }}"
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
         uses: codecov/codecov-action@v2
