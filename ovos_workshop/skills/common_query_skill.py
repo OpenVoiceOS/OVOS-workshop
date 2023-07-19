@@ -16,7 +16,7 @@ from os.path import dirname
 
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG
-
+from ovos_config.config import Configuration
 from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
 
@@ -57,17 +57,6 @@ class CommonQuerySkill(OVOSSkill):
     """
 
     def __init__(self, name=None, bus=None, **kwargs):
-        noise_words_filepath = f"text/{self.lang}/noise_words.list"
-        default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}/noise_words.list"
-        noise_words_filename = resolve_resource_file(noise_words_filepath) or \
-                               resolve_resource_file(default_res)
-
-        self._translated_noise_words = {}
-        if noise_words_filename:
-            with open(noise_words_filename) as f:
-                translated_noise_words = f.read().strip()
-            self._translated_noise_words[self.lang] = translated_noise_words.split()
-
         # these should probably be configurable
         self.level_confidence = {
             CQSMatchLevel.EXACT: 0.9,
@@ -75,6 +64,21 @@ class CommonQuerySkill(OVOSSkill):
             CQSMatchLevel.GENERAL: 0.5
         }
         OVOSSkill.__init__(self, name, bus, **kwargs)
+
+        noise_words_filepath = f"text/{self.lang}/noise_words.list"
+        default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}" \
+                      f"/noise_words.list"
+        noise_words_filename = \
+            resolve_resource_file(noise_words_filepath,
+                                  config=self.config_core) or \
+            resolve_resource_file(default_res, config=self.config_core)
+
+        self._translated_noise_words = {}
+        if noise_words_filename:
+            with open(noise_words_filename) as f:
+                translated_noise_words = f.read().strip()
+            self._translated_noise_words[self.lang] = \
+                translated_noise_words.split()
 
     @property
     def translated_noise_words(self):
