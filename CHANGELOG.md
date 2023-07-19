@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a46](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a46) (2023-07-15)
+## [0.0.12a47](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a47) (2023-07-19)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a45...0.0.12a46)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a46...0.0.12a47)
+
+**Merged pull requests:**
+
+- Minor import and logging updates to troubleshoot logged warnings [\#122](https://github.com/OpenVoiceOS/OVOS-workshop/pull/122) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a46](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a46) (2023-07-15)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a45...V0.0.12a46)
 
 **Merged pull requests:**
 
@@ -660,10 +668,6 @@
 ## [V0.0.5a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5a12) (2022-02-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/d9261b124f73a3e4d50c6edfcd9c2243b2bc3cf6...V0.0.5a12)
-
-**Fixed bugs:**
-
-- Fix/idleskill [\#15](https://github.com/OpenVoiceOS/OVOS-workshop/pull/15) ([NeonJarbas](https://github.com/NeonJarbas))
 
 **Merged pull requests:**
 
