@@ -16,7 +16,6 @@ from os.path import dirname
 
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG
-from ovos_config.config import Configuration
 from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
 
 
