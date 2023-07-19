@@ -21,18 +21,15 @@ jobs:
         sudo apt-get update
         sudo apt install python3-dev
         python -m pip install build wheel
+    - name: Install repo
+      run: |
+        pip install -e .
     - name: Install test dependencies
       run: |
         sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
-        pip install ovos-core[all]
-        pip install pytest pytest-timeout pytest-cov adapt-parser~=0.5
-    - name: Install repo
-      run: |
-        pip install .
+        pip install -r requirements/test.txt
     - name: Generate coverage report
       run: |
-        pip install pytest
-        pip install pytest-cov
         pytest --cov=./ovos_workshop --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
