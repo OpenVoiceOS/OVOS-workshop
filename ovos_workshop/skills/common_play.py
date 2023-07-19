@@ -50,8 +50,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, name=None, bus=None):
-        super().__init__(name, bus)
+    def __init__(self, name=None, bus=None, **kwargs):
         # NOTE: derived skills will likely want to override this list
         self.supported_media = [MediaType.GENERIC,
                                 MediaType.AUDIO]
@@ -66,7 +65,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self._stop_event = Event()
         self._playing = Event()
         # TODO replace with new default
-        self.skill_icon = "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
+        self.skill_icon = \
+            "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
+            "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
+        OVOSSkill.__init__(self, name, bus, **kwargs)
 
     def bind(self, bus):
         """Overrides the normal bind method.

@@ -96,10 +96,11 @@ class _SkillMetaclass(ABCMeta):
             # accepts kwargs and does its own init
             return super().__call__(skill_id=skill_id, bus=bus, **kwargs)
         except TypeError:
-            LOG.warning("legacy skill signature detected, attempting to init "
-                        "skill manually, self.bus and self.skill_id will only "
-                        "be available in self.initialize.\n__init__ method "
-                        "needs to accept `skill_id` and `bus` to resolve this.")
+            LOG.warning(f"Legacy skill signature detected for {skill_id};"
+                        f" attempting to init skill manually, self.bus and "
+                        f"self.skill_id will only be available in "
+                        f"self.initialize. `__init__` method needs to accept "
+                        f"`skill_id` and `bus` to resolve this.")
 
         # skill did not update its init method, init it manually
         # NOTE: no try/except because all skills must accept this initialization
