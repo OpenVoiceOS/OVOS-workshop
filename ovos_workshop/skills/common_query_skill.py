@@ -57,7 +57,6 @@ class CommonQuerySkill(OVOSSkill):
     """
 
     def __init__(self, name=None, bus=None, **kwargs):
-        OVOSSkill.__init__(self, name, bus, **kwargs)
         noise_words_filepath = f"text/{self.lang}/noise_words.list"
         default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}/noise_words.list"
         noise_words_filename = resolve_resource_file(noise_words_filepath) or \
@@ -75,6 +74,7 @@ class CommonQuerySkill(OVOSSkill):
             CQSMatchLevel.CATEGORY: 0.6,
             CQSMatchLevel.GENERAL: 0.5
         }
+        OVOSSkill.__init__(self, name, bus, **kwargs)
 
     @property
     def translated_noise_words(self):

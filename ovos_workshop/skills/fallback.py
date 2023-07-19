@@ -100,12 +100,12 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     wrapper_map: List[Tuple[callable, callable]] = []  # [(handler, wrapper)]
 
     def __init__(self, name=None, bus=None, use_settings=True, **kwargs):
-        super().__init__(name, bus, use_settings, **kwargs)
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
 
         # "skill_id": priority (int)  overrides
         self.fallback_config = self.config_core["skills"].get("fallbacks", {})
+        super().__init__(name, bus, use_settings, **kwargs)
 
     @classmethod
     def make_intent_failure_handler(cls, bus: MessageBusClient):
