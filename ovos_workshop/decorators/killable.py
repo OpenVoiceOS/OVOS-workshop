@@ -1,3 +1,5 @@
+from typing import Callable, Optional, Type
+
 import time
 from ovos_utils import create_killable_daemon
 from ovos_utils.messagebus import Message
@@ -18,16 +20,36 @@ class AbortQuestion(AbortEvent):
     """ gracefully abort get_response queries """
 
 
-def killable_intent(msg="mycroft.skills.abort_execution",
-                    callback=None, react_to_stop=True, call_stop=True,
-                    stop_tts=True):
+def killable_intent(msg: str = "mycroft.skills.abort_execution",
+                    callback: Optional[callable] = None,
+                    react_to_stop: bool = True,
+                    call_stop: bool = True, stop_tts: bool = True) -> callable:
+    """
+    Decorator to mark an intent that can be terminated during execution.
+    @param msg: Message name to terminate on
+    @param callback: Optional function or method to call on termination
+    @param react_to_stop: If true, also terminate on `stop` Messages
+    @param call_stop: If true, also call `Class.stop` method
+    @param stop_tts: If true, emit message to stop TTS audio playback
+    """
     return killable_event(msg, AbortIntent, callback, react_to_stop,
                           call_stop, stop_tts)
 
 
-def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
-                   callback=None, react_to_stop=False, call_stop=False,
-                   stop_tts=False):
+def killable_event(msg: str = "mycroft.skills.abort_execution",
+                   exc: Type[Exception] = AbortEvent,
+                   callback: Optional[callable] = None,
+                   react_to_stop: bool = False, call_stop: bool = False,
+                   stop_tts: bool = False):
+    """
+    Decorator to mark a method that can be terminated during execution.
+    @param msg: Message name to terminate on
+    @param exc: Exception to raise in killed thread
+    @param callback: Optional function or method to call on termination
+    @param react_to_stop: If true, also terminate on `stop` Messages
+    @param call_stop: If true, also call `Class.stop` method
+    @param stop_tts: If true, emit message to stop TTS audio playback
+    """
     # Begin wrapper
     def create_killable(func):
 
@@ -54,7 +76,7 @@ def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
                 try:
                     while t.is_alive():
                         t.raise_exc(exc)
-                        time.sleep(0.1)
+                        t.join(1)
                 except threading.ThreadError:
                     pass  # already killed
                 except AssertionError:
@@ -79,4 +101,3 @@ def killable_event(msg="mycroft.skills.abort_execution", exc=AbortEvent,
         return call_function
 
     return create_killable
-

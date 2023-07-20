@@ -2,6 +2,7 @@ import os
 from setuptools import setup
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
+os.chdir(BASEDIR)  # For relative `packages` spec in setup below
 
 
 def get_version():
@@ -48,6 +49,12 @@ def required(requirements_file):
                 if pkg.strip() and not pkg.startswith("#")]
 
 
+def get_description():
+    with open(os.path.join(BASEDIR, "README.md"), "r") as f:
+        long_description = f.read()
+    return long_description
+
+
 setup(
     name='ovos_workshop',
     version=get_version(),
@@ -65,5 +72,12 @@ setup(
     author='jarbasAi',
     author_email='jarbasai@mailfence.com',
     include_package_data=True,
-    description='frameworks, templates and patches for the mycroft universe'
+    description='frameworks, templates and patches for the OpenVoiceOS universe',
+    long_description=get_description(),
+    long_description_content_type="text/markdown",
+    entry_points={
+        'console_scripts': [
+            'ovos-skill-launcher=ovos_workshop.skill_launcher:_launch_script'
+        ]
+    }
 )

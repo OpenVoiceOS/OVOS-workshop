@@ -17,6 +17,7 @@ import os
 import re
 from collections import namedtuple
 from os import walk
+from os.path import dirname
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -46,9 +47,19 @@ SkillResourceTypes = namedtuple(
 )
 
 
-def locate_base_directories(skill_directory, resource_subdirectory=None):
-    base_dirs = [Path(skill_directory, resource_subdirectory)] if resource_subdirectory else []
-    base_dirs += [Path(skill_directory, "locale"), Path(skill_directory, "text")]
+def locate_base_directories(skill_directory: str,
+                            resource_subdirectory: Optional[str] = None) -> \
+        List[Path]:
+    """
+    Locate all possible resource directories found in the given skill_directory
+    @param skill_directory: skill base directory to search for resources
+    @param resource_subdirectory: optional extra resource directory to prepend
+    @return: list of existing skill resource directories
+    """
+    base_dirs = [Path(skill_directory, resource_subdirectory)] if \
+        resource_subdirectory else []
+    base_dirs += [Path(skill_directory, "locale"),
+                  Path(skill_directory, "text")]
     candidates = []
     for directory in base_dirs:
         if directory.exists():
@@ -56,7 +67,17 @@ def locate_base_directories(skill_directory, resource_subdirectory=None):
     return candidates
 
 
-def locate_lang_directories(lang, skill_directory, resource_subdirectory=None):
+def locate_lang_directories(lang: str, skill_directory: str,
+                            resource_subdirectory: Optional[str] = None) -> \
+        List[Path]:
+    """
+    Locate all possible resource directories found in the given skill_directory
+    for the specified language
+    @param lang: BCP-47 language code to get resources for
+    @param skill_directory: skill base directory to search for resources
+    @param resource_subdirectory: optional extra resource directory to prepend
+    @return: list of existing skill resource directories for the given lang
+    """
     base_lang = lang.split("-")[0]
     base_dirs = [Path(skill_directory, "locale"),
                  Path(skill_directory, "text")]
@@ -69,6 +90,77 @@ def locate_lang_directories(lang, skill_directory, resource_subdirectory=None):
                 if folder.name.startswith(base_lang):
                     candidates.append(folder)
     return candidates
+
+
+def resolve_resource_file(res_name: str) -> Optional[str]:
+    """Convert a resource into an absolute filename.
+
+    Resource names are in the form: 'filename.ext'
+    or 'path/filename.ext'
+
+    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
+    (defaults to ~/.local/share/mycroft/res_name), and if not found will
+    look at /opt/mycroft/res_name, then finally it will look for res_name
+    in the 'mycroft/res' folder of the source code package.
+
+    Example:
+        With mycroft running as the user 'bob', if you called
+        ``resolve_resource_file('snd/beep.wav')``
+        it would return either:
+        '$XDG_DATA_DIRS/mycroft/beep.wav',
+        '/home/bob/.mycroft/snd/beep.wav' or
+        '/opt/mycroft/snd/beep.wav' or
+        '.../mycroft/res/snd/beep.wav'
+        where the '...' is replaced by the path
+        where the package has been installed.
+
+    Args:
+        res_name (str): a resource path/name
+
+    Returns:
+        (str) path to resource or None if no resource found
+    """
+    # TODO: Deprecate in 0.1.0
+    LOG.warning(f"This method has moved to `ovos_utils.file_utils` and will be"
+                f"removed in a future release.")
+    from ovos_utils.file_utils import resolve_resource_file
+    config = Configuration()
+    return resolve_resource_file(res_name, config=config)
+
+
+def find_resource(res_name: str, root_dir: str, res_dirname: str,
+                  lang: Optional[str] = None) -> Optional[Path]:
+    """
+    Find a resource file.
+
+    Searches for the given filename using this scheme:
+        1. Search the resource lang directory:
+            <skill>/<res_dirname>/<lang>/<res_name>
+        2. Search the resource directory:
+            <skill>/<res_dirname>/<res_name>
+        3. Search the locale lang directory or other subdirectory:
+            <skill>/locale/<lang>/<res_name> or
+            <skill>/locale/<lang>/.../<res_name>
+
+    Args:
+        res_name (string): The resource name to be found
+        root_dir (string): A skill root directory
+        res_dirname (string): A skill sub directory
+        lang (string): language folder to be used
+
+    Returns:
+        Path: The full path to the resource file or None if not found
+    """
+    if lang:
+        for directory in locate_lang_directories(lang, root_dir, res_dirname):
+            for x in directory.iterdir():
+                if x.is_file() and res_name == x.name:
+                    return x
+
+    for directory in locate_base_directories(root_dir, res_dirname):
+        for d, _, file_names in walk(directory):
+            if res_name in file_names:
+                return Path(directory, d, res_name)
 
 
 class ResourceType:
@@ -87,7 +179,8 @@ class ResourceType:
         base_directory: directory containing all files for the resource type
     """
 
-    def __init__(self, resource_type: str, file_extension: str, language=None):
+    def __init__(self, resource_type: str, file_extension: str,
+                 language: Optional[str] = None):
         self.resource_type = resource_type
         self.file_extension = file_extension
         self.language = language
@@ -123,7 +216,7 @@ class ResourceType:
         if self.user_directory:
             self.base_directory = self.user_directory
 
-    def locate_base_directory(self, skill_directory):
+    def locate_base_directory(self, skill_directory: str) -> Optional[str]:
         """Find the skill's base directory for the specified resource type.
 
         There are three supported methodologies for storing resource files.
@@ -204,12 +297,12 @@ class ResourceFile:
         file_path: absolute path to the file
     """
 
-    def __init__(self, resource_type, resource_name):
+    def __init__(self, resource_type: ResourceType, resource_name: str):
         self.resource_type = resource_type
         self.resource_name = resource_name
         self.file_path = self._locate()
 
-    def _locate(self):
+    def _locate(self) -> str:
         """Locates a resource file in the skill's locale directory.
 
         A skill's locale directory can contain a subdirectory structure defined
@@ -438,7 +531,10 @@ class WordFile(ResourceFile):
 
 
 class SkillResources:
-    def __init__(self, skill_directory, language, dialog_renderer=None, skill_id=None):
+    def __init__(self, skill_directory: str,
+                 language: str,
+                 dialog_renderer: Optional[MustacheDialogRenderer] = None,
+                 skill_id: Optional[str] = None):
         self.skill_directory = skill_directory
         self.language = language
         self.skill_id = skill_id
@@ -447,16 +543,25 @@ class SkillResources:
         self.static = dict()
 
     @property
-    def dialog_renderer(self):
+    def dialog_renderer(self) -> MustacheDialogRenderer:
+        """
+        Get a dialog renderer object for these resources
+        """
         if not self._dialog_renderer:
             self._load_dialog_renderer()
         return self._dialog_renderer
 
     @dialog_renderer.setter
-    def dialog_renderer(self, val):
+    def dialog_renderer(self, val: MustacheDialogRenderer):
+        """
+        Set the dialog renderer object for these resources
+        """
         self._dialog_renderer = val
 
     def _load_dialog_renderer(self):
+        """
+        Initialize a MustacheDialogRenderer object for these resources
+        """
         base_dirs = locate_lang_directories(self.language,
                                             self.skill_directory,
                                             "dialog")
@@ -468,7 +573,8 @@ class SkillResources:
         LOG.debug(f'No dialog loaded for {self.language}')
 
     def _define_resource_types(self) -> SkillResourceTypes:
-        """Defines all known types of skill resource files.
+        """
+        Defines all known types of skill resource files.
 
         A resource file contains information the skill needs to function.
         Examples include dialog files to be spoken and vocab files for intent
@@ -492,8 +598,10 @@ class SkillResources:
             resource_type.locate_base_directory(self.skill_directory)
         return SkillResourceTypes(**resource_types)
 
-    def load_dialog_file(self, name, data=None) -> List[str]:
-        """Loads the contents of a dialog file into memory.
+    def load_dialog_file(self, name: str,
+                         data: Optional[dict] = None) -> List[str]:
+        """
+        Loads the contents of a dialog file into memory.
 
         Named variables in the dialog are populated with values found in the
         data dictionary.
@@ -508,12 +616,14 @@ class SkillResources:
         dialog_file.data = data
         return dialog_file.load()
 
-    def locate_qml_file(self, name):
+    def locate_qml_file(self, name: str) -> str:
         qml_file = QmlFile(self.types.qml, name)
         return qml_file.load()
 
-    def load_list_file(self, name, data=None) -> List[str]:
-        """Load a file containing a list of words or phrases
+    def load_list_file(self, name: str,
+                       data: Optional[dict] = None) -> List[str]:
+        """
+        Load a file containing a list of words or phrases
 
         Named variables in the dialog are populated with values found in the
         data dictionary.
@@ -528,8 +638,10 @@ class SkillResources:
         list_file.data = data
         return list_file.load()
 
-    def load_named_value_file(self, name, delimiter=None) -> dict:
-        """Load file containing a set names and values.
+    def load_named_value_file(self, name: str,
+                              delimiter: Optional[str] = None) -> dict:
+        """
+        Load file containing a set names and values.
 
         Loads a simple delimited file of name/value pairs.
         The name is the first item, the value is the second.
@@ -551,8 +663,9 @@ class SkillResources:
 
         return named_values
 
-    def load_regex_file(self, name) -> List[str]:
-        """Loads a file containing regular expression patterns.
+    def load_regex_file(self, name: str) -> List[str]:
+        """
+        Loads a file containing regular expression patterns.
 
         The regular expression patterns are generally used to find a value
         in a user utterance the skill needs to properly perform the requested
@@ -566,8 +679,10 @@ class SkillResources:
         regex_file = RegexFile(self.types.regex, name)
         return regex_file.load()
 
-    def load_template_file(self, name, data=None) -> List[str]:
-        """Loads the contents of a dialog file into memory.
+    def load_template_file(self, name: str,
+                           data: Optional[dict] = None) -> List[str]:
+        """
+        Loads the contents of a dialog file into memory.
 
         Named variables in the dialog are populated with values found in the
         data dictionary.
@@ -582,12 +697,13 @@ class SkillResources:
         template_file.data = data
         return template_file.load()
 
-    def load_vocabulary_file(self, name) -> List[List[str]]:
-        """Loads a file containing variations of words meaning the same thing.
+    def load_vocabulary_file(self, name: str) -> List[List[str]]:
+        """
+        Loads a file containing variations of words meaning the same thing.
 
         A vocabulary file defines words a skill uses for intent matching.
         It can also be used to match words in an utterance after intent
-        intent matching is complete.
+        matching is complete.
 
         Args:
             name: name of the regular expression file, no extension needed
@@ -597,7 +713,7 @@ class SkillResources:
         vocabulary_file = VocabularyFile(self.types.vocabulary, name)
         return vocabulary_file.load()
 
-    def load_word_file(self, name) -> Optional[str]:
+    def load_word_file(self, name: str) -> Optional[str]:
         """Loads a file containing a word.
 
         Args:
@@ -608,8 +724,9 @@ class SkillResources:
         word_file = WordFile(self.types.word, name)
         return word_file.load()
 
-    def render_dialog(self, name, data=None) -> str:
-        """Selects a record from a dialog file at random for TTS purposes.
+    def render_dialog(self, name: str, data: Optional[dict] = None) -> str:
+        """
+        Selects a record from a dialog file at random for TTS purposes.
 
         Args:
             name: name of the list file (no extension needed)
@@ -622,12 +739,18 @@ class SkillResources:
         return resource_file.render(self.dialog_renderer)
 
     def load_skill_vocabulary(self, alphanumeric_skill_id: str) -> dict:
+        """
+        Load all vocabulary files in the skill's resources
+        @param alphanumeric_skill_id: alphanumeric ID of the skill associated
+            with these resources.
+        @return: dict of vocab name to loaded contents
+        """
         skill_vocabulary = {}
         base_directory = self.types.vocabulary.base_directory
         for directory, _, files in walk(base_directory):
-            vocabulary_files = [
+            vocabulary_files = (
                 file_name for file_name in files if file_name.endswith(".voc")
-            ]
+            )
             for file_name in vocabulary_files:
                 vocab_type = alphanumeric_skill_id + file_name[:-4].title()
                 vocabulary = self.load_vocabulary_file(file_name)
@@ -637,12 +760,18 @@ class SkillResources:
         return skill_vocabulary
 
     def load_skill_regex(self, alphanumeric_skill_id: str) -> List[str]:
+        """
+        Load all regex files in the skill's resources
+        @param alphanumeric_skill_id: alphanumeric ID of the skill associated
+            with these resources.
+        @return: list of string regex expressions
+        """
         skill_regexes = []
         base_directory = self.types.regex.base_directory
         for directory, _, files in walk(base_directory):
-            regex_files = [
+            regex_files = (
                 file_name for file_name in files if file_name.endswith(".rx")
-            ]
+            )
             for file_name in regex_files:
                 skill_regexes.extend(self.load_regex_file(file_name))
 
@@ -653,9 +782,8 @@ class SkillResources:
         return skill_regexes
 
     @staticmethod
-    def _make_unique_regex_group(
-            regexes: List[str], alphanumeric_skill_id: str
-    ) -> List[str]:
+    def _make_unique_regex_group(regexes: List[str],
+                                 alphanumeric_skill_id: str) -> List[str]:
         """Adds skill ID to group ID in a regular expression for uniqueness.
 
         Args:
@@ -678,8 +806,11 @@ class SkillResources:
 
 class CoreResources(SkillResources):
     def __init__(self, language):
-        from mycroft import MYCROFT_ROOT_PATH
-        directory = f"{MYCROFT_ROOT_PATH}/mycroft/res"
+        try:
+            from mycroft import MYCROFT_ROOT_PATH
+            directory = f"{MYCROFT_ROOT_PATH}/mycroft/res"
+        except ImportError:
+            directory = f"{dirname(__file__)}/res"
         super().__init__(directory, language)
 
 
@@ -690,25 +821,21 @@ class UserResources(SkillResources):
 
 
 class RegexExtractor:
-    """Extracts data from an utterance using regular expressions.
-
-    Attributes:
-        group_name:
-        regex_patterns: regular expressions read from a .rx file
-    """
-
-    def __init__(self, group_name, regex_patterns):
+    def __init__(self, group_name: str, regex_patterns: List[str]):
+        """
+        Init an object representing an entity and a list of possible regex
+        patterns for extracting it
+        @param group_name: Named group entity to extract
+        @param regex_patterns: List of string regex patterns to evaluate
+        """
         self.group_name = group_name
         self.regex_patterns = regex_patterns
 
-    def extract(self, utterance) -> Optional[str]:
-        """Attempt to find a value in a user request.
-
-        Args:
-            utterance: request spoken by the user
-
-        Returns:
-            The value extracted from the utterance, if found
+    def extract(self, utterance: str) -> Optional[str]:
+        """
+        Attempt to extract `group_name` from the specified `utterance`
+        @param utterance: String to evaluate
+        @return: Extracted `group_name` value if matched in `utterance`
         """
         extract = None
         pattern_match = self._match_utterance_to_patterns(utterance)
@@ -718,14 +845,12 @@ class RegexExtractor:
 
         return extract
 
-    def _match_utterance_to_patterns(self, utterance: str):
-        """Match regular expressions to user request.
-
-        Args:
-            utterance: request spoken by the user
-
-        Returns:
-            a regular expression match object if a match is found
+    def _match_utterance_to_patterns(self,
+                                     utterance: str) -> Optional[re.Match]:
+        """
+        Compare `utterance` to all `regex_patterns` until a match is found.
+        @param utterance: String to evaluate
+        @return: re.Match object if utterance mathes any `regex_patterns`
         """
         pattern_match = None
         for pattern in self.regex_patterns:
@@ -735,11 +860,11 @@ class RegexExtractor:
 
         return pattern_match
 
-    def _extract_group_from_match(self, pattern_match):
-        """Extract the alarm name from the utterance.
-
-        Args:
-            pattern_match: a regular expression match object
+    def _extract_group_from_match(self, pattern_match: re.Match) -> str:
+        """
+        Extract the specified regex group value.
+        @param pattern_match: Match object associated with a particular input
+        @return: String matched to `self.group_name`
         """
         extract = None
         try:
@@ -753,112 +878,11 @@ class RegexExtractor:
         return extract
 
     def _log_extraction_result(self, extract: str):
-        """Log the results of the matching.
-
-        Args:
-            extract: the value extracted from the user utterance
+        """
+        Log the results of the matching.
+        @param extract: the value extracted from the user utterance
         """
         if extract is None:
             LOG.info(f"No {self.group_name.lower()} extracted from utterance")
         else:
             LOG.info(f"{self.group_name} extracted from utterance: " + extract)
-
-
-def resolve_resource_file(res_name):
-    """Convert a resource into an absolute filename.
-
-    Resource names are in the form: 'filename.ext'
-    or 'path/filename.ext'
-
-    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
-    (defaults to ~/.local/share/mycroft/res_name), and if not found will
-    look at /opt/mycroft/res_name, then finally it will look for res_name
-    in the 'mycroft/res' folder of the source code package.
-
-    Example:
-        With mycroft running as the user 'bob', if you called
-        ``resolve_resource_file('snd/beep.wav')``
-        it would return either:
-        '$XDG_DATA_DIRS/mycroft/beep.wav',
-        '/home/bob/.mycroft/snd/beep.wav' or
-        '/opt/mycroft/snd/beep.wav' or
-        '.../mycroft/res/snd/beep.wav'
-        where the '...' is replaced by the path
-        where the package has been installed.
-
-    Args:
-        res_name (str): a resource path/name
-
-    Returns:
-        (str) path to resource or None if no resource found
-    """
-    config = Configuration()
-
-    # First look for fully qualified file (e.g. a user setting)
-    if os.path.isfile(res_name):
-        return res_name
-
-    # Now look for XDG_DATA_DIRS
-    for path in get_xdg_data_dirs():
-        filename = os.path.join(path, res_name)
-        if os.path.isfile(filename):
-            return filename
-
-    # Now look in the old user location
-    filename = os.path.join(os.path.expanduser('~'),
-                            f'.{get_xdg_base()}',
-                            res_name)
-    if os.path.isfile(filename):
-        return filename
-
-    # Next look for /opt/mycroft/res/res_name
-    data_dir = config.get('data_dir', get_xdg_data_save_path())
-    res_dir = os.path.join(data_dir, 'res')
-    filename = os.path.expanduser(os.path.join(res_dir, res_name))
-    if os.path.isfile(filename):
-        return filename
-
-    # Finally look for it in the ovos-core package
-    try:
-        from mycroft import MYCROFT_ROOT_PATH
-        filename = f"{MYCROFT_ROOT_PATH}/mycroft/res/{res_name}"
-        filename = os.path.abspath(os.path.normpath(filename))
-        if os.path.isfile(filename):
-            return filename
-    except ImportError:
-        pass
-
-    return None  # Resource cannot be resolved
-
-
-def find_resource(res_name, root_dir, res_dirname, lang=None):
-    """Find a resource file.
-
-    Searches for the given filename using this scheme:
-        1. Search the resource lang directory:
-            <skill>/<res_dirname>/<lang>/<res_name>
-        2. Search the resource directory:
-            <skill>/<res_dirname>/<res_name>
-        3. Search the locale lang directory or other subdirectory:
-            <skill>/locale/<lang>/<res_name> or
-            <skill>/locale/<lang>/.../<res_name>
-
-    Args:
-        res_name (string): The resource name to be found
-        root_dir (string): A skill root directory
-        res_dirname (string): A skill sub directory
-        lang (string): language folder to be used
-
-    Returns:
-        Path: The full path to the resource file or None if not found
-    """
-    if lang:
-        for directory in locate_lang_directories(lang, root_dir, res_dirname):
-            for x in directory.iterdir():
-                if x.is_file() and res_name == x.name:
-                    return x
-
-    for directory in locate_base_directories(root_dir, res_dirname):
-        for d, _, file_names in walk(directory):
-            if res_name in file_names:
-                return Path(directory, d, res_name)

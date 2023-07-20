@@ -1,0 +1,5 @@
+ovos-core~=0.0.7
+neon-lang-plugin-libretranslate~=0.2
+adapt-parser~=0.5
+pytest
+pytest-cov

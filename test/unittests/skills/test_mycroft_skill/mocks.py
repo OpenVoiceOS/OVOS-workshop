@@ -15,7 +15,7 @@
 from copy import deepcopy
 from unittest.mock import Mock
 
-from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
+from ovos_config import LocalConf, DEFAULT_CONFIG
 
 __CONFIG = LocalConf(DEFAULT_CONFIG)
 

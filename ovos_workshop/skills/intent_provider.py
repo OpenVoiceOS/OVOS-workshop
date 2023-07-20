@@ -1,14 +1,14 @@
 from threading import Event
 from time import time as get_time, sleep
-from ovos_utils.log import LOG
+from ovos_utils.log import LOG, log_deprecation
 from ovos_utils.messagebus import Message
-from ovos_workshop.skills.ovos import OVOSFallbackSkill
+from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_config.config import read_mycroft_config, update_mycroft_config
 
 
 class BaseIntentEngine:
-    # TODO move to OPM
     def __init__(self, name, config=None):
+        log_deprecation("This base class is not supported", "0.1.0")
         self.name = name.lower()
         config = config or read_mycroft_config()
         self.config = config.get(self.name, {})
@@ -49,8 +49,9 @@ class BaseIntentEngine:
         return data
 
 
-class IntentEngineSkill(OVOSFallbackSkill):
+class IntentEngineSkill(FallbackSkill):
     def __init__(self, *args, **kwargs):
+        log_deprecation("This base class is not supported", "0.1.0")
         super().__init__(*args, **kwargs)
         self.engine = None
         self.config = {}

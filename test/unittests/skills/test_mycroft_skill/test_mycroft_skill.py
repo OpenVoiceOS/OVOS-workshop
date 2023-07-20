@@ -16,15 +16,16 @@
 
 import sys
 import unittest
-import pytest
-
 from datetime import datetime
 from os.path import join, dirname, abspath
 from unittest.mock import MagicMock, patch
 
-from adapt.intent import IntentBuilder
+from ovos_utils.intents import IntentBuilder
+from ovos_bus_client import Message
 from ovos_config.config import Configuration
-from mycroft_bus_client import Message
+
+from ovos_workshop.decorators import intent_handler, resting_screen_handler, \
+    intent_file_handler
 from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from .mocks import base_config
 
@@ -57,6 +58,21 @@ class MockEmitter(object):
 
 def vocab_base_path():
     return join(dirname(__file__), '..', 'vocab_test')
+
+
+class TestFunction(unittest.TestCase):
+    def test_resting_screen_handler(self):
+        class T(MycroftSkill):
+            def __init__(self):
+                self.name = 'TestObject'
+
+            @resting_screen_handler('humbug')
+            def f(self):
+                pass
+
+        test_class = T()
+        self.assertTrue('resting_handler' in dir(test_class.f))
+        self.assertEqual(test_class.f.resting_handler, 'humbug')
 
 
 class TestMycroftSkill(unittest.TestCase):
@@ -212,13 +228,15 @@ class TestMycroftSkill(unittest.TestCase):
                 'file_name': join(dirname(__file__), 'intent_file',
                                   'vocab', 'en-us', 'test.intent'),
                 'lang': 'en-us',
-                'name': str(s.skill_id) + ':test.intent'
+                'name': str(s.skill_id) + ':test.intent',
+                'samples': []
             },
             {
                 'file_name': join(dirname(__file__), 'intent_file',
                                   'vocab', 'en-us', 'test_ent.entity'),
                 'lang': 'en-us',
-                'name': str(s.skill_id) + ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c'
+                'name': str(s.skill_id) + ':test_ent_87af9db6c8402bcfaa8ebc719ae4427c',
+                'samples': []
             }
         ]
         self.check_register_object_file(expected_types, expected_results)
@@ -229,12 +247,11 @@ class TestMycroftSkill(unittest.TestCase):
                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
-    @pytest.mark.skip
     def test_register_decorators(self):
         """ Test decorated intents """
         path_orig = sys.path
         sys.path.append(abspath(dirname(__file__)))
-        SimpleSkill5 = __import__('decorator_test_skill').TestSkill
+
         s = SimpleSkill5()
         s.res_dir = abspath(join(dirname(__file__), 'intent_file'))
         s._startup(self.emitter, "A")
@@ -247,7 +264,9 @@ class TestMycroftSkill(unittest.TestCase):
                         'file_name': join(dirname(__file__), 'intent_file',
                                           'vocab', 'en-us', 'test.intent'),
                         'lang': 'en-us',
-                        'name': str(s.skill_id) + ':test.intent'}]
+                        'samples': [],
+                        'name': str(s.skill_id) + ':test.intent'}
+                    ]
 
         self.check_register_decorators(expected)
         # Restore sys.path
@@ -438,6 +457,15 @@ class TestMycroftSkill(unittest.TestCase):
         self.assertFalse(s.voc_match("would you please turn off the lights",
                                      "turn_off_test", exact=True))
 
+    def test_voc_list(self):
+        s = SimpleSkill1()
+        s.root_dir = abspath(dirname(__file__))
+
+        self.assertEqual(s._voc_list("turn_off_test"),
+                         ["turn off", "switch off"])
+        cache_key = s.lang + "turn_off_test"
+        self.assertIn(cache_key, s._voc_cache)
+
     def test_translate_locations(self):
         """Assert that the a translatable list can be loaded from dialog and
         locale.
@@ -502,9 +530,28 @@ class TestMycroftSkill(unittest.TestCase):
         s.config_core['secondary_langs'] = secondary
 
 
+class TestIntentCollisions(unittest.TestCase):
+    def test_two_intents_with_same_name(self):
+        emitter = MockEmitter()
+        skill = SameIntentNameSkill()
+        skill.bind(emitter)
+        with self.assertRaises(ValueError):
+            skill.initialize()
+
+    def test_two_anonymous_intent_decorators(self):
+        """Two anonymous intent handlers should be ok."""
+        emitter = MockEmitter()
+        skill = SameAnonymousIntentDecoratorsSkill()
+        skill.bind(emitter)
+        skill._register_decorated()
+        self.assertEqual(len(skill.intent_service.registered_intents), 2)
+
+
 class _TestSkill(MycroftSkill):
     def __init__(self):
         super().__init__()
+        self.config_core['lang'] = "en-us"
+        self.config_core['secondary_langs'] = []
         self.skill_id = 'A'
 
 
@@ -570,6 +617,21 @@ class SimpleSkill4(_TestSkill):
         pass
 
 
+class SimpleSkill5(MycroftSkill):
+    """ Test skill for intent_handler decorator. """
+
+    @intent_handler(IntentBuilder('a').require('Keyword').build())
+    def handler(self, message):
+        pass
+
+    @intent_file_handler('test.intent')
+    def handler2(self, message):
+        pass
+
+    def stop(self):
+        pass
+
+
 class SimpleSkill6(_TestSkill):
     """ Test skill for padatious intent """
     skill_id = 'A'
@@ -592,5 +654,15 @@ class SameIntentNameSkill(_TestSkill):
         self.register_intent(intent, self.handler)
         self.register_intent(intent2, self.handler)
 
+    def handler(self, message):
+        pass
+
+
+class SameAnonymousIntentDecoratorsSkill(_TestSkill):
+    """Test skill for duplicate anonymous intent handlers."""
+    skill_id = 'A'
+
+    @intent_handler(IntentBuilder('').require('Keyword'))
+    @intent_handler(IntentBuilder('').require('OtherKeyword'))
     def handler(self, message):
         pass

@@ -2,14 +2,74 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from mycroft_bus_client import Message
+from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
 from mycroft.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
-from mycroft.skills.skill_loader import SkillLoader
+from ovos_workshop.skill_launcher import SkillLoader
+
+
+class LegacySkill(CoreSkill):
+    def __init__(self, skill_name="LegacySkill", bus=None, **kwargs):
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
+        super().__init__(skill_name, bus, **kwargs)
+        # __new__ calls `_startup` so this should be defined in __init__
+        assert self.skill_id is not None
+
+    def initialize(self):
+        self.initialized = True
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+        self.initialize()
+
+
+class BadLegacySkill(LegacySkill):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.bus)  # not set, exception in property
+
+
+class GoodLegacySkill(CoreSkill):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.bus)  # maybe not set, exception in property
+
+
+class SpecificArgsSkill(OVOSSkill):
+    def __init__(self, skill_id="SpecificArgsSkill", bus=None, **kwargs):
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
+        super().__init__(skill_id=skill_id, bus=bus, **kwargs)
+        self.kwargs = kwargs
+
+    def initialize(self):
+        self.initialized = True
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+        self.initialize()
+
+
+class KwargSkill(OVOSSkill):
+    def __init__(self, **kwargs):
+        self.inited = True
+        self.initialized = False
+        self.startup_called = False
+        super().__init__(**kwargs)
+
+    def initialize(self):
+        self.initialized = True
+
+    def _startup(self, bus, skill_id=""):
+        self.startup_called = True
+        self.initialize()
 
 
 class TestSkill(unittest.TestCase):
@@ -101,3 +161,49 @@ class TestSkill(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.skill.unload()
+
+
+class TestSkillNew(unittest.TestCase):
+    def test_legacy(self):
+        bus = FakeBus()
+
+        # a legacy skill accepts wrong args, but accepts kwargs
+        legacy = LegacySkill("LegacyName", bus, skill_id="legacy.mycroft")
+        self.assertTrue(legacy.inited)
+        self.assertTrue(legacy.initialized)
+        self.assertTrue(legacy.startup_called)
+        self.assertIsNotNone(legacy.skill_id)
+        self.assertEqual(legacy.bus, bus)
+
+        # a legacy skill not accepting args at all
+        with self.assertRaises(Exception) as ctxt:
+            BadLegacySkill()  # accesses self.bus in __init__
+        self.assertTrue("Accessed MycroftSkill.bus in __init__" in str(ctxt.exception))
+
+        legacynoargs = LegacySkill()  # no exception this time because bus is not used in init
+        self.assertTrue(legacynoargs.inited)
+        self.assertFalse(legacynoargs.initialized)
+        self.assertFalse(legacynoargs.startup_called)
+
+        # a legacy skill fully inited at once
+        legacy = GoodLegacySkill(skill_id="legacy.mycroft", bus=bus)  # accesses self.bus in __init__
+        self.assertEqual(legacy.skill_id, "legacy.mycroft")
+        self.assertEqual(legacy.bus, bus)
+
+    def test_load(self):
+        bus = FakeBus()
+        kwarg = KwargSkill(skill_id="kwarg", bus=bus)
+        self.assertTrue(kwarg.inited)
+        self.assertTrue(kwarg.initialized)
+        self.assertTrue(kwarg.startup_called)
+        self.assertEqual(kwarg.skill_id, "kwarg")
+        self.assertEqual(kwarg.bus, bus)
+
+        gui = Mock()
+        args = SpecificArgsSkill("args", bus, gui=gui)
+        self.assertTrue(args.inited)
+        self.assertTrue(args.initialized)
+        self.assertTrue(args.startup_called)
+        self.assertEqual(args.skill_id, "args")
+        self.assertEqual(args.bus, bus)
+        self.assertEqual(args.gui, gui)

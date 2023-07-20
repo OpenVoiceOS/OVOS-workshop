@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from mycroft.skills.core import MycroftSkill
+from ovos_workshop.skills import MycroftSkill
 
 
 class LoadTestSkill(MycroftSkill):

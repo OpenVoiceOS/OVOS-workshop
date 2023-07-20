@@ -31,11 +31,15 @@ on:
   workflow_dispatch:
 
 jobs:
+  py_build_tests:
+    uses: neongeckocom/.github/.github/workflows/python_build_tests.yml@master
+    with:
+      python_version: "3.8"
+
   unit_tests:
     strategy:
-      max-parallel: 2
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, "3.10" ]
+        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11" ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -50,31 +54,19 @@ jobs:
           python -m pip install build wheel
       - name: Install ovos workshop
         run: |
-          pip install .
+          pip install -e .
       - name: Install test dependencies
         run: |
           sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
-          pip install ovos-core>=0.0.6a17
-          pip install pytest pytest-timeout pytest-cov adapt-parser~=0.5
+          pip install -r requirements/test.txt
       - name: Run unittests
         run: |
           pytest --cov=ovos_workshop --cov-report xml test/unittests
           # NOTE: additional pytest invocations should also add the --cov-append flag
           #       or they will overwrite previous invocations' coverage reports
           #       (for an example, see OVOS Skill Manager's workflow)
-      - name: Replace ovos-core with mycroft-core
-        run: |
-          pip uninstall ovos-core -y
-          pip uninstall ovos-lingua-franca -y
-          pip install git+https://github.com/MycroftAI/mycroft-core
-          pip install .
-      - name: Run mycroft unittests
-        run: |
-          pytest --cov-append --cov=ovos_workshop --cov-report xml test/unittests
-          # NOTE: additional pytest invocations should also add the --cov-append flag
-          #       or they will overwrite previous invocations' coverage reports
-          #       (for an example, see OVOS Skill Manager's workflow)
       - name: Upload coverage
+        if: "${{ matrix.python-version == '3.9' }}"
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
         uses: codecov/codecov-action@v2
