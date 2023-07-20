@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.12a50](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a50) (2023-07-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.12a49...0.0.12a50)
+
+**Merged pull requests:**
+
+- Add description to setup.py to fix \#125 [\#126](https://github.com/OpenVoiceOS/OVOS-workshop/pull/126) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.12a49](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a49) (2023-07-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a48...0.0.12a49)
@@ -657,10 +665,6 @@
 ## [V0.0.7a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.7a1) (2022-05-07)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.6...V0.0.7a1)
-
-**Fixed bugs:**
-
-- Fix/optional adapt [\#19](https://github.com/OpenVoiceOS/OVOS-workshop/pull/19) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [V0.0.6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.6) (2022-03-03)
 
