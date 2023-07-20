@@ -2,6 +2,7 @@ import os
 from setuptools import setup
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
+os.chdir(BASEDIR)  # For relative `packages` spec in setup below
 
 
 def get_version():
