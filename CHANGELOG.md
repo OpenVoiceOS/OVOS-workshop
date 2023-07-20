@@ -1,8 +1,17 @@
 # Changelog
 
-## [0.0.12a47](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a47) (2023-07-19)
+## [0.0.12a48](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a48) (2023-07-20)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a46...0.0.12a47)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a47...0.0.12a48)
+
+**Merged pull requests:**
+
+- Update dependencies to stable versions [\#124](https://github.com/OpenVoiceOS/OVOS-workshop/pull/124) ([NeonDaniel](https://github.com/NeonDaniel))
+- Fix codecov automation [\#123](https://github.com/OpenVoiceOS/OVOS-workshop/pull/123) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a47](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a47) (2023-07-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a46...V0.0.12a47)
 
 **Merged pull requests:**
 
@@ -657,10 +666,6 @@
 
 - remove/skillgui\_patches [\#18](https://github.com/OpenVoiceOS/OVOS-workshop/pull/18) ([JarbasAl](https://github.com/JarbasAl))
 
-**Closed issues:**
-
-- OVOSSkill class inherited skills do not initialize [\#17](https://github.com/OpenVoiceOS/OVOS-workshop/issues/17)
-
 ## [V0.0.5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5) (2022-02-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.5a12...V0.0.5)
@@ -668,10 +673,6 @@
 ## [V0.0.5a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5a12) (2022-02-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/d9261b124f73a3e4d50c6edfcd9c2243b2bc3cf6...V0.0.5a12)
-
-**Merged pull requests:**
-
-- Feat/workflows [\#16](https://github.com/OpenVoiceOS/OVOS-workshop/pull/16) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
