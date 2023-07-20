@@ -1,8 +1,16 @@
 # Changelog
 
-## [0.0.12a48](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a48) (2023-07-20)
+## [0.0.12a49](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.12a49) (2023-07-20)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a47...0.0.12a48)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a48...0.0.12a49)
+
+**Merged pull requests:**
+
+- Update automation to latest standards [\#125](https://github.com/OpenVoiceOS/OVOS-workshop/pull/125) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.0.12a48](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a48) (2023-07-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a47...V0.0.12a48)
 
 **Merged pull requests:**
 
@@ -661,10 +669,6 @@
 ## [V0.0.6a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.6a1) (2022-03-03)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.5...V0.0.6a1)
-
-**Breaking changes:**
-
-- remove/skillgui\_patches [\#18](https://github.com/OpenVoiceOS/OVOS-workshop/pull/18) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [V0.0.5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.5) (2022-02-25)
 
