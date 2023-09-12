@@ -1,6 +1,6 @@
 import re
+from abc import ABCMeta
 from threading import Event
-
 from typing import List, Optional, Union
 
 from ovos_bus_client import MessageBusClient
@@ -11,13 +11,29 @@ from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
-from ovos_workshop.resource_files import SkillResources
-
 from ovos_workshop.decorators.layers import IntentLayers
-from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
+from ovos_workshop.resource_files import SkillResources
+from ovos_workshop.skills.base import BaseSkill
+from ovos_workshop.skills.mycroft_skill import is_classic_core, MycroftSkill
 
 
-class OVOSSkill(MycroftSkill):
+class _OVOSSkillMetaclass(ABCMeta):
+    """
+    To override isinstance checks
+    """
+
+    def __instancecheck__(self, instance):
+        if is_classic_core():
+            # instance imported from vanilla mycroft
+            from mycroft.skills import MycroftSkill as _CoreSkill
+            if issubclass(self.__class__, _CoreSkill):
+                return True
+
+        return super().__instancecheck__(instance) or \
+            issubclass(self.__class__, MycroftSkill)
+
+
+class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
     """
     New features:
         - all patches for MycroftSkill class
@@ -140,7 +156,7 @@ class OVOSSkill(MycroftSkill):
                     core_supported = True  # min version of ovos-core
             except ImportError:
                 # skills don't require core anymore, running standalone
-                core_supported = True 
+                core_supported = True
 
         if core_supported:
             message = dig_for_message() or Message("")
@@ -223,7 +239,7 @@ class OVOSSkill(MycroftSkill):
 
     def register_intent_layer(self, layer_name: str,
                               intent_list: List[Union[IntentBuilder, Intent,
-                                                str]]):
+                              str]]):
         """
         Register a named intent layer.
         @param layer_name: Name of intent layer to add
