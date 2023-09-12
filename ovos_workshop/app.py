@@ -28,18 +28,18 @@ class OVOSAbstractApplication(OVOSSkill):
         @param enable_settings_manager: if True, enables a SettingsManager for
             this application to manage default settings and backend sync
         """
-        super().__init__(skill_id=skill_id, bus=bus, gui=gui,
-                         resources_dir=resources_dir,
-                         enable_settings_manager=enable_settings_manager,
-                         **kwargs)
-        self.skill_id = skill_id
         self._dedicated_bus = False
         if bus:
             self._dedicated_bus = False
         else:
             self._dedicated_bus = True
             bus = get_mycroft_bus()
-        self._startup(bus, skill_id)
+
+        super().__init__(skill_id=skill_id, bus=bus, gui=gui,
+                         resources_dir=resources_dir,
+                         enable_settings_manager=enable_settings_manager,
+                         **kwargs)
+
         if settings:
             log_deprecation(f"Settings should be set in {self._settings_path}. "
                             f"Passing `settings` to __init__ is not supported.",
