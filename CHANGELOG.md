@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a2) (2023-09-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a1...0.0.13a2)
+
+**Implemented enhancements:**
+
+- feat/sounds\_playback in ovos-audio [\#129](https://github.com/OpenVoiceOS/OVOS-workshop/pull/129) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a1) (2023-09-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.12...0.0.13a1)
