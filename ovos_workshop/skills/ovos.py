@@ -26,7 +26,7 @@ class _OVOSSkillMetaclass(ABCMeta):
         if is_classic_core():
             # instance imported from vanilla mycroft
             from mycroft.skills import MycroftSkill as _CoreSkill
-            if issubclass(self.__class__, _CoreSkill):
+            if issubclass(instance.__class__, _CoreSkill):
                 return True
 
         return super().__instancecheck__(instance) or \
