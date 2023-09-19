@@ -33,6 +33,40 @@ class _OVOSSkillMetaclass(ABCMeta):
             issubclass(instance.__class__, MycroftSkill)
 
 
+def _can_play_audio(instant=False):
+    """ helper method to ensure skills keep working on old versions of ovos/mycroft"""
+    # TODO - completely drop support for older core versions in 0.1.0 release
+    try:
+        import mycroft
+    except ImportError:
+        # skills don't require core anymore, running standalone
+        return True
+
+    if instant:
+        try:
+            from ovos_core.version import OVOS_VERSION_BUILD, \
+                OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+            if OVOS_VERSION_MAJOR >= 1 or \
+                    OVOS_VERSION_MINOR > 0 or \
+                    OVOS_VERSION_BUILD >= 8:
+                return True  # min version of ovos-core - 0.0.8
+        except ImportError:
+            pass
+    else:
+        try:
+            # feature introduced before ovos_core module
+            from mycroft.version import OVOS_VERSION_BUILD, \
+                OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
+            if OVOS_VERSION_MAJOR >= 1 or \
+                    OVOS_VERSION_MINOR > 0 or \
+                    OVOS_VERSION_BUILD >= 4:
+                return True  # min version of ovos-core - 0.0.4
+        except ImportError:
+            pass
+
+    return False
+
+
 class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
     """
     New features:
@@ -140,28 +174,34 @@ class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
         """
         self._deactivate()
 
-    def play_audio(self, filename: str):
+    def acknowledge(self):
+        """
+        Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        audio_file = self.config_core.get('sounds', {}).get('acknowledge',
+                                                            'snd/acknowledge.mp3')
+        self.play_audio(audio_file, instant=True)
+
+    def play_audio(self, filename: str, instant: bool = False):
         """
         Queue and audio file for playback
         @param filename: File to play
+        @param instant: if True audio will be played instantly instead of queued with TTS
         """
-        core_supported = False
-        if not is_classic_core():
-            try:
-                from mycroft.version import OVOS_VERSION_BUILD, \
-                    OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
-                if OVOS_VERSION_MAJOR >= 1 or \
-                        OVOS_VERSION_MINOR > 0 or \
-                        OVOS_VERSION_BUILD >= 4:
-                    core_supported = True  # min version of ovos-core
-            except ImportError:
-                # skills don't require core anymore, running standalone
-                core_supported = True
-
-        if core_supported:
+        if _can_play_audio(instant):
             message = dig_for_message() or Message("")
-            self.bus.emit(message.forward("mycroft.audio.queue",
-                                          {"filename": filename}))
+            if instant:
+                self.bus.emit(message.forward("mycroft.audio.play_sound",
+                                              {"uri": filename}))
+            else:
+                self.bus.emit(message.forward("mycroft.audio.queue",
+                                              {"filename": filename,  # TODO - deprecate filename in ovos-audio
+                                               "uri": filename  # new namespace
+                                               }))
         else:
             LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, "
                         "falling back to local skill playback")

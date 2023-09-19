@@ -21,6 +21,7 @@ from typing import Optional
 from ovos_bus_client import MessageBusClient, Message
 from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
+from ovos_utils.sound import play_acknowledge_sound
 
 
 class _SkillMetaclass(ABCMeta):
@@ -165,6 +166,19 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
                                                            self.skill_id)
             except ImportError:
                 pass  # standalone skill, skip backwards compat property
+
+    @staticmethod
+    def acknowledge():
+        """
+        Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        # DEPRECATED - note that this is a staticmethod and uses the old endpoint
+        # the OVOSSkill class does things properly
+        return play_acknowledge_sound()
 
     def _init_settings(self):
         """Setup skill settings."""
