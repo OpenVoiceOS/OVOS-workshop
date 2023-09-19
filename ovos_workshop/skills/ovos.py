@@ -30,7 +30,7 @@ class _OVOSSkillMetaclass(ABCMeta):
                 return True
 
         return super().__instancecheck__(instance) or \
-            issubclass(self.__class__, MycroftSkill)
+            issubclass(instance.__class__, MycroftSkill)
 
 
 class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
