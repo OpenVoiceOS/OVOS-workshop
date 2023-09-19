@@ -19,7 +19,7 @@ from os.path import join, exists
 from typing import Optional
 
 from ovos_bus_client import MessageBusClient, Message
-from ovos_utils.log import LOG, log_deprecation
+from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
@@ -113,10 +113,12 @@ class _SkillMetaclass(ABCMeta):
         if is_classic_core():
             # instance imported from vanilla mycroft
             from mycroft.skills import MycroftSkill as _CoreSkill
-            if issubclass(self.__class__, _CoreSkill):
+            if issubclass(instance.__class__, _CoreSkill):
                 return True
 
-        return super().__instancecheck__(instance)
+        from ovos_workshop.skills.ovos import OVOSSkill
+        return super().__instancecheck__(instance) or \
+            issubclass(instance.__class__, OVOSSkill)
 
 
 class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
@@ -126,6 +128,7 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
     recommended to implement `OVOSSkill` to properly implement new methods.
     """
 
+    @deprecated("MycroftSkill class has been deprecated, please subclass from OVOSSkill", "0.1.0")
     def __init__(self, name: str = None, bus: MessageBusClient = None,
                  use_settings: bool = True, *args, **kwargs):
         """

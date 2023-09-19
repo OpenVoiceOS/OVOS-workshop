@@ -11,7 +11,7 @@ class ActiveSkillExample(ActiveSkill):
 
     def make_active(self):
         self.active()
-        ActiveSkill.make_active(self)
+        ActiveSkill.activate(self)
 
 
 class TestActiveSkill(unittest.TestCase):
