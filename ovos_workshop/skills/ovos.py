@@ -11,10 +11,11 @@ from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
+from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 from ovos_workshop.skills.base import BaseSkill
-from ovos_workshop.skills.mycroft_skill import is_classic_core, MycroftSkill
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
 
 
 class _OVOSSkillMetaclass(ABCMeta):
@@ -22,49 +23,17 @@ class _OVOSSkillMetaclass(ABCMeta):
     To override isinstance checks
     """
 
-    def __instancecheck__(self, instance):
-        if is_classic_core():
-            # instance imported from vanilla mycroft
-            from mycroft.skills import MycroftSkill as _CoreSkill
-            if issubclass(instance.__class__, _CoreSkill):
-                return True
+    def __instancecheck_classic__(self, instance):
+        # instance imported from vanilla mycroft
+        from mycroft.skills import MycroftSkill as _CoreSkill
+        if issubclass(instance.__class__, _CoreSkill):
+            return True
+        return issubclass(instance.__class__, MycroftSkill)
 
+    @backwards_compat(classic_core=__instancecheck_classic__)
+    def __instancecheck__(self, instance):
         return super().__instancecheck__(instance) or \
             issubclass(instance.__class__, MycroftSkill)
-
-
-def _can_play_audio(instant=False):
-    """ helper method to ensure skills keep working on old versions of ovos/mycroft"""
-    # TODO - completely drop support for older core versions in 0.1.0 release
-    try:
-        import mycroft
-    except ImportError:
-        # skills don't require core anymore, running standalone
-        return True
-
-    if instant:
-        try:
-            from ovos_core.version import OVOS_VERSION_BUILD, \
-                OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
-            if OVOS_VERSION_MAJOR >= 1 or \
-                    OVOS_VERSION_MINOR > 0 or \
-                    OVOS_VERSION_BUILD >= 8:
-                return True  # min version of ovos-core - 0.0.8
-        except ImportError:
-            pass
-    else:
-        try:
-            # feature introduced before ovos_core module
-            from mycroft.version import OVOS_VERSION_BUILD, \
-                OVOS_VERSION_MINOR, OVOS_VERSION_MAJOR
-            if OVOS_VERSION_MAJOR >= 1 or \
-                    OVOS_VERSION_MINOR > 0 or \
-                    OVOS_VERSION_BUILD >= 4:
-                return True  # min version of ovos-core - 0.0.4
-        except ImportError:
-            pass
-
-    return False
 
 
 class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
@@ -174,6 +143,19 @@ class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
         """
         self._deactivate()
 
+    @staticmethod
+    def __acknowledge_classic():
+        """
+        Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        # use BaseSkill method, self.play_audio does not exist
+        return super().acknowledge()
+
+    @backwards_compat(classic_core=__acknowledge_classic)
     def acknowledge(self):
         """
         Acknowledge a successful request.
@@ -186,26 +168,41 @@ class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
                                                             'snd/acknowledge.mp3')
         self.play_audio(audio_file, instant=True)
 
+    def _play_audio_old(self, filename: str, instant: bool = False):
+        """ compat for ovos-core <= 0.0.7 """
+        if instant:
+            LOG.warning("self.play_audio instant flag requires ovos-core >= 0.0.8, "
+                        "falling back to local skill playback")
+            play_audio(filename).wait()
+        else:
+            message = dig_for_message() or Message("")
+            self.bus.emit(message.forward("mycroft.audio.queue",
+                                          {"filename": filename,  # TODO - deprecate filename in ovos-audio
+                                           "uri": filename  # new namespace
+                                           }))
+
+    def _play_audio_classic(self, filename: str, instant: bool = False):
+        """ compat for classic mycroft-core """
+        LOG.warning("self.play_audio requires ovos-core >= 0.0.4, "
+                    "falling back to local skill playback")
+        play_audio(filename).wait()
+
+    @backwards_compat(pre_008=_play_audio_old, classic_core=_play_audio_classic)
     def play_audio(self, filename: str, instant: bool = False):
         """
         Queue and audio file for playback
         @param filename: File to play
         @param instant: if True audio will be played instantly instead of queued with TTS
         """
-        if _can_play_audio(instant):
-            message = dig_for_message() or Message("")
-            if instant:
-                self.bus.emit(message.forward("mycroft.audio.play_sound",
-                                              {"uri": filename}))
-            else:
-                self.bus.emit(message.forward("mycroft.audio.queue",
-                                              {"filename": filename,  # TODO - deprecate filename in ovos-audio
-                                               "uri": filename  # new namespace
-                                               }))
+        message = dig_for_message() or Message("")
+        if instant:
+            self.bus.emit(message.forward("mycroft.audio.play_sound",
+                                          {"uri": filename}))
         else:
-            LOG.warning("self.play_audio requires ovos-core >= 0.0.4a45, "
-                        "falling back to local skill playback")
-            play_audio(filename).wait()
+            self.bus.emit(message.forward("mycroft.audio.queue",
+                                          {"filename": filename,  # TODO - deprecate filename in ovos-audio
+                                           "uri": filename  # new namespace
+                                           }))
 
     def load_lang(self, root_directory: Optional[str] = None,
                   lang: Optional[str] = None):
@@ -296,7 +293,7 @@ class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
             self.intent_layers.update_layer(layer_name, [name])
 
     # killable_events support
-    def send_stop_signal(self, stop_event: Optional[str] = None):
+    def __send_stop_signal_classic(self, stop_event: Optional[str] = None):
         """
         Notify services to stop current execution
         @param stop_event: optional `stop` event name to forward
@@ -313,13 +310,33 @@ class OVOSSkill(BaseSkill, metaclass=_OVOSSkillMetaclass):
         # Tell ovos-core to stop recording (not in mycroft-core)
         self.bus.emit(msg.forward('recognizer_loop:record_stop'))
 
-        # special non-ovos handling
-        if is_classic_core():
-            # NOTE: mycroft does not have an event to stop recording
-            # this attempts to force a stop by sending silence to end STT step
-            self.bus.emit(Message('mycroft.mic.mute'))
-            waiter.wait(1.5)  # the silence from muting should make STT stop recording
-            self.bus.emit(Message('mycroft.mic.unmute'))
+        # NOTE: mycroft does not have an event to stop recording
+        # this attempts to force a stop by sending silence to end STT step
+        self.bus.emit(Message('mycroft.mic.mute'))
+        waiter.wait(1.5)  # the silence from muting should make STT stop recording
+        self.bus.emit(Message('mycroft.mic.unmute'))
+
+        # TODO: register TTS events to track state instead of guessing
+        waiter.wait(0.5)  # if TTS had not yet started
+        self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
+
+    @backwards_compat(classic_core=__send_stop_signal_classic)
+    def send_stop_signal(self, stop_event: Optional[str] = None):
+        """
+        Notify services to stop current execution
+        @param stop_event: optional `stop` event name to forward
+        """
+        waiter = Event()
+        msg = dig_for_message() or Message("mycroft.stop")
+        # stop event execution
+        if stop_event:
+            self.bus.emit(msg.forward(stop_event))
+
+        # stop TTS
+        self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
+
+        # Tell ovos-core to stop recording (not in mycroft-core)
+        self.bus.emit(msg.forward('recognizer_loop:record_stop'))
 
         # TODO: register TTS events to track state instead of guessing
         waiter.wait(0.5)  # if TTS had not yet started

@@ -15,14 +15,16 @@
 import operator
 from typing import Optional, List, Callable, Tuple
 
+from ovos_config import Configuration
+
 from ovos_bus_client import MessageBusClient
 from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_handler_name, Message
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
-from ovos_config import Configuration
+from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.permissions import FallbackMode
-from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 class _MutableFallback(type(OVOSSkill)):
@@ -59,31 +61,22 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
     A Fallback can either observe or consume an utterance. A consumed
     utterance will not be seen by any other Fallback handlers.
     """
-    def __new__(cls, *args, **kwargs):
+    def __new__classic__(cls, *args, **kwargs):
         if cls is FallbackSkill:
-            # direct instantiation of class, dynamic wizardry or unittests
+            # direct instantiation of class, dynamic wizardry for unittests
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
+        cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
+        return super().__new__(cls, *args, **kwargs)
 
-        is_old = is_classic_core()
-        if not is_old:
-            try:
-                from mycroft.version import OVOS_VERSION_MAJOR, \
-                    OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
-                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and \
-                        OVOS_VERSION_BUILD < 8:
-                    is_old = True
-                elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and \
-                        OVOS_VERSION_BUILD == 8 and 0 < OVOS_VERSION_ALPHA < 5:
-                    is_old = True
-            except ImportError:
-                pass
-        if is_old:
-            LOG.debug("Using V1 Fallback")
-            cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
-        else:
-            LOG.debug("Using V2 Fallback")
-            cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
+    @backwards_compat(classic_core=__new__classic__,
+                      pre_008=__new__classic__)
+    def __new__(cls, *args, **kwargs):
+        if cls is FallbackSkill:
+            # direct instantiation of class, dynamic wizardry for unittests
+            # return V2 as expected, V1 will eventually be dropped
+            return FallbackSkillV2(*args, **kwargs)
+        cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
         return super().__new__(cls, *args, **kwargs)
 
     @classmethod
