@@ -1556,34 +1556,10 @@ class BaseSkill:
             raise ValueError(f'The intent name {name} is already taken')
         return name
 
-    def _register_adapt_intent_classic(self,
-                                       intent_parser: Union[IntentBuilder, Intent, str],
-                                       handler: callable):
-        """
-        < ovos-core 0.0.8 munging happened skill side,
-        since 0.0.8 pipeline plugins are skill_id aware out of the box
-        any needed munging happens plugin side
-        """
-        name = self._validate_intent_name(intent_parser, handler)
-
-        # old mycroft needs things munged before registering
-        munge_intent_parser(intent_parser, name, self.skill_id)
-        self.intent_service.register_adapt_intent(name, intent_parser)
-        if handler:
-            self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
-
-    @backwards_compat(classic_core=_register_adapt_intent_classic,
-                      pre_008=_register_adapt_intent_classic)
     def _register_adapt_intent(self,
                                intent_parser: Union[IntentBuilder, Intent, str],
                                handler: callable):
-        """
-        < ovos-core 0.0.8 munging happened skill side,
-        since 0.0.8 pipeline plugins are skill_id aware out of the box
-        any needed munging happens plugin side
-        """
         name = self._validate_intent_name(intent_parser, handler)
-
         intent = self.intent_service.register_keyword_intent(name=name,
                                                              required=intent_parser.requires,
                                                              at_least_one=intent_parser.at_least_one,
@@ -1751,8 +1727,6 @@ class BaseSkill:
             raise ValueError('Context should be a string')
         if not isinstance(word, str):
             raise ValueError('Word should be a string')
-
-        context = self._alphanumeric_skill_id + context
         self.intent_service.set_context(context, word, origin)
 
     def remove_context(self, context: str):
@@ -1761,7 +1735,7 @@ class BaseSkill:
         """
         if not isinstance(context, str):
             raise ValueError('context should be a string')
-        context = self._alphanumeric_skill_id + context
+
         self.intent_service.remove_context(context)
 
     def handle_set_cross_context(self, message: Message):
