@@ -26,16 +26,18 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event, RLock
 from typing import List, Optional, Dict, Callable, Union
 
-from ovos_bus_client import MessageBusClient
-from ovos_bus_client.session import SessionManager
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
 from ovos_backend_client.api import EmailApi, MetricsApi
-from ovos_bus_client.message import Message, dig_for_message
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_config_save_path
+
+from ovos_bus_client import MessageBusClient
+from ovos_bus_client.message import Message, dig_for_message
+from ovos_bus_client.session import SessionManager
 from ovos_utils import camel_case_split
+from ovos_utils import classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventContainer, EventSchedulerInterface
@@ -52,9 +54,7 @@ from ovos_utils.messagebus import get_handler_name, create_wrapper, \
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_utils.sound import play_acknowledge_sound
-from ovos_utils import classproperty
-
+from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.decorators.killable import killable_event, \
     AbortQuestion
@@ -64,6 +64,18 @@ from ovos_workshop.resource_files import ResourceFile, \
 from ovos_workshop.settings import SkillSettingsManager
 
 
+def is_classic_core():
+    try:
+        from mycroft.version import OVOS_VERSION_STR
+        return False
+    except:
+        try:
+            import mycroft
+            return True
+        except:
+            return False
+
+
 # backwards compat alias
 class SkillNetworkRequirements(RuntimeRequirements):
     def __init__(self, *args, **kwargs):
@@ -71,23 +83,6 @@ class SkillNetworkRequirements(RuntimeRequirements):
                         "`ovos_utils.process_utils.RuntimeRequirements`",
                         "0.1.0")
         super().__init__(*args, **kwargs)
-
-
-def is_classic_core() -> bool:
-    """
-    Check if the current core is the classic mycroft-core
-    """
-    try:
-        from mycroft.version import OVOS_VERSION_STR
-        return False  # ovos-core
-    except ImportError:
-        try:
-            log_deprecation("Support for `mycroft_core` will be deprecated",
-                            "0.1.0")
-            from mycroft.version import CORE_VERSION_STR
-            return True  # mycroft-core
-        except ImportError:
-            return False  # standalone
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -474,7 +469,7 @@ class BaseSkill:
         work in regular mycroft-core it was made private!
         """
         return [lang.lower() for lang in self.config_core.get(
-                'secondary_langs', []) if lang != self._core_lang]
+            'secondary_langs', []) if lang != self._core_lang]
 
     # property not present in mycroft-core
     @property
@@ -713,6 +708,26 @@ class BaseSkill:
                                                         skill_id=self.skill_id)
         return self._lang_resources[lang]
 
+    def __bind_classic(self, bus):
+        self._bus = bus
+        self.events.set_bus(bus)
+        self.intent_service.set_bus(bus)
+        self.event_scheduler.set_bus(bus)
+        self._enclosure.set_bus(bus)
+        self._register_system_event_handlers()
+        self._register_public_api()
+        log_deprecation("Support for mycroft-core is deprecated",
+                        "0.1.0")
+        # inject ovos exclusive features in vanilla mycroft-core
+        # if possible
+        # limited support for missing skill deactivated event
+        # TODO - update ConverseTracker
+        ConverseTracker.connect_bus(self.bus)  # pull/1468
+        self.add_event("converse.skill.deactivated",
+                       self._handle_skill_deactivated,
+                       speak_errors=False)
+
+    @backwards_compat(classic_core=__bind_classic)
     def bind(self, bus: MessageBusClient):
         """
         Register MessageBusClient with skill.
@@ -726,18 +741,6 @@ class BaseSkill:
             self._enclosure.set_bus(bus)
             self._register_system_event_handlers()
             self._register_public_api()
-
-            if is_classic_core():
-                log_deprecation("Support for mycroft-core is deprecated",
-                                "0.1.0")
-                # inject ovos exclusive features in vanilla mycroft-core
-                # if possible
-                # limited support for missing skill deactivated event
-                # TODO - update ConverseTracker
-                ConverseTracker.connect_bus(self.bus)  # pull/1468
-                self.add_event("converse.skill.deactivated",
-                               self._handle_skill_deactivated,
-                               speak_errors=False)
 
     def _register_public_api(self):
         """
@@ -1009,6 +1012,7 @@ class BaseSkill:
         Returns:
             str: user's response or None on a timeout
         """
+
         # TODO: Support `message` signature like default?
         def converse(utterances, lang=None):
             converse.response = utterances[0] if utterances else None
@@ -1176,6 +1180,20 @@ class BaseSkill:
                 self.speak(line, expect_response=True)
             else:
                 self.bus.emit(msg)
+
+    @staticmethod
+    def acknowledge():
+        """
+        Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        # DEPRECATED - note that this is a staticmethod and uses the old endpoint
+        # the OVOSSkill class does things properly
+        from ovos_utils.sound import play_acknowledge_sound
+        return play_acknowledge_sound()
 
     def ask_yesno(self, prompt: str,
                   data: Optional[dict] = None) -> Optional[str]:

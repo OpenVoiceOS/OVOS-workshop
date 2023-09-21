@@ -16,7 +16,8 @@ from os.path import dirname
 
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG
-from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
+from ovos_workshop.skills.ovos import OVOSSkill
+from ovos_workshop.decorators.compat import backwards_compat
 
 
 class CQSMatchLevel(IntEnum):
@@ -187,6 +188,17 @@ class CommonQuerySkill(OVOSSkill):
 
         return confidence
 
+    def __handle_query_classic(self, message):
+        """does not perform self.speak, < 0.0.8 this is done by core itself"""
+        if message.data["skill_id"] != self.skill_id:
+            # Not for this skill!
+            return
+        phrase = message.data["phrase"]
+        data = message.data.get("callback_data") or {}
+        # Invoke derived class to provide playback data
+        self.CQS_action(phrase, data)
+
+    @backwards_compat(classic_core=__handle_query_classic, pre_008=__handle_query_classic)
     def __handle_query_action(self, message):
         """Message handler for question:action.
 
@@ -199,20 +211,7 @@ class CommonQuerySkill(OVOSSkill):
         phrase = message.data["phrase"]
         data = message.data.get("callback_data") or {}
         if data.get("answer"):
-            # check core version, ovos-core does this speak call itself up to version 0.0.8a4
-            core_speak = is_classic_core()
-            if not core_speak:
-                try:
-                    from mycroft.version import OVOS_VERSION_MAJOR, OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSIOM_ALPHA
-                    if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD < 8:
-                        core_speak = True
-                    elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and OVOS_VERSION_BUILD == 8 and \
-                            OVOS_VERSIOM_ALPHA < 5:
-                        core_speak = True
-                except ImportError:
-                    pass
-            if not core_speak:
-                self.speak(data["answer"])
+            self.speak(data["answer"])
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
 
