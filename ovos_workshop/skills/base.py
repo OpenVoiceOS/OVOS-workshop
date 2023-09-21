@@ -26,16 +26,18 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event, RLock
 from typing import List, Optional, Dict, Callable, Union
 
-from ovos_bus_client import MessageBusClient
-from ovos_bus_client.session import SessionManager
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
 from ovos_backend_client.api import EmailApi, MetricsApi
-from ovos_bus_client.message import Message, dig_for_message
 from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_config_save_path
+
+from ovos_bus_client import MessageBusClient
+from ovos_bus_client.message import Message, dig_for_message
+from ovos_bus_client.session import SessionManager
 from ovos_utils import camel_case_split
+from ovos_utils import classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventContainer, EventSchedulerInterface
@@ -52,8 +54,6 @@ from ovos_utils.messagebus import get_handler_name, create_wrapper, \
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_utils import classproperty
-
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.decorators.killable import killable_event, \
@@ -62,6 +62,18 @@ from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, SkillResources, find_resource
 from ovos_workshop.settings import SkillSettingsManager
+
+
+def is_classic_core():
+    try:
+        from mycroft.version import OVOS_VERSION_STR
+        return False
+    except:
+        try:
+            import mycroft
+            return True
+        except:
+            return False
 
 
 # backwards compat alias
@@ -457,7 +469,7 @@ class BaseSkill:
         work in regular mycroft-core it was made private!
         """
         return [lang.lower() for lang in self.config_core.get(
-                'secondary_langs', []) if lang != self._core_lang]
+            'secondary_langs', []) if lang != self._core_lang]
 
     # property not present in mycroft-core
     @property
@@ -1000,6 +1012,7 @@ class BaseSkill:
         Returns:
             str: user's response or None on a timeout
         """
+
         # TODO: Support `message` signature like default?
         def converse(utterances, lang=None):
             converse.response = utterances[0] if utterances else None

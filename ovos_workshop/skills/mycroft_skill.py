@@ -23,18 +23,6 @@ from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.skills.base import BaseSkill
 
 
-def is_classic_core():
-    try:
-        from mycroft.version import OVOS_VERSION_STR
-        return False
-    except:
-        try:
-            import mycroft
-            return True
-        except:
-            return False
-
-
 class _SkillMetaclass(ABCMeta):
     """
     This metaclass ensures we can load skills like regular python objects.
