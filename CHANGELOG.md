@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a3) (2023-09-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a2...0.0.13a3)
+
+**Implemented enhancements:**
+
+- feat/compat\_handler\_decorator [\#131](https://github.com/OpenVoiceOS/OVOS-workshop/pull/131) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a2) (2023-09-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a1...0.0.13a2)
