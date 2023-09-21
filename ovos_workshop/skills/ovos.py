@@ -11,7 +11,7 @@ from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
 from ovos_utils.skills.settings import PrivateSettings
 from ovos_utils.sound import play_audio
-from ovos_workshop.decorators.compat import backwards_compat
+from ovos_utils import backwards_compat
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 from ovos_workshop.skills.base import BaseSkill

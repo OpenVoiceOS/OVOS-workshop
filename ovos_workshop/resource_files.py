@@ -357,6 +357,9 @@ class ResourceFile:
                     continue
                 yield line
 
+    def __iter__(self):
+        return iter(self._read())
+
 
 class QmlFile(ResourceFile):
     def _locate(self):

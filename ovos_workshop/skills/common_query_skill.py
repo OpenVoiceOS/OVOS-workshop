@@ -17,7 +17,7 @@ from os.path import dirname
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.decorators.compat import backwards_compat
+from ovos_utils import backwards_compat
 
 
 class CQSMatchLevel(IntEnum):
