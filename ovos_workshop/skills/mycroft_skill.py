@@ -20,7 +20,7 @@ from typing import Optional
 from ovos_bus_client import MessageBusClient, Message
 from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_workshop.decorators.compat import backwards_compat
-from ovos_workshop.skills.base import BaseSkill
+from ovos_workshop.skills.base import BaseSkill, is_classic_core
 
 
 class _SkillMetaclass(ABCMeta):
