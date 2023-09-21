@@ -22,7 +22,7 @@ from ovos_utils.log import LOG
 from ovos_utils.messagebus import get_handler_name, Message
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
-from ovos_workshop.decorators.compat import backwards_compat
+from ovos_utils import backwards_compat
 from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill
 

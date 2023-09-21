@@ -36,6 +36,7 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager
+from ovos_utils import backwards_compat
 from ovos_utils import camel_case_split
 from ovos_utils import classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -54,7 +55,6 @@ from ovos_utils.messagebus import get_handler_name, create_wrapper, \
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent
 from ovos_workshop.decorators.killable import killable_event, \
     AbortQuestion
@@ -846,9 +846,8 @@ class BaseSkill:
         """
         Detach all intents for this skill from the intent_service.
         """
-        for (name, _) in self.intent_service:
-            name = f'{self.skill_id}:{name}'
-            self.intent_service.detach_intent(name)
+        for name in self.intent_service.intent_names:
+            self.intent_service.remove_intent(name)
 
     def initialize(self):
         """
@@ -1540,16 +1539,7 @@ class BaseSkill:
         """
         return self.events.remove(name)
 
-    def _register_adapt_intent(self,
-                               intent_parser: Union[IntentBuilder, Intent, str],
-                               handler: callable):
-        """
-        Register an adapt intent.
-
-        Args:
-            intent_parser: Intent object to parse utterance for the handler.
-            handler (func): function to register with intent
-        """
+    def _validate_intent_name(self, intent_parser: Union[IntentBuilder, Intent], handler: callable):
         # Default to the handler's function name if none given
         is_anonymous = not intent_parser.name
         name = intent_parser.name or handler.__name__
@@ -1560,15 +1550,48 @@ class BaseSkill:
             while name in self.intent_service.intent_names:
                 nbr += 1
                 name = f'{original_name}{nbr}'
+
         elif name in self.intent_service.intent_names and \
                 not self.intent_service.intent_is_detached(name):
             raise ValueError(f'The intent name {name} is already taken')
+        return name
 
+    def _register_adapt_intent_classic(self,
+                                       intent_parser: Union[IntentBuilder, Intent, str],
+                                       handler: callable):
+        """
+        < ovos-core 0.0.8 munging happened skill side,
+        since 0.0.8 pipeline plugins are skill_id aware out of the box
+        any needed munging happens plugin side
+        """
+        name = self._validate_intent_name(intent_parser, handler)
+
+        # old mycroft needs things munged before registering
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
-            self.add_event(intent_parser.name, handler,
-                           'mycroft.skill.handler')
+            self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
+
+    @backwards_compat(classic_core=_register_adapt_intent_classic,
+                      pre_008=_register_adapt_intent_classic)
+    def _register_adapt_intent(self,
+                               intent_parser: Union[IntentBuilder, Intent, str],
+                               handler: callable):
+        """
+        < ovos-core 0.0.8 munging happened skill side,
+        since 0.0.8 pipeline plugins are skill_id aware out of the box
+        any needed munging happens plugin side
+        """
+        name = self._validate_intent_name(intent_parser, handler)
+
+        intent = self.intent_service.register_keyword_intent(name=name,
+                                                             required=intent_parser.requires,
+                                                             at_least_one=intent_parser.at_least_one,
+                                                             optional=intent_parser.optional,
+                                                             lang=self.lang,
+                                                             skill_id=self.skill_id)
+        if handler:
+            self.add_event(intent.intent_message, handler, 'mycroft.skill.handler')
 
     def register_intent(self, intent_parser: Union[IntentBuilder, Intent, str],
                         handler: callable):
@@ -1616,16 +1639,21 @@ class BaseSkill:
             handler:     function to register with intent
         """
         for lang in self._native_langs:
-            name = f'{self.skill_id}:{intent_file}'
             resources = self._load_lang(self.res_dir, lang)
             resource_file = ResourceFile(resources.types.intent, intent_file)
             if resource_file.file_path is None:
                 self.log.error(f'Unable to find "{intent_file}"')
                 continue
-            filename = str(resource_file.file_path)
-            self.intent_service.register_padatious_intent(name, filename, lang)
+
+            samples = list(resource_file)
+
+            name = intent_file.replace(".intent", "")  # not munged!
+            intent = self.intent_service.register_intent(name=name,
+                                                         samples=samples,
+                                                         lang=lang,
+                                                         skill_id=self.skill_id)
             if handler:
-                self.add_event(name, handler, 'mycroft.skill.handler')
+                self.add_event(intent.intent_message, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file: str):
         """
@@ -1651,10 +1679,10 @@ class BaseSkill:
             if entity.file_path is None:
                 self.log.error(f'Unable to find "{entity_file}"')
                 continue
-            filename = str(entity.file_path)
-            name = f"{self.skill_id}:{basename(entity_file)}_" \
-                   f"{md5(entity_file.encode('utf-8')).hexdigest()}"
-            self.intent_service.register_padatious_entity(name, filename, lang)
+            samples = list(entity)
+            name = basename(entity_file)
+            self.intent_service.register_entity(name=name, samples=samples,
+                                                lang=lang, skill_id=self.skill_id)
 
     def handle_enable_intent(self, message: Message):
         """
@@ -1662,8 +1690,8 @@ class BaseSkill:
         @param message: `mycroft.skill.enable_intent` Message
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service.detached_intents:
-            if name == intent_name:
+        for intent in self.intent_service.intents:
+            if intent.name == intent_name and intent.detached:
                 return self.enable_intent(intent_name)
 
     def handle_disable_intent(self, message: Message):
@@ -1672,8 +1700,8 @@ class BaseSkill:
         @param message: `mycroft.skill.disable_intent` Message
         """
         intent_name = message.data['intent_name']
-        for (name, _) in self.intent_service.registered_intents:
-            if name == intent_name:
+        for intent in self.intent_service.intents:
+            if intent.name == intent_name and not intent.detached:
                 return self.disable_intent(intent_name)
 
     def disable_intent(self, intent_name: str) -> bool:
@@ -1686,16 +1714,9 @@ class BaseSkill:
         Returns:
                 bool: True if disabled, False if it wasn't registered
         """
-        if intent_name in self.intent_service:
+        if intent_name in self.intent_service.intent_names:
             self.log.info('Disabling intent ' + intent_name)
-            name = f'{self.skill_id}:{intent_name}'
-            self.intent_service.detach_intent(name)
-
-            langs = [self._core_lang] + self._secondary_langs
-            for lang in langs:
-                lang_intent_name = f'{name}_{lang}'
-                self.intent_service.detach_intent(lang_intent_name)
-            return True
+            return self.intent_service.disable_intent(intent_name)
         else:
             self.log.error(f'Could not disable {intent_name}, it hasn\'t been registered.')
             return False
@@ -1710,15 +1731,9 @@ class BaseSkill:
         Returns:
             bool: True if enabled, False if it wasn't registered
         """
-        intent = self.intent_service.get_intent(intent_name)
-        if intent:
-            if ".intent" in intent_name:
-                self.register_intent_file(intent_name, None)
-            else:
-                intent.name = intent_name
-                self.register_intent(intent, None)
+        if intent_name in self.intent_service.intent_names:
             self.log.debug(f'Enabling intent {intent_name}')
-            return True
+            return self.intent_service.enable_intent(intent_name)
         else:
             self.log.error(f'Could not enable {intent_name}, it hasn\'t been registered.')
             return False
@@ -1738,7 +1753,7 @@ class BaseSkill:
             raise ValueError('Word should be a string')
 
         context = self._alphanumeric_skill_id + context
-        self.intent_service.set_adapt_context(context, word, origin)
+        self.intent_service.set_context(context, word, origin)
 
     def remove_context(self, context: str):
         """
@@ -1747,7 +1762,7 @@ class BaseSkill:
         if not isinstance(context, str):
             raise ValueError('context should be a string')
         context = self._alphanumeric_skill_id + context
-        self.intent_service.remove_adapt_context(context)
+        self.intent_service.remove_context(context)
 
     def handle_set_cross_context(self, message: Message):
         """
@@ -1803,10 +1818,10 @@ class BaseSkill:
         @param entity_type: Intent handler entity name to associate entity to
         @param lang: language of `entity` (default self.lang)
         """
-        keyword_type = self._alphanumeric_skill_id + entity_type
-        lang = lang or self.lang
-        self.intent_service.register_adapt_keyword(keyword_type, entity,
-                                                   lang=lang)
+        self.intent_service.register_keyword(name=entity_type,
+                                             samples=[entity],
+                                             lang=lang or self.lang,
+                                             skill_id=self.skill_id)
 
     def register_regex(self, regex_str: str, lang: Optional[str] = None):
         """
@@ -1815,9 +1830,9 @@ class BaseSkill:
         @param lang: language of regex_str (default self.lang)
         """
         self.log.debug('registering regex string: ' + regex_str)
-        regex = munge_regex(regex_str, self.skill_id)
-        re.compile(regex)  # validate regex
-        self.intent_service.register_adapt_regex(regex, lang=lang or self.lang)
+        name = ""  # TODO - get from regex_str
+        self.intent_service.register_regex_entity(name="", samples=[regex_str],
+                                                  lang=lang or self.lang, skill_id=self.skill_id)
 
     def speak(self, utterance: str, expect_response: bool = False,
               wait: bool = False, meta: Optional[dict] = None):
@@ -1939,8 +1954,8 @@ class BaseSkill:
                     for line in skill_vocabulary[vocab_type]:
                         entity = line[0]
                         aliases = line[1:]
-                        self.intent_service.register_adapt_keyword(
-                            vocab_type, entity, aliases, lang)
+                        self.intent_service.register_keyword(name=vocab_type, samples=[entity] + aliases,
+                                                             lang=lang, skill_id=self.skill_id)
 
     def load_regex_files(self, root_directory=None):
         """ Load regex files found under the skill directory."""
@@ -1950,7 +1965,9 @@ class BaseSkill:
             if resources.types.regex.base_directory is not None:
                 regexes = resources.load_skill_regex(self._alphanumeric_skill_id)
                 for regex in regexes:
-                    self.intent_service.register_adapt_regex(regex, lang)
+                    name = ""  # TODO extract from regex
+                    self.intent_service.register_regex_entity(name=name, samples=[regex],
+                                                              lang=lang, skill_id=self.skill_id)
 
     def __handle_stop(self, message):
         """Handler for the "mycroft.stop" signal. Runs the user defined
