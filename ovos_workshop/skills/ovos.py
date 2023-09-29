@@ -97,31 +97,13 @@ class _OVOSSkillMetaclass(ABCMeta):
 
 class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     """
-    Base class for mycroft skills providing common behaviour and parameters
-    to all Skill implementations. This base class does not require `mycroft` to
-    be importable
+    Base class for OpenVoiceOS skills providing common behaviour and parameters
+    to all Skill implementations.
 
     skill_launcher.py used to be skill_loader-py in mycroft-core
 
     for launching skills one can use skill_launcher.py to run them standalone
-    (eg, docker), but the main objective is to make skills work more like proper
-    python objects and allow usage of the class directly
-
-    the considerations are:
-
-    - most skills in the wild don't expose kwargs, so don't accept
-      skill_id or bus
-    - most skills expect a loader class to set up the bus and skill_id after
-      object creation
-    - skills can not do pythonic things in init, instead of doing things after
-      super() devs are expected to use initialize() which is a mycroft invention
-      and non-standard
-    - main concern is that anything depending on self.skill_id being set can not
-      be used in init method (eg. self.settings and self.file_system)
-    - __new__ uncouples the skill init from a helper class, making skills work
-      like regular python objects
-    - the magic in `__new__` is just so we don't break everything in the wild,
-      since we cant start requiring skill_id and bus args
+    (eg, docker)
 
     KwArgs:
         name (str): skill name - DEPRECATED
