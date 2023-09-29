@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a4) (2023-09-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a3...0.0.13a4)
+
+**Merged pull requests:**
+
+- refactor/merge BaseSkill and OVOSSkill [\#133](https://github.com/OpenVoiceOS/OVOS-workshop/pull/133) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a3) (2023-09-21)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a2...0.0.13a3)
