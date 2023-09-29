@@ -41,13 +41,13 @@ class OVOSAbstractApplication(OVOSSkill):
                          **kwargs)
 
         if settings:
-            log_deprecation(f"Settings should be set in {self._settings_path}. "
+            log_deprecation(f"Settings should be set in {self.settings_path}. "
                             f"Passing `settings` to __init__ is not supported.",
                             "0.1.0")
             self.settings.merge(settings)
 
     @property
-    def _settings_path(self) -> str:
+    def settings_path(self) -> str:
         """
         Overrides the default path to put settings in `apps` subdirectory.
         """

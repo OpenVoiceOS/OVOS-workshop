@@ -1,6 +1,6 @@
 from inspect import signature
 from threading import Event
-from ovos_workshop.skills.ovos import OVOSSkill, MycroftSkill
+from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_bus_client import Message
 from ovos_utils.log import LOG
 
@@ -29,7 +29,7 @@ def get_non_properties(obj):
         d = cls.__dict__
         np = [k for k in d if not isinstance(d[k], property)]
         # Recurse through base classes excluding MycroftSkill and object
-        for b in [b for b in cls.__bases__ if b not in (object, MycroftSkill)]:
+        for b in [b for b in cls.__bases__ if b not in (object, OVOSSkill)]:
             np += check_class(b)
         return np
 
