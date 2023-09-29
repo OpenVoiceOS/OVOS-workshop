@@ -827,8 +827,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self._enclosure.set_bus(bus)
         self._register_system_event_handlers()
         self._register_public_api()
-        log_deprecation("Support for mycroft-core is deprecated",
-                        "0.1.0")
+        self.intent_layers.bind(self)
+        self.audio_service = OCPInterface(self.bus)
+        self.private_settings = PrivateSettings(self.skill_id)
+
+        log_deprecation("Support for mycroft-core is deprecated", "0.1.0")
         # inject ovos exclusive features in vanilla mycroft-core
         # if possible
         # limited support for missing skill deactivated event
