@@ -4,7 +4,6 @@ from typing import Optional, List
 
 from ovos_bus_client import MessageBusClient
 from ovos_utils.log import LOG
-from ovos_workshop.skills.base import BaseSkill
 
 
 def dig_for_skill(max_records: int = 10) -> Optional[object]:
@@ -13,17 +12,20 @@ def dig_for_skill(max_records: int = 10) -> Optional[object]:
     @param max_records: maximum number of records in the stack to check
     @return: Skill or AbstractApplication instance if found
     """
+
+    from ovos_workshop.skills.ovos import OVOSSkill
+
     stack = inspect.stack()[1:]  # First frame will be this function call
     stack = stack if len(stack) <= max_records else stack[:max_records]
     for record in stack:
         args = inspect.getargvalues(record.frame)
         if args.locals.get("self"):
             obj = args.locals["self"]
-            if isinstance(obj, BaseSkill):
+            if isinstance(obj, OVOSSkill):
                 return obj
         elif args.locals.get("args"):
             for obj in args.locals["args"]:
-                if isinstance(obj, BaseSkill):
+                if isinstance(obj, OVOSSkill):
                     return obj
     return None
 
@@ -170,7 +172,7 @@ class IntentLayers:
         return self
 
     @property
-    def skill(self) -> BaseSkill:
+    def skill(self):
         return self._skill
 
     @property

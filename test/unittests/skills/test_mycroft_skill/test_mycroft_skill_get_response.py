@@ -164,11 +164,11 @@ class TestMycroftSkillGetResponse(TestCase):
         def validator(*args, **kwargs):
             self.assertTrue(skill._converse_is_implemented)
 
-        self.assertFalse(skill._converse_is_implemented)
+        self.assertFalse(skill.converse_is_implemented)
         skill.get_response('what do you want', validator=validator)
         skill._wait_response.assert_called_with(AnyCallable(), validator,
                                                 AnyCallable(), -1)
-        self.assertFalse(skill._converse_is_implemented)
+        self.assertFalse(skill.converse_is_implemented)
 
 
 class TestMycroftSkillAskYesNo(TestCase):
@@ -230,7 +230,7 @@ class TestMycroftSkillAskYesNo(TestCase):
         response = skill.ask_yesno('Do you like breakfast')
         self.assertEqual(response, 'I am a fish')
 
-    @mock.patch('ovos_workshop.skills.base.dig_for_message')
+    @mock.patch('ovos_workshop.skills.ovos.dig_for_message')
     def test_ask_yesno_german(self, dig_mock):
         """Check that when the skill is set to german it responds to "ja"."""
         # lang is session based, it comes from originating message in ovos-core

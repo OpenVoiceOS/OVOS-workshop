@@ -484,7 +484,7 @@ class SkillLoader:
             log_deprecation("This initialization is deprecated. Update skill to"
                             "handle passed `skill_id` and `bus` kwargs",
                             "0.1.0")
-            if not self.instance._is_fully_initialized:
+            if not self.instance.is_fully_initialized:
                 self.instance._startup(self.bus, self.skill_id)
         except Exception as e:
             LOG.exception(f'Skill __init__ failed with {e}')

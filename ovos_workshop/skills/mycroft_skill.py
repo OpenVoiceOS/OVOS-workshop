@@ -13,17 +13,15 @@
 # limitations under the License.
 
 import shutil
-from abc import ABCMeta
 from os.path import join, exists
-from typing import Optional
 
 from ovos_bus_client import MessageBusClient, Message
 from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_workshop.decorators.compat import backwards_compat
-from ovos_workshop.skills.base import BaseSkill, is_classic_core
+from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core, _OVOSSkillMetaclass
 
 
-class _SkillMetaclass(ABCMeta):
+class _SkillMetaclass(_OVOSSkillMetaclass):
     """
     This metaclass ensures we can load skills like regular python objects.
     mycroft-core required a skill loader helper class, which created the skill
@@ -36,8 +34,25 @@ class _SkillMetaclass(ABCMeta):
 
     To override isinstance checks we also need to use a metaclass
 
-    TODO: remove compat ovos-core 0.2.0, including MycroftSkill class
+    TODO: remove compat ovos-core 0.2.0 at the latest, including MycroftSkill class
     """
+
+    def __instancecheck_classic__(self, instance):
+        # instance imported from vanilla mycroft
+        from mycroft.skills import MycroftSkill as _CoreSkill
+        from ovos_workshop.app import OVOSAbstractApplication
+        if issubclass(instance.__class__, _CoreSkill):
+            return True
+        return issubclass(instance.__class__, OVOSSkill) and \
+            not issubclass(instance.__class__, OVOSAbstractApplication)
+
+    @backwards_compat(classic_core=__instancecheck_classic__)
+    def __instancecheck__(self, instance):
+        from ovos_workshop.app import OVOSAbstractApplication
+        if issubclass(instance.__class__, OVOSAbstractApplication):
+            return False
+        return super().__instancecheck__(instance) or \
+            issubclass(instance.__class__, OVOSSkill)
 
     def __call__(cls, *args, **kwargs):
         from ovos_bus_client import MessageBusClient
@@ -109,21 +124,8 @@ class _SkillMetaclass(ABCMeta):
         skill._startup(bus, skill_id)
         return skill
 
-    def __instancecheck_classic__(self, instance):
-        # instance imported from vanilla mycroft
-        from mycroft.skills import MycroftSkill as _CoreSkill
-        if issubclass(instance.__class__, _CoreSkill):
-            return True
-        return issubclass(instance.__class__, MycroftSkill)
 
-    @backwards_compat(classic_core=__instancecheck_classic__)
-    def __instancecheck__(self, instance):
-        from ovos_workshop.skills.ovos import OVOSSkill
-        return super().__instancecheck__(instance) or \
-            issubclass(instance.__class__, OVOSSkill)
-
-
-class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
+class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
     """
     Base class for mycroft skills providing common behaviour and parameters
     to all Skill implementations. This class is kept for backwards-compat. It is
@@ -188,40 +190,19 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
 
     def __init_settings_classic(self):
         # migrate settings if needed
-        if not exists(self._settings_path) and \
+        if not exists(self.settings_path) and \
                 exists(self._old_settings_path):
             LOG.warning("Found skill settings at pre-xdg location, "
                         "migrating!")
-            shutil.copy(self._old_settings_path, self._settings_path)
+            shutil.copy(self._old_settings_path, self.settings_path)
             LOG.info(f"{self._old_settings_path} moved to "
-                     f"{self._settings_path}")
+                     f"{self.settings_path}")
         super()._init_settings()
 
     @backwards_compat(classic_core=__init_settings_classic)
     def _init_settings(self):
         """Setup skill settings."""
         super()._init_settings()
-
-    # renamed in base class for naming consistency
-    def init_dialog(self, root_directory: Optional[str] = None):
-        """
-        DEPRECATED: use load_dialog_files instead
-        """
-        log_deprecation("Use `load_dialog_files`", "0.1.0")
-        self.load_dialog_files(root_directory)
-
-    # renamed in base class for naming consistency
-    def make_active(self):
-        """
-        Bump skill to active_skill list in intent_service.
-
-        This enables converse method to be called even without skill being
-        used in last 5 minutes.
-
-        deprecated: use self._activate() instead
-        """
-        log_deprecation("Use `_activate`", "0.1.0")
-        self._activate()
 
     # patched due to functional (internal) differences under mycroft-core
     def __on_end_classic(self, message: Message, handler_info: str,
@@ -246,47 +227,6 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
         Store settings and indicate that the skill handler has completed
         """
         return super()._on_event_end(message, handler_info, skill_data)
-
-    # renamed in base class for naming consistency
-    # refactored to use new resource utils
-    def translate(self, text: str, data: Optional[dict] = None):
-        """
-        Deprecated method for translating a dialog file.
-        use self._resources.render_dialog(text, data) instead
-        """
-        log_deprecation("Use `_resources.render_dialog`", "0.1.0")
-        return self._resources.render_dialog(text, data)
-
-    # renamed in base class for naming consistency
-    # refactored to use new resource utils
-    def translate_namedvalues(self, name: str, delim: str = ','):
-        """
-        Deprecated method for translating a name/value file.
-        use self._resources.load_named_value_filetext, data) instead
-        """
-        log_deprecation("Use `_resources.load_named_value_file`", "0.1.0")
-        return self._resources.load_named_value_file(name, delim)
-
-    # renamed in base class for naming consistency
-    # refactored to use new resource utils
-    def translate_list(self, list_name: str, data: Optional[dict] = None):
-        """
-        Deprecated method for translating a list.
-        use delf._resources.load_list_file(text, data) instead
-        """
-        log_deprecation("Use `_resources.load_list_file`", "0.1.0")
-        return self._resources.load_list_file(list_name, data)
-
-    # renamed in base class for naming consistency
-    # refactored to use new resource utils
-    def translate_template(self, template_name: str,
-                           data: Optional[dict] = None):
-        """
-        Deprecated method for translating a template file
-        use delf._resources.template_file(text, data) instead
-        """
-        log_deprecation("Use `_resources.template_file`", "0.1.0")
-        return self._resources.load_template_file(template_name, data)
 
     # refactored - backwards compat + log warnings
     @property
@@ -316,9 +256,9 @@ class MycroftSkill(BaseSkill, metaclass=_SkillMetaclass):
             log_deprecation("`self.settings_write_path` is no longer used",
                             "0.1.0")
             return join(self.settings_write_path, 'settings.json')
-        return super()._settings_path
+        return super().settings_path
 
     @property
     @backwards_compat(classic_core=__get_settings_pclassic)
-    def _settings_path(self):
-        return super()._settings_path
+    def settings_path(self):
+        return super().settings_path
