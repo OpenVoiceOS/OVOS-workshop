@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a5) (2023-09-30)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a4...0.0.13a5)
+
+**Implemented enhancements:**
+
+- refactor/get\_response\_v2\_converse\_session [\#68](https://github.com/OpenVoiceOS/OVOS-workshop/pull/68) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a4) (2023-09-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a3...0.0.13a4)
