@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a7) (2023-09-30)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a6...0.0.13a7)
+
+**Fixed bugs:**
+
+- fix/fallbackV1 [\#135](https://github.com/OpenVoiceOS/OVOS-workshop/pull/135) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a6) (2023-09-30)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a5...0.0.13a6)
