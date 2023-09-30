@@ -95,10 +95,10 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     def __init__(self, name=None, bus=None, use_settings=True, **kwargs):
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
-
-        super().__init__(name, bus, use_settings, **kwargs)
         # "skill_id": priority (int)  overrides
-        self.fallback_config = self.config_core["skills"].get("fallbacks", {})
+        self.fallback_config = Configuration()["skills"].get("fallbacks", {})
+
+        super().__init__(name=name, bus=bus, **kwargs)
 
     @classmethod
     def make_intent_failure_handler(cls, bus: MessageBusClient):
@@ -187,7 +187,7 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
         cls.fallback_handlers[priority] = wrapper
         cls.wrapper_map.append((handler, wrapper))
 
-    def _old_register_fallback(self, handler: Callable[[Message], None],
+    def register_fallback(self, handler: Callable[[Message], None],
                           priority: int):
         """
         core >= 0.8.0 makes skill active
@@ -216,35 +216,6 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
 
         self.instance_fallback_handlers.append(handler)
         self._register_fallback(handler, wrapper, priority)
-
-    @backwards_compat(classic_core=_old_register_fallback, pre_008=_old_register_fallback)
-    def register_fallback(self, handler: Callable[[Message], None],
-                          priority: int):
-        """
-        Register a fallback handler method with a given priority. This will
-        account for configuration overrides of fallback priority, as well as
-        configured fallback skill whitelist/blacklist.
-        @param handler: fallback handler method that accepts a `Message` arg
-        @param priority: fallback priority
-        """
-        opmode = self.fallback_config.get("fallback_mode",
-                                          FallbackMode.ACCEPT_ALL)
-        priority_overrides = self.fallback_config.get("fallback_priorities", {})
-        fallback_blacklist = self.fallback_config.get("fallback_blacklist", [])
-        fallback_whitelist = self.fallback_config.get("fallback_whitelist", [])
-
-        if opmode == FallbackMode.BLACKLIST and \
-                self.skill_id in fallback_blacklist:
-            return
-        if opmode == FallbackMode.WHITELIST and \
-                self.skill_id not in fallback_whitelist:
-            return
-
-        # check if .conf is overriding the priority for this skill
-        priority = priority_overrides.get(self.skill_id, priority)
-
-        self.instance_fallback_handlers.append(handler)
-        self._register_fallback(handler, handler, priority)
 
     @classmethod
     def _remove_registered_handler(cls, wrapper_to_del: callable) -> bool:
