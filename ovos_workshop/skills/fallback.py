@@ -212,14 +212,8 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
         # check if .conf is overriding the priority for this skill
         priority = priority_overrides.get(self.skill_id, priority)
 
-        def wrapper(*args, **kwargs):
-            if handler(*args, **kwargs):
-                self.activate()
-                return True
-            return False
-
         self.instance_fallback_handlers.append(handler)
-        self._register_fallback(handler, wrapper, priority)
+        self._register_fallback(handler, handler, priority)
 
     @classmethod
     def _remove_registered_handler(cls, wrapper_to_del: callable) -> bool:
@@ -403,15 +397,8 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
 
         LOG.info(f"registering fallback handler -> "
                  f"ovos.skills.fallback.{self.skill_id}")
-
-        def wrapper(*args, **kwargs):
-            if handler(*args, **kwargs):
-                self.activate()
-                return True
-            return False
-
-        self._fallback_handlers.append((priority, wrapper))
-        self.bus.on(f"ovos.skills.fallback.{self.skill_id}", wrapper)
+        self._fallback_handlers.append((priority, handler))
+        self.bus.on(f"ovos.skills.fallback.{self.skill_id}", handler)
 
     def default_shutdown(self):
         """
