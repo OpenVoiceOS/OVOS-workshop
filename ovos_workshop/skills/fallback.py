@@ -187,6 +187,37 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
         cls.fallback_handlers[priority] = wrapper
         cls.wrapper_map.append((handler, wrapper))
 
+    def _old_register_fallback(self, handler: Callable[[Message], None],
+                          priority: int):
+        """
+        core >= 0.8.0 makes skill active
+        """
+        opmode = self.fallback_config.get("fallback_mode",
+                                          FallbackMode.ACCEPT_ALL)
+        priority_overrides = self.fallback_config.get("fallback_priorities", {})
+        fallback_blacklist = self.fallback_config.get("fallback_blacklist", [])
+        fallback_whitelist = self.fallback_config.get("fallback_whitelist", [])
+
+        if opmode == FallbackMode.BLACKLIST and \
+                self.skill_id in fallback_blacklist:
+            return
+        if opmode == FallbackMode.WHITELIST and \
+                self.skill_id not in fallback_whitelist:
+            return
+
+        # check if .conf is overriding the priority for this skill
+        priority = priority_overrides.get(self.skill_id, priority)
+
+        def wrapper(*args, **kwargs):
+            if handler(*args, **kwargs):
+                self.activate()
+                return True
+            return False
+
+        self.instance_fallback_handlers.append(handler)
+        self._register_fallback(handler, wrapper, priority)
+
+    @backwards_compat(classic_core=_old_register_fallback, pre_008=_old_register_fallback)
     def register_fallback(self, handler: Callable[[Message], None],
                           priority: int):
         """
@@ -387,6 +418,24 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
             f"ovos.skills.fallback.{self.skill_id}.response",
             data={"result": status, "fallback_handler": handler_name}))
 
+    def _old_register_fallback(self, handler: callable, priority: int):
+        """
+        makes the skill active, done by core >= 0.0.8
+        """
+
+        LOG.info(f"registering fallback handler -> "
+                 f"ovos.skills.fallback.{self.skill_id}")
+
+        def wrapper(*args, **kwargs):
+            if handler(*args, **kwargs):
+                self.activate()
+                return True
+            return False
+
+        self._fallback_handlers.append((priority, wrapper))
+        self.bus.on(f"ovos.skills.fallback.{self.skill_id}", wrapper)
+
+    @backwards_compat(classic_core=_old_register_fallback, pre_008=_old_register_fallback)
     def register_fallback(self, handler: callable, priority: int):
         """
         Register a fallback handler and add a messagebus handler to call it on
