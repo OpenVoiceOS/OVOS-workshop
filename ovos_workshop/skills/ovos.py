@@ -1561,7 +1561,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             return  # not for us!
 
         utterances = message.data["utterances"]
-        print(f"GET RESPONSE GOT: {utterances}")
         # received get_response
         self.__responses[sess2.session_id] = utterances
 
@@ -1599,8 +1598,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 # aborted externally (if None)
                 self.log.debug("get_response aborted")
                 break
-
-        print(f"GET RESPONSE RETURN: {ans}")
         return ans
 
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
