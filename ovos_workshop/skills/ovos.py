@@ -1496,7 +1496,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.bus.emit(message.forward("mycroft.audio.queue",
                                           {"uri": filename}))
 
-    def __get_response_v1(self):
+    def __get_response_v1(self, session=None):
         """Helper to get a response from the user
 
         NOTE:  There is a race condition here.  There is a small amount of
@@ -1511,13 +1511,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Returns:
             str: user's response or None on a timeout
         """
-        srcm = dig_for_message() or Message("", context={"source": "skills",
-                                                         "skill_id": self.skill_id})
-        self.bus.emit(srcm.forward("skill.converse.get_response.enable",
-                                   {"skill_id": self.skill_id}))
+        session = session or SessionManager.get()
 
-        # TODO: Support `message` signature like default?
         def converse(utterances, lang=None):
+            self.__responses[session.session_id] = utterances
             converse.response = utterances[0] if utterances else None
             converse.finished = True
             return True
@@ -1529,23 +1526,22 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.converse = converse
 
         # 10 for listener, 5 for SST, then timeout
+        ans = []
         # NOTE: a threading.Event is not used otherwise we can't raise the
         # AbortEvent exception to kill the thread
         # this is for compat with killable_intents decorators
         start = time.time()
-        while time.time() - start <= 15 and not converse.finished:
-            # TODO: Refactor to event-based handling
+        while time.time() - start <= 15 and not ans:
+            ans = self.__responses[session.session_id]
             time.sleep(0.1)
-            if self.__response is not False:
-                if self.__response is None:
-                    # aborted externally (if None)
-                    self.log.debug("get_response aborted")
+            if ans is None:
+                # aborted externally (if None)
+                self.log.debug("get_response aborted")
                 converse.finished = True
-                converse.response = self.__response  # external override
+                break
+
         self.converse = self._original_converse
-        self.bus.emit(srcm.forward("skill.converse.get_response.disable",
-                                   {"skill_id": self.skill_id}))
-        return converse.response
+        return ans
 
     def __handle_get_response(self, message):
 
@@ -1691,7 +1687,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             if ans or ans is None:  # canceled response
                 break
 
-        self.__responses.pop(session.session_id)
+        if session.session_id in self.__responses:
+            self.__responses.pop(session.session_id)
 
         if isinstance(ans, list):
             ans = ans[0]  # TODO handle multiple transcriptions
