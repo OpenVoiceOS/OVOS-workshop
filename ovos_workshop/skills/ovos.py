@@ -21,7 +21,7 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
-from ovos_bus_client.session import SessionManager
+from ovos_bus_client.session import SessionManager, Session
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.enclosure.api import EnclosureAPI
@@ -1544,7 +1544,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         return converse.response
 
     @backwards_compat(classic_core=__get_response_v1, pre_008=__get_response_v1)
-    def __get_response(self):
+    def __get_response(self, session: Session):
         """Helper to get a response from the user
 
         this method is unsafe and contains a race condition for
@@ -1561,14 +1561,13 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         srcm = dig_for_message() or Message("", context={"source": "skills",
                                                          "skill_id": self.skill_id})
+        srcm.context["session"] = session.serialize()
 
         self.bus.emit(srcm.forward("skill.converse.get_response.enable",
                                    {"skill_id": self.skill_id}))
-        self.activate()
         utterances = []
 
-        sess = SessionManager.get(srcm)
-        LOG.debug(f"get_response session: {sess.session_id}")
+        LOG.debug(f"get_response session: {session.session_id}")
 
         def _handle_get_response(message):
             nonlocal utterances
@@ -1580,7 +1579,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             # validate session_id to ensure this isnt another
             # user querying the skill at same time
             sess2 = SessionManager.get(message)
-            if sess.session_id != sess2.session_id:
+            if session.session_id != sess2.session_id:
                 LOG.debug(f"ignoring get_response answer for session: {sess2.session_id}")
                 return  # not for us!
 
@@ -1613,7 +1612,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
                      validator: Optional[Callable[[str], bool]] = None,
                      on_fail: Optional[Union[str, Callable[[str], str]]] = None,
-                     num_retries: int = -1) -> Optional[str]:
+                     num_retries: int = -1, message: Message = None) -> Optional[str]:
         """
         Get a response from the user. If a dialog is supplied it is spoken,
         followed immediately by listening for a user response. If the dialog is
@@ -1632,6 +1631,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
               once.
         @return: String user response (None if no valid response is given)
         """
+        message = message or dig_for_message() or \
+                  Message('mycroft.mic.listen', context={"skill_id": self.skill_id})
         data = data or {}
 
         def on_fail_default(utterance):
@@ -1660,16 +1661,14 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         if dialog:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
-            msg = dig_for_message()
-            msg = msg.reply('mycroft.mic.listen') if msg else \
-                Message('mycroft.mic.listen',
-                        context={"skill_id": self.skill_id})
+            msg = message.reply('mycroft.mic.listen')
             self.bus.emit(msg)
         return self._wait_response(is_cancel, validator, on_fail_fn,
-                                   num_retries)
+                                   num_retries, message)
 
     def _wait_response(self, is_cancel: callable, validator: callable,
-                       on_fail: callable, num_retries: int) -> Optional[str]:
+                       on_fail: callable, num_retries: int,
+                       message: Message) -> Optional[str]:
         """
         Loop until a valid response is received from the user or the retry
         limit is reached.
@@ -1680,7 +1679,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         @returns: User response if validated, else None
         """
         self.__response = False
-        self._real_wait_response(is_cancel, validator, on_fail, num_retries)
+        self._real_wait_response(is_cancel, validator, on_fail, num_retries, message)
         while self.__response is False:
             # TODO: Refactor to Event
             time.sleep(0.1)
@@ -1695,7 +1694,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
                     callback=_handle_killed_wait_response, react_to_stop=True)
-    def _real_wait_response(self, is_cancel, validator, on_fail, num_retries):
+    def _real_wait_response(self, is_cancel, validator, on_fail, num_retries,
+                            message: Message):
         """
         Loop until a valid response is received from the user or the retry
         limit is reached.
@@ -1706,10 +1706,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             on_fail (callable): function handling retries
 
         """
-        msg = dig_for_message()
-        msg = msg.reply('mycroft.mic.listen') if msg else \
-            Message('mycroft.mic.listen',
-                    context={"skill_id": self.skill_id})
+        sess = SessionManager.get(message)
+        msg = message.reply('mycroft.mic.listen')
 
         num_fails = 0
         while True:
@@ -1718,7 +1716,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 # also allows overriding returned result from other events
                 return self.__response
 
-            response = self.__get_response()
+            response = self.__get_response(sess)
 
             if response is None:
                 # if nothing said, prompt one more time
