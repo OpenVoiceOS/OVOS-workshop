@@ -1,4 +1,4 @@
 ovos-core>=0.0.8a50
 pytest
 pytest-cov
-ovos-translate-plugin-server
+ovos-translate-server-plugin
