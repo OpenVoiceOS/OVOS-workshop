@@ -1,5 +1,4 @@
 ovos-core>=0.0.8a50
-neon-lang-plugin-libretranslate~=0.2
-adapt-parser~=0.5
+adapt-parser>=1.0.0, <2.0.0
 pytest
 pytest-cov
