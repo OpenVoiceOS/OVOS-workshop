@@ -28,9 +28,14 @@ jobs:
       run: |
         sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
         pip install -r requirements/test.txt
+        pip install ./test/end2end/session/skill-ovos-hello-world
+        pip install ./test/end2end/session/skill-ovos-fallback-unknown
+        pip install ./test/end2end/session/skill-ovos-fallback-unknownv1
+        pip install ./test/end2end/session/skill-converse_test
     - name: Generate coverage report
       run: |
-        pytest --cov=./ovos_workshop --cov-report=xml
+        pytest --cov=./ovos_workshop --cov-report xml test/unittests
+        pytest --cov-append --cov=ovos_workshop --cov-report xml test/end2end
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
