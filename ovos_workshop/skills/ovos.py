@@ -187,6 +187,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self._original_converse = self.converse  # for get_response
 
         self.__responses = {}
+        self.__validated_responses = {}
         self._threads = []  # for killable events decorator
 
         # yay, following python best practices again!
@@ -1655,6 +1656,14 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             msg = message.reply('mycroft.mic.listen')
             self.bus.emit(msg)
+
+        # NOTE: self._wait_response launches a killable thread
+        #  the thread waits for a user response for 15 seconds
+        #  if no response it will re-prompt the user up to num_retries
+        # see killable_event decorators for more info
+
+        #  _wait_response contains a loop that gets validated results
+        #  from the killable thread and returns the answer
         ans = self._wait_response(is_cancel, validator, on_fail_fn,
                                   num_retries, message)
         self.bus.emit(message.forward("skill.converse.get_response.disable",
@@ -1675,7 +1684,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         session = SessionManager.get(message)
 
-        # self.__responses.get(session.session_id) <- set in a killable thread
+        # self.__validated_responses.get(session.session_id) <- set in a killable thread
         self._real_wait_response(is_cancel, validator, on_fail, num_retries, message)
 
         # wait for answer from killable thread
@@ -1683,32 +1692,53 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         while not ans:
             # TODO: Refactor to Event
             time.sleep(0.1)
-            ans = self.__responses.get(session.session_id)
+            ans = self.__validated_responses.get(session.session_id)
             if ans or ans is None:  # canceled response
                 break
 
-        if session.session_id in self.__responses:
-            self.__responses.pop(session.session_id)
+        if session.session_id in self.__validated_responses:
+            self.__validated_responses.pop(session.session_id)
 
         if isinstance(ans, list):
             ans = ans[0]  # TODO handle multiple transcriptions
 
+        return ans
+
+    def _validate_response(self, response: list,
+                           sess: Session,
+                           is_cancel: callable,
+                           validator: callable,
+                           on_fail: callable):
+        reprompt_speak = None
+        ans = response[0]  # TODO handle multiple transcriptions
+
         # catch user saying 'cancel'
         if is_cancel(ans):
+            # signal get_response loop to stop
+            self.__responses[sess.session_id] = None
+            # return None in self.get_response
+            self.__validated_responses[sess.session_id] = None
             return None
 
-        # returns the validated value or the response
-        # (backwards compat)
         validated = validator(ans)
-        ans = ans if validated is True else validated
+        if not validated:
+            reprompt_speak = on_fail(response)
+            self.__responses[sess.session_id] = []  # re-prompt
+        else:
+            # returns the validated value or the response
+            # (backwards compat)
+            self.__validated_responses[sess.session_id] = ans if validated is True else validated
+            # signal get_response loop to stop
+            self.__responses[sess.session_id] = None
 
-        return ans
+        return reprompt_speak
 
     def _handle_killed_wait_response(self):
         """
         Handle "stop" request when getting a response.
         """
         self.__responses = {k: None for k in self.__responses}
+        self.__validated_responses = {k: None for k in self.__validated_responses}
         self.converse = self._original_converse
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
@@ -1731,27 +1761,39 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         sess = SessionManager.get(message)
 
         num_fails = 0
+        self.__validated_responses[sess.session_id] = []
+
         while True:
 
             response = self.__get_response(sess)
+            reprompt = None
 
             if response is None:
                 break  # killed externally
-
-            if not response:  # empty list
-                # if nothing said, prompt one more time
-                if num_fails >= num_retries:
-                    self.__responses[sess.session_id] = None  # stop trying
-
+            elif response:
+                reprompt = self._validate_response(response, sess,
+                                               is_cancel, validator, on_fail)
+                if reprompt:
+                    # reset counter, user said something and we reformulated the question
+                    num_fails = 0
+            else:
+                # empty response
                 num_fails += 1
+                LOG.debug(f"get_response N fails: {num_fails}")
+
+                # if nothing said, prompt one more time
+                if num_fails >= num_retries and num_retries >= 0:  # stop trying, exceeded num_retries
+                    # signal get_response loop to stop
+                    self.__responses[sess.session_id] = None
+                    # return None in self.get_response
+                    self.__validated_responses[sess.session_id] = None
 
             if self.__responses.get(sess.session_id) is None:
                 return  # dont prompt
 
             # re-prompt user
-            line = on_fail(response)
-            if line:
-                self.speak(line, expect_response=True)
+            if reprompt:
+                self.speak(reprompt, expect_response=True)
             else:
                 self.bus.emit(message.reply('mycroft.mic.listen'))
 
