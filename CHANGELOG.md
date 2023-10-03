@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a11) (2023-10-03)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a10...0.0.13a11)
+
+**Merged pull requests:**
+
+- unittests/end2end [\#140](https://github.com/OpenVoiceOS/OVOS-workshop/pull/140) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a10) (2023-10-03)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a9...0.0.13a10)
@@ -14,7 +22,7 @@
 
 **Fixed bugs:**
 
-- fix/get\_response [\#138](https://github.com/OpenVoiceOS/OVOS-workshop/pull/138) ([JarbasAl](https://github.com/JarbasAl))
+- fix/get\_response\_return\_val [\#138](https://github.com/OpenVoiceOS/OVOS-workshop/pull/138) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [0.0.13a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a8) (2023-10-02)
 
@@ -22,7 +30,7 @@
 
 **Fixed bugs:**
 
-- fix/get\_response [\#137](https://github.com/OpenVoiceOS/OVOS-workshop/pull/137) ([JarbasAl](https://github.com/JarbasAl))
+- fix/get\_response\_message\_context [\#137](https://github.com/OpenVoiceOS/OVOS-workshop/pull/137) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [0.0.13a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a7) (2023-09-30)
 
