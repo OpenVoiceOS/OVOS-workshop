@@ -1654,8 +1654,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         if dialog:
             self.speak_dialog(dialog, data, expect_response=True, wait=True)
         else:
-            msg = message.reply('mycroft.mic.listen')
-            self.bus.emit(msg)
+            # make sure the destination is audio
+            message.context["destination"] = "audio"
+            self.bus.emit(message.forward('mycroft.mic.listen'))
 
         # NOTE: self._wait_response launches a killable thread
         #  the thread waits for a user response for 15 seconds
