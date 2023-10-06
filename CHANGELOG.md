@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a12) (2023-10-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a11...0.0.13a12)
+
+**Fixed bugs:**
+
+- fix mic listen message destination [\#141](https://github.com/OpenVoiceOS/OVOS-workshop/pull/141) ([emphasize](https://github.com/emphasize))
+
 ## [0.0.13a11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a11) (2023-10-03)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a10...0.0.13a11)
