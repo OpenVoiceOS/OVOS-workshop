@@ -337,7 +337,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """ language detector, lazy init on first access"""
         if not self._lang_detector:
             # if it's being used, there is no recovery, do not try: except:
-            self._lang_detector = OVOSLangDetectionFactory.create()
+            self._lang_detector = OVOSLangDetectionFactory.create(self.config_core)
         return self._lang_detector
 
     @lang_detector.setter
@@ -349,7 +349,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """ language translator, lazy init on first access"""
         if not self._translator:
             # if it's being used, there is no recovery, do not try: except:
-            self._translator = OVOSLangTranslationFactory.create()
+            self._translator = OVOSLangTranslationFactory.create(self.config_core)
         return self._translator
 
     @translator.setter
