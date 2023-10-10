@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a14](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a14) (2023-10-10)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a13...0.0.13a14)
+
+**Implemented enhancements:**
+
+- Add Russian noise words [\#136](https://github.com/OpenVoiceOS/OVOS-workshop/pull/136) ([putnik](https://github.com/putnik))
+
 ## [0.0.13a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a13) (2023-10-10)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a12...0.0.13a13)
