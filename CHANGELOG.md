@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a13) (2023-10-10)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a12...0.0.13a13)
+
+**Implemented enhancements:**
+
+- CommonQuerySkill handler complete event and tests [\#142](https://github.com/OpenVoiceOS/OVOS-workshop/pull/142) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.13a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a12) (2023-10-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a11...0.0.13a12)
