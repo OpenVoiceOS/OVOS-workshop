@@ -146,8 +146,8 @@ class CommonQuerySkill(OVOSSkill):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __get_cq(self, search_phrase: str) -> List[str, CQSMatchLevel, str,
-                                                   Optional[dict]]:
+    def __get_cq(self, search_phrase: str) -> (str, CQSMatchLevel, str,
+                                               Optional[dict]):
         """
         Invoke the CQS handler to let the skill perform its search
         @param search_phrase: parsed question to get an answer for
