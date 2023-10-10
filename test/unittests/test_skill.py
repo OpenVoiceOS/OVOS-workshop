@@ -136,8 +136,8 @@ class TestSkill(unittest.TestCase):
 
         # base skill class events exclusive to ovos-core
         if not is_classic_core():
-            default_ovos = ["skill.converse.ping",
-                            "skill.converse.request",
+            default_ovos = [f"{self.skill.skill_id}.converse.ping",
+                            f"{self.skill.skill_id}.converse.request",
                             "intent.service.skills.activated",
                             "intent.service.skills.deactivated",
                             f"{self.skill.skill_id}.activate",
