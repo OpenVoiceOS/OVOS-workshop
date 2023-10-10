@@ -15,13 +15,13 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_config_save_path
-
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_config_save_path
+from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.enclosure.api import EnclosureAPI
@@ -148,6 +148,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.gui = gui
         self._bus = bus
         self._enclosure = EnclosureAPI()
+
+        # optional lang translation, lazy inited on first access
+        self._lang_detector = None
+        self._translator = None  # can be passed to solvers plugins
 
         # Core configuration
         self.config_core: Configuration = Configuration()
@@ -327,6 +331,22 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         return ''.join(c if c.isalnum() else '_'
                        for c in str(self.skill_id))
+
+    @property
+    def lang_detector(self):
+        """ language detector, lazy init on first access"""
+        if not self._lang_detector:
+            # if it's being used, there is no recovery, do not try: except:
+            self._lang_detector = OVOSLangDetectionFactory.create()
+        return self._lang_detector
+
+    @property
+    def translator(self):
+        """ language translator, lazy init on first access"""
+        if not self._translator:
+            # if it's being used, there is no recovery, do not try: except:
+            self._translator = OVOSLangTranslationFactory.create()
+        return self._translator
 
     @property
     def settings_path(self) -> str:
@@ -1771,7 +1791,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 break  # killed externally
             elif response:
                 reprompt = self._validate_response(response, sess,
-                                               is_cancel, validator, on_fail)
+                                                   is_cancel, validator, on_fail)
                 if reprompt:
                     # reset counter, user said something and we reformulated the question
                     num_fails = 0
@@ -2121,24 +2141,32 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.event_scheduler.cancel_all_repeating_events()
 
     # intent/context skill dev facing utils
-    def activate(self):
+    def activate(self, duration_minutes=None):
         """
         Mark this skill as active and push to the top of the active skills list.
         This enables converse method to be called even without skill being
         used in last 5 minutes.
+
+        :param duration_minutes: duration in minutes for skill to remain active
+         (-1 for infinite)
         """
+        if duration_minutes is None:
+            duration_minutes = Configuration().get("converse", {}).get("timeout", 300) / 60  # convert to minutes
+
         msg = dig_for_message() or Message("")
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id
 
         m1 = msg.forward("intent.service.skills.activate",
-                         data={"skill_id": self.skill_id})
+                         data={"skill_id": self.skill_id,
+                               "timeout": duration_minutes})
         self.bus.emit(m1)
 
         # backwards compat with mycroft-core
         # TODO - remove soon
         m2 = msg.forward("active_skill_request",
-                         data={"skill_id": self.skill_id})
+                         data={"skill_id": self.skill_id,
+                               "timeout": duration_minutes})
         self.bus.emit(m2)
 
     def deactivate(self):
