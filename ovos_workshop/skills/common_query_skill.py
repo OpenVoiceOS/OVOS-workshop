@@ -253,8 +253,8 @@ class CommonQuerySkill(OVOSSkill):
             self.speak(data["answer"])
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
-        self.bus.emit(message.forward("question:handler_complete"))
-
+        self.bus.emit(message.forward("mycroft.skill.handler.complete",
+                                      {"handler": "common_query"}))
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \
             Optional[Tuple[str, CQSMatchLevel, Optional[dict]]]:

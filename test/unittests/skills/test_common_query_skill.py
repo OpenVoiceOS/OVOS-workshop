@@ -1,5 +1,4 @@
 from unittest import TestCase
-from unittest.mock import patch
 
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.skills.base import BaseSkill
