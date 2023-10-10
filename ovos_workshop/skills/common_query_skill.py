@@ -13,7 +13,7 @@
 from abc import abstractmethod
 from enum import IntEnum
 from os.path import dirname
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
@@ -257,7 +257,7 @@ class CommonQuerySkill(OVOSSkill):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \
-            Optional[(str, CQSMatchLevel, Optional[dict])]:
+            Optional[Tuple[str, CQSMatchLevel, Optional[dict]]]:
         """
         Determine an answer to the input phrase and return match information, or
         `None` if no answer can be determined.
