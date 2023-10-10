@@ -27,9 +27,6 @@ class UniversalSkill(OVOSSkill):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.lang_detector = OVOSLangDetectionFactory.create()
-        self.translator = OVOSLangTranslationFactory.create()
-
         # the skill internally only works in this language
         self.internal_language = None
         # __tags__ private value will be translated (adapt entities)
