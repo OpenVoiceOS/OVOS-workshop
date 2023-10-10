@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a15](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a15) (2023-10-10)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a14...0.0.13a15)
+
+**Implemented enhancements:**
+
+- feat/extend\_ovosskill [\#143](https://github.com/OpenVoiceOS/OVOS-workshop/pull/143) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a14](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a14) (2023-10-10)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a13...0.0.13a14)
