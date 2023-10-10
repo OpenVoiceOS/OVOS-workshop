@@ -13,9 +13,11 @@
 from abc import abstractmethod
 from enum import IntEnum
 from os.path import dirname
+from typing import List, Optional
 
+from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
-from ovos_utils.log import LOG
+from ovos_utils.log import LOG, log_deprecation
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.decorators.compat import backwards_compat
 
@@ -81,13 +83,18 @@ class CommonQuerySkill(OVOSSkill):
                 translated_noise_words.split()
 
     @property
-    def translated_noise_words(self):
-        LOG.warning("self.translated_noise_words will become a private variable in next release")
+    def translated_noise_words(self) -> List[str]:
+        """
+        Get a list of "noise" words in the current language
+        """
+        log_deprecation("self.translated_noise_words will become a "
+                        "private variable", "0.1.0")
         return self._translated_noise_words.get(self.lang, [])
 
     @translated_noise_words.setter
-    def translated_noise_words(self, val):
-        LOG.warning("self.translated_noise_words will become a private variable in next release")
+    def translated_noise_words(self, val: List[str]):
+        log_deprecation("self.translated_noise_words will become a "
+                        "private variable", "0.1.0")
         self._translated_noise_words[self.lang] = val
 
     def bind(self, bus):
@@ -98,10 +105,18 @@ class CommonQuerySkill(OVOSSkill):
         """
         if bus:
             super().bind(bus)
-            self.add_event('question:query', self.__handle_question_query, speak_errors=False)
-            self.add_event('question:action', self.__handle_query_action, speak_errors=False)
+            self.add_event('question:query', self.__handle_question_query,
+                           speak_errors=False)
+            self.add_event('question:action', self.__handle_query_action,
+                           speak_errors=False)
 
-    def __handle_question_query(self, message):
+    def __handle_question_query(self, message: Message):
+        """
+        Handle an incoming user query. Get a result from this skill's
+        `CQS_match_query_phrase` method and emit a response back to the intent
+        service.
+        @param message: Message with matched query 'phrase'
+        """
         search_phrase = message.data["phrase"]
         message.context["skill_id"] = self.skill_id
         # First, notify the requestor that we are attempting to handle
@@ -131,8 +146,14 @@ class CommonQuerySkill(OVOSSkill):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __get_cq(self, search_phrase):
-        # Now invoke the CQS handler to let the skill perform its search
+    def __get_cq(self, search_phrase: str) -> List[str, CQSMatchLevel, str,
+                                                   Optional[dict]]:
+        """
+        Invoke the CQS handler to let the skill perform its search
+        @param search_phrase: parsed question to get an answer for
+        @return: (matched substring from search_phrase,
+            confidence level of match, speakable answer, optional callback data)
+        """
         try:
             result = self.CQS_match_query_phrase(search_phrase)
         except:
@@ -140,8 +161,13 @@ class CommonQuerySkill(OVOSSkill):
             result = None
         return result
 
-    def remove_noise(self, phrase, lang=None):
-        """remove noise to produce essence of question"""
+    def remove_noise(self, phrase: str, lang: str = None) -> str:
+        """
+        Remove extra words from the query to produce essence of question
+        @param phrase: raw phrase to parse (usually from the intent service)
+        @param lang: language of `phrase`, else defaults to `self.lang`
+        @return: cleaned `phrase` with extra words removed
+        """
         lang = lang or self.lang
         phrase = ' ' + phrase + ' '
         for word in self._translated_noise_words.get(lang, []):
@@ -151,7 +177,16 @@ class CommonQuerySkill(OVOSSkill):
         phrase = ' '.join(phrase.split())
         return phrase.strip()
 
-    def __calc_confidence(self, match, phrase, level, answer):
+    def __calc_confidence(self, match: str, phrase: str, level: CQSMatchLevel,
+                          answer: str) -> float:
+        """
+        Calculate a confidence level for the skill response.
+        @param match: Matched portion of the input phrase
+        @param phrase: User input phrase that was evaluated
+        @param level: Skill-determined match level of the answer
+        @param answer: Speakable response to the input phrase
+        @return: Float (0.0-1.0) confidence level of the response
+        """
         # Assume the more of the words that get consumed, the better the match
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
@@ -189,7 +224,9 @@ class CommonQuerySkill(OVOSSkill):
         return confidence
 
     def __handle_query_classic(self, message):
-        """does not perform self.speak, < 0.0.8 this is done by core itself"""
+        """
+        does not perform self.speak, < 0.0.8 this is done by core itself
+        """
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
@@ -198,12 +235,14 @@ class CommonQuerySkill(OVOSSkill):
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
 
-    @backwards_compat(classic_core=__handle_query_classic, pre_008=__handle_query_classic)
-    def __handle_query_action(self, message):
-        """Message handler for question:action.
-
-        Extracts phrase and data from message forward this to the skills
-        CQS_action method.
+    @backwards_compat(classic_core=__handle_query_classic,
+                      pre_008=__handle_query_classic)
+    def __handle_query_action(self, message: Message):
+        """
+        If this skill's response was spoken to the user, this method is called.
+        Phrase and callback data from `CQS_match_query_phrase` will be passed
+        to the `CQS_action` method.
+        @param message: `question:action` message
         """
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
@@ -214,35 +253,30 @@ class CommonQuerySkill(OVOSSkill):
             self.speak(data["answer"])
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
+        self.bus.emit(message.forward("question:handler_complete"))
 
     @abstractmethod
-    def CQS_match_query_phrase(self, phrase):
-        """Analyze phrase to see if it is a answer-able phrase with this skill.
-
-        Needs to be implemented by the skill.
-
-        Args:
-            phrase (str): User phrase, "What is an aardwark"
-
-        Returns:
-            (match, CQSMatchLevel[, callback_data]) or None: Tuple containing
-                 a string with the appropriate matching phrase, the PlayMatch
-                 type, and optionally data to return in the callback if the
-                 match is selected.
+    def CQS_match_query_phrase(self, phrase: str) -> \
+            Optional[(str, CQSMatchLevel, Optional[dict])]:
         """
-        # Derived classes must implement this, e.g.
+        Determine an answer to the input phrase and return match information, or
+        `None` if no answer can be determined.
+        @param phrase: User question, i.e. "What is an aardvark"
+        @return: (matched portion of the phrase, match confidence level,
+            optional callback data) if this skill can answer the question,
+            else None.
+        """
         return None
 
-    def CQS_action(self, phrase, data):
-        """Take additional action IF the skill is selected.
+    def CQS_action(self, phrase: str, data: dict):
+        """
+        Take additional action IF the skill is selected.
 
         The speech is handled by the common query but if the chosen skill
         wants to display media, set a context or prepare for sending
         information info over e-mail this can be implemented here.
-
-        Args:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
-            data (dict): Callback data specified in match_query_phrase()
+        @param phrase: User phrase, i.e. "What is an aardvark"
+        @param data: Callback data specified in CQS_match_query_phrase
         """
         # Derived classes may implement this if they use additional media
         # or wish to set context after being called.
