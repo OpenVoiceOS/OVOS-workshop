@@ -340,6 +340,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self._lang_detector = OVOSLangDetectionFactory.create()
         return self._lang_detector
 
+    @lang_detector.setter
+    def lang_detector(self, val):
+        self._lang_detector = val
+
     @property
     def translator(self):
         """ language translator, lazy init on first access"""
@@ -347,6 +351,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             # if it's being used, there is no recovery, do not try: except:
             self._translator = OVOSLangTranslationFactory.create()
         return self._translator
+
+    @translator.setter
+    def translator(self, val):
+        self._translator = val
 
     @property
     def settings_path(self) -> str:
