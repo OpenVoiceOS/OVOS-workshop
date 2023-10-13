@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a16) (2023-10-13)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a15...0.0.13a16)
+
+**Implemented enhancements:**
+
+- Refactor/converse messages [\#144](https://github.com/OpenVoiceOS/OVOS-workshop/pull/144) ([emphasize](https://github.com/emphasize))
+
 ## [0.0.13a15](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a15) (2023-10-10)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a14...0.0.13a15)
