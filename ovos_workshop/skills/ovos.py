@@ -1555,8 +1555,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             data = {"uri": filename}
         else:
             with open(filename, "rb") as f:
-                data = {"audio_ext": filename.split(".")[-1],
-                        "binary_data": binascii.hexlify(f.read())}
+                bindata = binascii.hexlify(f.read()).decode('utf-8')
+            data = {"audio_ext": filename.split(".")[-1],
+                    "binary_data": bindata}
 
         self.bus.emit(message.forward(mtype, data))
 
