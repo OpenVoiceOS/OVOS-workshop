@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a17](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a17) (2023-10-18)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a16...0.0.13a17)
+
+**Implemented enhancements:**
+
+- feat/handle\_hex\_audiodata [\#145](https://github.com/OpenVoiceOS/OVOS-workshop/pull/145) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.13a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a16) (2023-10-13)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a15...0.0.13a16)
