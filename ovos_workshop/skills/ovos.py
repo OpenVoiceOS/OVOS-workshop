@@ -1,4 +1,6 @@
+import binascii
 import datetime
+import os
 import re
 import sys
 import time
@@ -15,12 +17,13 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_config_save_path
+
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_config_save_path
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -1056,7 +1059,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         @param message: `{self.skill_id}.converse.ping` Message
         """
         if message.msg_type == "skill.converse.ping":
-            log_deprecation("Support for message type `skill.converse.ping` is deprecated, use `{skill_id}.converse.ping`", "0.0.9")
+            log_deprecation(
+                "Support for message type `skill.converse.ping` is deprecated, use `{skill_id}.converse.ping`", "0.0.9")
             if message.data.get("skill_id") != self.skill_id:
                 return  # not for us!
 
@@ -1073,7 +1077,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         @param message: `{self.skill_id}.converse.request` Message
         """
         if message.msg_type == "skill.converse.request":
-            log_deprecation("Support for message type `skill.converse.request` is deprecated, use `{skill_id}.converse.request`", "0.0.9")
+            log_deprecation(
+                "Support for message type `skill.converse.request` is deprecated, use `{skill_id}.converse.request`",
+                "0.0.9")
             if message.data.get("skill_id") != self.skill_id:
                 return  # not for us!
 
@@ -1081,18 +1087,18 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             # converse can have multiple signatures
             params = signature(self.converse).parameters
             kwargs = {"message": message,
-                        "utterances": message.data['utterances'],
-                        "lang": message.data['lang']}
+                      "utterances": message.data['utterances'],
+                      "lang": message.data['lang']}
             kwargs = {k: v for k, v in kwargs.items() if k in params}
             result = self.converse(**kwargs)
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
-                                            "result": result}))
+                                         "result": result}))
         except Exception as e:
             LOG.error(e)
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
-                                            "result": False}))
+                                         "result": False}))
 
     def _handle_collect_resting(self, message: Optional[Message] = None):
         """
@@ -1534,12 +1540,26 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         @param instant: if True audio will be played instantly instead of queued with TTS
         """
         message = dig_for_message() or Message("")
+        # if running in docker we need to send binary data to the ovos-audio container
+        # if sessions is not default we also need to do it since
+        # it likely is a remote client such as hivemind
+        send_binary = os.environ.get("IS_OVOS_CONTAINER") or \
+                      SessionManager.get(message).session_id != "default"
+
         if instant:
-            self.bus.emit(message.forward("mycroft.audio.play_sound",
-                                          {"uri": filename}))
+            mtype = "mycroft.audio.play_sound"
         else:
-            self.bus.emit(message.forward("mycroft.audio.queue",
-                                          {"uri": filename}))
+            mtype = "mycroft.audio.queue"
+
+        if not send_binary:
+            data = {"uri": filename}
+        else:
+            with open(filename, "rb") as f:
+                bindata = binascii.hexlify(f.read()).decode('utf-8')
+            data = {"audio_ext": filename.split(".")[-1],
+                    "binary_data": bindata}
+
+        self.bus.emit(message.forward(mtype, data))
 
     def __get_response_v1(self, session=None):
         """Helper to get a response from the user
@@ -1594,7 +1614,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         sent from the intent service
         """
         if message.msg_type == "skill.converse.get_response":
-            log_deprecation("Support for message type `skill.converse.get_response` is deprecated, use `{skill_id}.converse.get_response`", "0.0.9")
+            log_deprecation(
+                "Support for message type `skill.converse.get_response` is deprecated, use `{skill_id}.converse.get_response`",
+                "0.0.9")
             if message.data.get("skill_id") != self.skill_id:
                 return  # not for us!
 
