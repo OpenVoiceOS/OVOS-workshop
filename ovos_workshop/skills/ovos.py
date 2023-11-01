@@ -1500,8 +1500,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             expect_response (bool): set to True if Mycroft should listen
                                     for a response immediately after
                                     speaking the utterance.
-            wait (bool):            set to True to block while the text
-                                    is being spoken.
+            wait (Union[bool, int]): set to True to block while the text
+                                     is being spoken for 15 seconds. Alternatively, set
+                                     to an integer to specify a timeout in seconds.
         """
         if self.dialog_renderer:
             data = data or {}
