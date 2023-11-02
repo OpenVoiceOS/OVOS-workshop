@@ -1437,7 +1437,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
     # skill developer facing utils
     def speak(self, utterance: str, expect_response: bool = False,
-              wait: bool = False, meta: Optional[dict] = None):
+              wait: Union[bool, int] = False, meta: Optional[dict] = None):
         """Speak a sentence.
 
         Args:
@@ -1445,8 +1445,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             expect_response (bool): set to True if Mycroft should listen
                                     for a response immediately after
                                     speaking the utterance.
-            wait (bool):            set to True to block while the text
-                                    is being spoken.
+            wait (Union[bool, int]): set to True to block while the text
+                                     is being spoken for 15 seconds. Alternatively, set
+                                     to an integer to specify a timeout in seconds.
             meta:                   Information of what built the sentence.
         """
         # registers the skill as being active
@@ -1473,6 +1474,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.bus.emit(m)
 
         if wait:
+            timeout = wait if isinstance(wait, int) else 15
             sessid = SessionManager.get(m).session_id
             event = Event()
 
@@ -1482,12 +1484,12 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                     event.set()
 
             self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
-            event.wait(timeout=15)
+            event.wait(timeout=timeout)
             self.bus.remove("recognizer_loop:audio_output_end",
                             handle_output_end)
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
-                     expect_response: bool = False, wait: bool = False):
+                     expect_response: bool = False, wait: Union[bool, int] = False):
         """
         Speak a random sentence from a dialog file.
 
@@ -1498,8 +1500,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             expect_response (bool): set to True if Mycroft should listen
                                     for a response immediately after
                                     speaking the utterance.
-            wait (bool):            set to True to block while the text
-                                    is being spoken.
+            wait (Union[bool, int]): set to True to block while the text
+                                     is being spoken for 15 seconds. Alternatively, set
+                                     to an integer to specify a timeout in seconds.
         """
         if self.dialog_renderer:
             data = data or {}
@@ -1670,7 +1673,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
                      validator: Optional[Callable[[str], bool]] = None,
                      on_fail: Optional[Union[str, Callable[[str], str]]] = None,
-                     num_retries: int = -1, message: Message = None) -> Optional[str]:
+                     num_retries: int = -1, message: Message = None,
+                     wait: Union[bool, int] = True) -> Optional[str]:
         """
         Get a response from the user. If a dialog is supplied it is spoken,
         followed immediately by listening for a user response. If the dialog is
@@ -1687,6 +1691,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             * If the user asks to "cancel", this method will exit
             * If the user doesn't respond and this is `-1` this will only retry
               once.
+        @param message: Optional message to use for context
+        @param wait: If True, wait for the response to finish speaking before
+            listening. If False, start listening immediately. Can be an int
+            to set the timeout in seconds.
         @return: String user response (None if no valid response is given)
         """
         message = message or dig_for_message() or \
@@ -1722,7 +1730,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         # Speak query and wait for user response
         if dialog:
-            self.speak_dialog(dialog, data, expect_response=True, wait=True)
+            self.speak_dialog(dialog, data, expect_response=True, wait=wait)
         else:
             self.bus.emit(message.forward('mycroft.mic.listen'))
 
