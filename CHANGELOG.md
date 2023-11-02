@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a18) (2023-11-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a17...0.0.13a18)
+
+**Implemented enhancements:**
+
+- Allows wait argument to be int value for seconds [\#146](https://github.com/OpenVoiceOS/OVOS-workshop/pull/146) ([jaredcobb](https://github.com/jaredcobb))
+
 ## [0.0.13a17](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a17) (2023-10-18)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a16...0.0.13a17)
