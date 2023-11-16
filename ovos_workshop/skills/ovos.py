@@ -1256,8 +1256,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                          '.intent'
             handler:     function to register with intent
         """
+        name = f'{self.skill_id}:{intent_file}'
         for lang in self.native_langs:
-            name = f'{self.skill_id}:{intent_file}'
             resources = self.load_lang(self.res_dir, lang)
             resource_file = ResourceFile(resources.types.intent, intent_file)
             if resource_file.file_path is None:
@@ -1265,8 +1265,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 continue
             filename = str(resource_file.file_path)
             self.intent_service.register_padatious_intent(name, filename, lang)
-            if handler:
-                self.add_event(name, handler, 'mycroft.skill.handler')
+        if handler:
+            self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file: str):
         """
