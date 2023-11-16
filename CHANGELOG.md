@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a19](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a19) (2023-11-16)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a18...0.0.13a19)
+
+**Fixed bugs:**
+
+- Fix Padatious intent handler registration with multiple native languages [\#148](https://github.com/OpenVoiceOS/OVOS-workshop/pull/148) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.13a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a18) (2023-11-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a17...0.0.13a18)
