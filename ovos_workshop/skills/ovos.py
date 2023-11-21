@@ -1702,6 +1702,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         data = data or {}
 
         session = SessionManager.get(message)
+        session.enable_response_mode(self.skill_id)
+        message.context["session"] = session.serialize()
         self.__responses[session.session_id] = []
         self.bus.emit(message.forward("skill.converse.get_response.enable",
                                       {"skill_id": self.skill_id}))
@@ -1743,6 +1745,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         #  from the killable thread and returns the answer
         ans = self._wait_response(is_cancel, validator, on_fail_fn,
                                   num_retries, message)
+
+        session.disable_response_mode(self.skill_id)
+        message.context["session"] = session.serialize()
         self.bus.emit(message.forward("skill.converse.get_response.disable",
                                       {"skill_id": self.skill_id}))
         return ans
