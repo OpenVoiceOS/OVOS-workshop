@@ -420,6 +420,32 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         self._fallback_handlers.append((priority, handler))
         self.bus.on(f"ovos.skills.fallback.{self.skill_id}", handler)
 
+        # TODO: the question why should we register the skill with the fallback service
+        # without a handler present during `_register_system_event_handler`?
+        # regardless, if the fallback mode is dropped, we have to register again
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id,
+                               "priority": self.priority}))
+    
+    def remove_fallback(self, handler_to_del: Optional[callable] = None) -> bool:
+        """
+        Remove a fallback handler.
+        @param handler_to_del: registered callback handler (or wrapped handler)
+        @return: True if at least one handler was removed, otherwise False
+        """
+        found_handler = False
+        for i in reversed(range(len(self._fallback_handlers))):
+            if handler_to_del is None or self._fallback_handlers[i] == handler_to_del:
+                found_handler = True
+                del self._fallback_handlers[i]
+
+        if not found_handler:
+            LOG.warning('No fallback matching {}'.format(handler_to_del))
+        if len(self._fallback_handlers) == 0:
+            self.bus.emit("ovos.skills.fallback.deregister",
+                          {"skill_id": self.skill_id})
+        return found_handler
+
     def default_shutdown(self):
         """
         Remove all registered handlers and perform skill shutdown.
