@@ -341,9 +341,6 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                        speak_errors=False)
         self.add_event(f"ovos.skills.fallback.{self.skill_id}.request",
                        self._handle_fallback_request, speak_errors=False)
-        self.bus.emit(Message("ovos.skills.fallback.register",
-                              {"skill_id": self.skill_id,
-                               "priority": self.priority}))
 
     def _handle_fallback_ack(self, message: Message):
         """
@@ -405,6 +402,10 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
 
         self._fallback_handlers.append((priority, wrapper))
         self.bus.on(f"ovos.skills.fallback.{self.skill_id}", wrapper)
+        # register with fallback service
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id,
+                               "priority": self.priority}))
 
     @backwards_compat(classic_core=_old_register_fallback, pre_008=_old_register_fallback)
     def register_fallback(self, handler: callable, priority: int):
@@ -419,6 +420,30 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                  f"ovos.skills.fallback.{self.skill_id}")
         self._fallback_handlers.append((priority, handler))
         self.bus.on(f"ovos.skills.fallback.{self.skill_id}", handler)
+        # register with fallback service
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id,
+                               "priority": self.priority}))
+    
+    def remove_fallback(self, handler_to_del: Optional[callable] = None) -> bool:
+        """
+        Remove fallback registration / fallback handler.
+        @param handler_to_del: registered callback handler (or wrapped handler)
+        @return: True if at least one handler was removed, otherwise False
+        """
+        found_handler = False
+        for i in reversed(range(len(self._fallback_handlers))):
+            _, handler = self._fallback_handlers[i]
+            if handler_to_del is None or handler == handler_to_del:
+                found_handler = True
+                del self._fallback_handlers[i]
+
+        if not found_handler:
+            LOG.warning('No fallback matching {}'.format(handler_to_del))
+        if len(self._fallback_handlers) == 0:
+            self.bus.emit(Message("ovos.skills.fallback.deregister",
+                          {"skill_id": self.skill_id}))
+        return found_handler
 
     def default_shutdown(self):
         """
