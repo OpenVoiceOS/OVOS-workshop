@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.13a21](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a21) (2023-12-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a20...0.0.13a21)
+
+**Implemented enhancements:**
+
+- option to remove fallback \(handler\) [\#150](https://github.com/OpenVoiceOS/OVOS-workshop/pull/150) ([emphasize](https://github.com/emphasize))
+
 ## [0.0.13a20](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.13a20) (2023-11-21)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.13a19...0.0.13a20)
