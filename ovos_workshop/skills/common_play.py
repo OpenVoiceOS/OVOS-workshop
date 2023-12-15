@@ -5,7 +5,7 @@ from ovos_bus_client import Message
 from ovos_utils.log import LOG
 from ovos_utils import camel_case_split
 from typing import List
-
+from ocp_nlp.features import KeywordFeatures
 # backwards compat imports, do not delete, skills import from here
 
 
@@ -74,8 +74,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.skill_icon = \
             "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
             "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
-        self._registered_kws = {e: {} for e in MediaType
-                                if e != MediaType.GENERIC}
+
+        self.ocp_matchers = {l: KeywordFeatures() for l in self.native_langs}
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -138,37 +138,75 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                            "media_type": self.supported_media,
                            "featured_tracks": len(self._featured_handlers) >= 1}))
 
-    def register_ocp_keyword(self, media_type: MediaType, label: str,
-                             samples: List, langs: List[str] = None):
-        """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
-        the label must be a valid OCP entity known by the classifier,
+    def ocp_voc_match(self, utterance, lang=None):
+        """uses Aho–Corasick algorithm to match OCP keywords
+        this efficiently matches many keywords against an utterance
 
-        a full list can be found here:  TODO
+        OCP keywords are registered via self.register_ocp_keyword
 
-        if OCP finds the name in user utterances it will help
-        the classifier disambiguate between media_types
-        eg, search netflix instead of spotify
+        example usages
+            print(self.ocp_voc_match("play metallica"))
+            # {'album_name': 'Metallica', 'artist_name': 'Metallica'}
+
+            print(self.ocp_voc_match("play the beatles"))
+            # {'album_name': 'The Beatles', 'series_name': 'The Beatles',
+            # 'artist_name': 'The Beatles', 'movie_name': 'The Beatles'}
+
+            print(self.ocp_voc_match("play rob zombie"))
+            # {'artist_name': 'Rob Zombie', 'album_name': 'Zombie',
+            # 'book_name': 'Zombie', 'game_name': 'Zombie', 'movie_name': 'Zombie'}
+
+            print(self.ocp_voc_match("play horror movie"))
+            # {'film_genre': 'Horror', 'cartoon_genre': 'Horror', 'anime_genre': 'Horror',
+            # 'radio_drama_genre': 'horror', 'video_genre': 'horror',
+            # 'book_genre': 'Horror', 'movie_name': 'Horror Movie'}
+
+            print(self.ocp_voc_match("play science fiction"))
+            #  {'film_genre': 'Science Fiction', 'cartoon_genre': 'Science Fiction',
+            #  'podcast_genre': 'Fiction', 'anime_genre': 'Science Fiction',
+            #  'documentary_genre': 'Science', 'book_genre': 'Science Fiction',
+            #  'artist_name': 'Fiction', 'tv_channel': 'Science',
+            #  'album_name': 'Science Fiction', 'short_film_name': 'Science',
+            #  'book_name': 'Science Fiction', 'movie_name': 'Science Fiction'}
         """
-        assert label in OCP_ENTITIES
+        lang = lang or self.lang
+        if lang not in self.ocp_matchers:
+            return {}
+        return self.ocp_matchers[lang].extract(utterance)
 
+    def register_ocp_keyword(self, label: str, samples: List, langs: List[str] = None):
+        """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
+
+        ocp keywords can be efficiently matched with self.ocp_match helper method
+        that uses Aho–Corasick algorithm
+
+        if the label is a valid OCP entity known by the classifier it will help
+        the classifier disambiguate between media_types
+
+        a full list can be found in ocp_nlp.constants.OCP_ENTITIES
+
+        eg, if OCP finds a movie name in user utterances it will
+            prefer to search netflix instead of spotify
+        """
         langs = langs or self.native_langs
-        if label not in self._registered_kws[media_type]:
-            self._registered_kws[media_type][label] = []
-        self._registered_kws[media_type][label] += samples
+        for l in langs:
+            if l not in self.ocp_matchers:
+                self.ocp_matchers[l] = KeywordFeatures()
+            self.ocp_matchers[l].register_entity(label, samples)
 
         self.bus.emit(
             Message('ovos.common_play.register_keyword',
                     {"skill_id": self.skill_id,
-                     "label": label,
+                     "label": label,  # if in OCP_ENTITIES it influences classifier
                      "langs": langs,
-                     "samples": samples,
-                     "media_type": media_type}))
+                     "samples": samples}))
 
     def deregister_ocp_keyword(self, media_type: MediaType, label: str,
                                langs: List[str] = None):
         langs = langs or self.native_langs
-        if label in self._registered_kws[media_type]:
-            self._registered_kws[media_type][label] = []
+        for l in langs:
+            if l in self.ocp_matchers:
+                self.ocp_matchers[l].deregister_entity(label)
         self.bus.emit(
             Message('ovos.common_play.deregister_keyword',
                     {"skill_id": self.skill_id,
