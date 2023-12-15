@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.13a23](https://github.com/NeonJarbas/OVOS-workshop/tree/0.0.13a23) (2023-12-15)
+
+[Full Changelog](https://github.com/NeonJarbas/OVOS-workshop/compare/0.0.13a22...0.0.13a23)
+
 ## [0.0.13a22](https://github.com/NeonJarbas/OVOS-workshop/tree/0.0.13a22) (2023-12-15)
 
 [Full Changelog](https://github.com/NeonJarbas/OVOS-workshop/compare/0.0.12...0.0.13a22)
