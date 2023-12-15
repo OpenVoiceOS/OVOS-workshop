@@ -3,12 +3,14 @@ from threading import Event
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_bus_client import Message
 from ovos_utils.log import LOG
-
+from ovos_utils import camel_case_split
+from typing import List
 
 # backwards compat imports, do not delete, skills import from here
-from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
-    ocp_previous, ocp_featured_media, MediaType, MediaState, MatchConfidence, \
-    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState
+
+
+from ocp_nlp.constants import PlayerState, PlaybackType, LoopState, TrackState, \
+    PlaybackMode, MediaType, MediaState, OCP_ENTITIES
 
 
 def get_non_properties(obj):
@@ -50,10 +52,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, name=None, bus=None, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # NOTE: derived skills will likely want to override this list
-        self.supported_media = [MediaType.GENERIC,
-                                MediaType.AUDIO]
+        self.supported_media = [MediaType.GENERIC]
+        skill_name = camel_case_split(self.__class__.__name__)
+        alt = skill_name.replace(" skill", "").replace(" Skill", "")
+        self.skill_aliases = [skill_name, alt]
+
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
         self._current_query = None
@@ -68,7 +74,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.skill_icon = \
             "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
             "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
-        OVOSSkill.__init__(self, name, bus, **kwargs)
+        self._registered_kws = {e: {} for e in MediaType
+                                if e != MediaType.GENERIC}
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -104,14 +111,70 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.add_event("mycroft.stop",
                            self.__handle_stop_search)
 
-    def __handle_ocp_skills_get(self, message):
+    def register_media_type(self, media_type: MediaType):
+        """ helper instead of editing self.supported_media directly
+        will auto-sync changes via bus"""
+        if media_type not in self.supported_media:
+            self.supported_media.append(media_type)
+            LOG.info(f"{self.skill_id} registered type {media_type}")
+            self.__handle_ocp_skills_get()
+
+    def __handle_ocp_skills_get(self, message=None):
+        """ report skill OCP info
+
+        thumbnail and featured tracks inform the OCP homescreen
+
+        media_type and skill_name help the classifier disambiguate between media_types
+            eg, if OCP finds the name of a movie skill in user utterance
+                it will search netflix instead of spotify
+         """
+        message = message or Message("")
         self.bus.emit(
             message.reply('ovos.common_play.announce',
                           {"skill_id": self.skill_id,
-                           "skill_name": self.name,
+                           "skill_name": self.skill_name,
+                           "aliases": self.skill_aliases,
                            "thumbnail": self.skill_icon,
                            "media_type": self.supported_media,
                            "featured_tracks": len(self._featured_handlers) >= 1}))
+
+    def register_ocp_keyword(self, media_type: MediaType, label: str,
+                             samples: List, langs: List[str] = None):
+        """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
+        the label must be a valid OCP entity known by the classifier,
+
+        a full list can be found here:  TODO
+
+        if OCP finds the name in user utterances it will help
+        the classifier disambiguate between media_types
+        eg, search netflix instead of spotify
+        """
+        assert label in OCP_ENTITIES
+
+        langs = langs or self.native_langs
+        if label not in self._registered_kws[media_type]:
+            self._registered_kws[media_type][label] = []
+        self._registered_kws[media_type][label] += samples
+
+        self.bus.emit(
+            Message('ovos.common_play.register_keyword',
+                    {"skill_id": self.skill_id,
+                     "label": label,
+                     "langs": langs,
+                     "samples": samples,
+                     "media_type": media_type}))
+
+    def deregister_ocp_keyword(self, media_type: MediaType, label: str,
+                               langs: List[str] = None):
+        langs = langs or self.native_langs
+        if label in self._registered_kws[media_type]:
+            self._registered_kws[media_type][label] = []
+        self.bus.emit(
+            Message('ovos.common_play.deregister_keyword',
+                    {"skill_id": self.skill_id,
+                     "label": label,
+                     "langs": langs,
+                     "media_type": media_type}))
 
     def _register_decorated(self):
         # register search handlers
@@ -162,6 +225,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                         LOG.warning("multiple declarations of resume playback"
                                     "handler, replacing previous handler")
                     self.__resume_handler = method
+
         super()._register_decorated()
 
         # volunteer info to OCP
