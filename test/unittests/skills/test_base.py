@@ -40,7 +40,7 @@ class TestBaseSkill(unittest.TestCase):
         from ovos_workshop.settings import SkillSettingsManager
         from ovos_workshop.skills.ovos import SkillGUI
         from ovos_utils.events import EventContainer, EventSchedulerInterface
-        from ovos_utils.intents import IntentServiceInterface
+        from ovos_workshop.intents import IntentServiceInterface
         from ovos_utils.process_utils import RuntimeRequirements
         from ovos_bus_client.apis.enclosure import EnclosureAPI
         from ovos_workshop.filesystem import FileSystemAccess
