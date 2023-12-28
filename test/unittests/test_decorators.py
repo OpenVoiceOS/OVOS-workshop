@@ -5,7 +5,8 @@ from unittest.mock import Mock
 from time import sleep
 
 from ovos_workshop.skill_launcher import SkillLoader
-from ovos_utils.messagebus import FakeBus, Message
+from ovos_utils.messagebus import FakeBus
+from ovos_bus_client.message import Message
 
 
 class TestDecorators(unittest.TestCase):

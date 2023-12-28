@@ -2,7 +2,7 @@ from abc import ABC
 
 from ovos_config import Configuration
 from ovos_plugin_manager.language import OVOSLangDetectionFactory, OVOSLangTranslationFactory
-from ovos_utils import get_handler_name
+from ovos_utils.events import get_handler_name
 from ovos_utils.log import LOG
 
 from ovos_workshop.resource_files import SkillResources

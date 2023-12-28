@@ -42,7 +42,7 @@ class TestBaseSkill(unittest.TestCase):
         from ovos_utils.events import EventContainer, EventSchedulerInterface
         from ovos_utils.intents import IntentServiceInterface
         from ovos_utils.process_utils import RuntimeRequirements
-        from ovos_utils.enclosure.api import EnclosureAPI
+        from ovos_bus_client.apis.enclosure import EnclosureAPI
         from ovos_workshop.filesystem import FileSystemAccess
         from ovos_workshop.resource_files import SkillResources
 
@@ -560,7 +560,7 @@ class TestSkillGui(unittest.TestCase):
 
     @patch("ovos_workshop.skills.ovos.GUIInterface.__init__")
     def test_skill_gui(self, interface_init):
-        from ovos_utils.gui import GUIInterface
+        from ovos_bus_client.apis.gui import GUIInterface
         from ovos_workshop.skills.base import SkillGUI
 
         # Old skill with `ui` directory in root

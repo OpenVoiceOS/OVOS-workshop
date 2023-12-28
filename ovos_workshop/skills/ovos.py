@@ -22,19 +22,17 @@ from ovos_config.locations import get_xdg_config_save_path
 
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
+from ovos_bus_client.apis.enclosure import EnclosureAPI
+from ovos_bus_client.apis.gui import GUIInterface
+from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
-from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.file_utils import FileWatcher
-from ovos_utils.gui import GUIInterface, get_ui_directories
-from ovos_utils.intents import ConverseTracker
-from ovos_workshop.intents import IntentBuilder, Intent
-from ovos_utils.intents.intent_service_interface import munge_regex, \
-    munge_intent_parser, IntentServiceInterface
+from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_utils.messagebus import get_handler_name, create_wrapper, \
@@ -42,16 +40,17 @@ from ovos_utils.messagebus import get_handler_name, create_wrapper, \
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_utils.skills.audioservice import OCPInterface
-from ovos_workshop.settings import PrivateSettings
 from ovos_utils.sound import play_audio
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.filesystem import FileSystemAccess
+from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, \
+    munge_intent_parser, IntentServiceInterface
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
+from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
 
 
@@ -869,8 +868,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # inject ovos exclusive features in vanilla mycroft-core
         # if possible
         # limited support for missing skill deactivated event
-        # TODO - update ConverseTracker
-        ConverseTracker.connect_bus(self.bus)  # pull/1468
+        try:
+            from ovos_utils.intents.converse import ConverseTracker
+            ConverseTracker.connect_bus(self.bus)  # pull/1468
+        except ImportError:
+            pass  # deprecated in utils 0.1.0
         self.add_event("converse.skill.deactivated",
                        self._handle_skill_deactivated,
                        speak_errors=False)
