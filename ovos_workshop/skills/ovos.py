@@ -31,7 +31,8 @@ from ovos_utils.enclosure.api import EnclosureAPI
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.gui import GUIInterface, get_ui_directories
-from ovos_utils.intents import ConverseTracker, IntentBuilder, Intent
+from ovos_utils.intents import ConverseTracker
+from ovos_workshop.intents import IntentBuilder, Intent
 from ovos_utils.intents.intent_service_interface import munge_regex, \
     munge_intent_parser, IntentServiceInterface
 from ovos_utils.json_helper import merge_dict
@@ -42,7 +43,7 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.skills.audioservice import OCPInterface
-from ovos_utils.skills.settings import PrivateSettings
+from ovos_workshop.settings import PrivateSettings
 from ovos_utils.sound import play_audio
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \

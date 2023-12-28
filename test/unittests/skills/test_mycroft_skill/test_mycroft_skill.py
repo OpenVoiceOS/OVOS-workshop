@@ -20,7 +20,7 @@ from datetime import datetime
 from os.path import join, dirname, abspath
 from unittest.mock import MagicMock, patch
 
-from ovos_utils.intents import IntentBuilder
+from ovos_workshop.intents import IntentBuilder
 from ovos_bus_client import Message
 from ovos_config.config import Configuration
 
