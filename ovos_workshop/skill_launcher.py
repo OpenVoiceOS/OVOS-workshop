@@ -15,7 +15,6 @@ from ovos_utils import wait_for_exit_signal
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.log import LOG, deprecated, log_deprecation
 from ovos_utils.process_utils import RuntimeRequirements
-from ovos_utils.skills.locations import get_skill_directories as _get_skill_dirs
 
 from ovos_workshop.skills.active import ActiveSkill
 from ovos_workshop.skills.auto_translatable import UniversalSkill, UniversalFallback
@@ -35,15 +34,16 @@ SKILL_BASE_CLASSES = [
 SKILL_MAIN_MODULE = '__init__.py'
 
 
-@deprecated("This method has moved to `ovos_utils.skills.locations`", "0.1.0")
+@deprecated("This method has moved to `ovos_plugin_manager.skills`", "0.1.0")
 def get_skill_directories(conf=None):
     conf = conf or Configuration()
+    from ovos_plugin_manager.skills import get_skill_directories as _get_skill_dirs
     return _get_skill_dirs(conf)
 
 
-@deprecated("This method has moved to `ovos_utils.skills.locations`", "0.1.0")
+@deprecated("This method has moved to `ovos_plugin_manager.skills`", "0.1.0")
 def get_default_skills_directory(conf=None):
-    from ovos_utils.skills.locations import get_default_skills_directory
+    from ovos_plugin_manager.skills import get_default_skills_directory
     conf = conf or Configuration()
     return get_default_skills_directory(conf)
 

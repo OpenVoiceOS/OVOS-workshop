@@ -2,7 +2,8 @@ from unittest import TestCase
 from unittest.mock import patch, Mock
 
 from threading import Event
-from ovos_utils.messagebus import FakeBus, Message
+from ovos_utils.messagebus import FakeBus
+from ovos_bus_client.message import Message
 from ovos_workshop.decorators import fallback_handler
 from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.fallback import FallbackSkillV1, FallbackSkillV2, \

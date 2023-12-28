@@ -3,7 +3,7 @@ from typing import Optional
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_utils.messagebus import get_mycroft_bus
 from ovos_utils.log import log_deprecation
-from ovos_utils.gui import GUIInterface
+from ovos_bus_client.apis.gui import GUIInterface
 from ovos_bus_client.client.client import MessageBusClient
 from ovos_workshop.resource_files import locate_lang_directories
 from ovos_workshop.skills.ovos import OVOSSkill

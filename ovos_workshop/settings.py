@@ -1,9 +1,11 @@
 import json
-import yaml
-
 from os.path import isfile
-from typing import Optional
 from threading import Timer
+from typing import Optional
+
+import yaml
+from json_database import JsonStorageXDG
+
 from ovos_backend_client.api import DeviceApi
 from ovos_backend_client.pairing import is_paired, requires_backend
 from ovos_backend_client.settings import RemoteSkillSettings, get_display_name
@@ -160,3 +162,53 @@ class SkillSettingsManager:
 
     def handle_download_remote(self, message: Message):
         self.download()
+
+
+def settings2meta(settings, section_name="Skill Settings"):
+    """ generates basic settingsmeta """
+    fields = []
+
+    for k, v in settings.items():
+        if k.startswith("_"):
+            continue
+        label = k.replace("-", " ").replace("_", " ").title()
+        if isinstance(v, bool):
+            fields.append({
+                "name": k,
+                "type": "checkbox",
+                "label": label,
+                "value": str(v).lower()
+            })
+        if isinstance(v, str):
+            fields.append({
+                "name": k,
+                "type": "text",
+                "label": label,
+                "value": v
+            })
+        if isinstance(v, int):
+            fields.append({
+                "name": k,
+                "type": "number",
+                "label": label,
+                "value": str(v)
+            })
+    return {
+        "skillMetadata": {
+            "sections": [
+                {
+                    "name": section_name,
+                    "fields": fields
+                }
+            ]
+        }
+    }
+
+
+class PrivateSettings(JsonStorageXDG):
+    def __init__(self, skill_id):
+        super(PrivateSettings, self).__init__(skill_id)
+
+    @property
+    def settingsmeta(self):
+        return settings2meta(self, self.name)

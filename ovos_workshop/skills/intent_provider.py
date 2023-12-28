@@ -1,7 +1,7 @@
 from threading import Event
 from time import time as get_time, sleep
 from ovos_utils.log import LOG, log_deprecation
-from ovos_utils.messagebus import Message
+from ovos_bus_client.message import Message
 from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_config.config import read_mycroft_config, update_mycroft_config
 
