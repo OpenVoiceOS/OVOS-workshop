@@ -1230,8 +1230,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                            file to parse utterance for the handler.
             handler (func): function to register with intent
         """
-        if (isinstance(intent_parser, str) and
-                intent_parser.endswith('.intent')):
+        if isinstance(intent_parser, str):
+            if not intent_parser.endswith('.intent'):
+                raise ValueError
             return self.register_intent_file(intent_parser, handler)
         return self._register_adapt_intent(intent_parser, handler)
 
