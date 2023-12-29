@@ -6,7 +6,7 @@ from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
-from mycroft.skills import MycroftSkill as CoreSkill
+from ovos_workshop.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
