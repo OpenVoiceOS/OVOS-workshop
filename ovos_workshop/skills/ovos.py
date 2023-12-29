@@ -35,8 +35,8 @@ from ovos_utils.file_utils import FileWatcher
 from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG, log_deprecation, deprecated
-from ovos_utils.messagebus import get_handler_name, create_wrapper, \
-    get_message_lang
+from ovos_utils.events import get_handler_name, create_wrapper
+from ovos_bus_client.util import get_message_lang
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties

@@ -1,7 +1,7 @@
 from os.path import isdir, join
 from typing import Optional
 from ovos_config.locations import get_xdg_config_save_path
-from ovos_utils.messagebus import get_mycroft_bus
+from ovos_bus_client.util import get_mycroft_bus
 from ovos_utils.log import log_deprecation
 from ovos_bus_client.apis.gui import GUIInterface
 from ovos_bus_client.client.client import MessageBusClient
