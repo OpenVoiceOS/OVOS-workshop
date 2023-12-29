@@ -1,7 +1,7 @@
 from os.path import exists
 from threading import RLock
 from typing import List, Tuple, Optional
-
+import abc
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.util import get_mycroft_bus
 from ovos_utils.log import LOG, log_deprecation
@@ -15,7 +15,13 @@ except ImportError:
     _IB = object
 
 
-class Intent(_I):
+class _IntentMeta(abc.ABCMeta):
+    def __instancecheck__(self, instance):
+        return isinstance(instance, _I) or \
+            super().__instancecheck__(instance)
+
+
+class Intent(_I, metaclass=_IntentMeta):
     def __init__(self, name="", requires=None, at_least_one=None, optional=None):
         """Create Intent object
         Args:
@@ -56,7 +62,13 @@ class Intent(_I):
         raise NotImplementedError("please install adapt-parser")
 
 
-class IntentBuilder(_IB):
+class _IntentBuilderMeta(abc.ABCMeta):
+    def __instancecheck__(self, instance):
+        return isinstance(instance, _IB) or \
+            super().__instancecheck__(instance)
+
+
+class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
     """
     IntentBuilder, used to construct intent parsers.
     Attributes:
@@ -501,3 +513,9 @@ def open_intent_envelope(message):
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
                   intent_dict.get('optional'))
+
+
+if __name__ == "__main__":
+    i1 = _I("a", [], [], [])  # skills using adapt directly
+    assert isinstance(i1, Intent)  # backwards compat via metaclass
+
