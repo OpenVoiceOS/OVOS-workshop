@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from ovos_utils.log import LOG, log_deprecation
-from ovos_utils.messagebus import Message
+from ovos_bus_client.message import Message
 
 from ovos_workshop.skills.base import BaseSkill
 

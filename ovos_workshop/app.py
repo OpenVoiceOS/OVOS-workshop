@@ -1,9 +1,9 @@
 from os.path import isdir, join
 from typing import Optional
 from ovos_config.locations import get_xdg_config_save_path
-from ovos_utils.messagebus import get_mycroft_bus
+from ovos_bus_client.util import get_mycroft_bus
 from ovos_utils.log import log_deprecation
-from ovos_utils.gui import GUIInterface
+from ovos_bus_client.apis.gui import GUIInterface
 from ovos_bus_client.client.client import MessageBusClient
 from ovos_workshop.resource_files import locate_lang_directories
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -28,26 +28,26 @@ class OVOSAbstractApplication(OVOSSkill):
         @param enable_settings_manager: if True, enables a SettingsManager for
             this application to manage default settings and backend sync
         """
-        super().__init__(skill_id=skill_id, bus=bus, gui=gui,
-                         resources_dir=resources_dir,
-                         enable_settings_manager=enable_settings_manager,
-                         **kwargs)
-        self.skill_id = skill_id
         self._dedicated_bus = False
         if bus:
             self._dedicated_bus = False
         else:
             self._dedicated_bus = True
             bus = get_mycroft_bus()
-        self._startup(bus, skill_id)
+
+        super().__init__(skill_id=skill_id, bus=bus, gui=gui,
+                         resources_dir=resources_dir,
+                         enable_settings_manager=enable_settings_manager,
+                         **kwargs)
+
         if settings:
-            log_deprecation(f"Settings should be set in {self._settings_path}. "
+            log_deprecation(f"Settings should be set in {self.settings_path}. "
                             f"Passing `settings` to __init__ is not supported.",
                             "0.1.0")
             self.settings.merge(settings)
 
     @property
-    def _settings_path(self) -> str:
+    def settings_path(self) -> str:
         """
         Overrides the default path to put settings in `apps` subdirectory.
         """

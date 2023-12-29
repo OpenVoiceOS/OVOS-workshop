@@ -4,7 +4,7 @@ from os.path import join, dirname
 from os import remove
 from unittest.mock import Mock, patch
 
-from ovos_utils.gui import GUIInterface
+from ovos_bus_client.apis.gui import GUIInterface
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.app import OVOSAbstractApplication
 from json_database import JsonStorage
@@ -50,19 +50,20 @@ class TestApp(unittest.TestCase):
         self.assertEqual(self.app.gui, self.gui)
 
     def test_settings_path(self):
-        self.assertIn("/apps/", self.app._settings_path)
+        self.assertIn("/apps/", self.app.settings_path)
 
         # Test settings path conflicts
         test_app = OVOSAbstractApplication(skill_id="test", bus=self.bus)
-        from ovos_workshop.skills import OVOSSkill, MycroftSkill
+        from ovos_workshop.skills import OVOSSkill
+        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         test_skill = OVOSSkill(skill_id="test", bus=self.bus)
         mycroft_skill = MycroftSkill(skill_id="test", bus=self.bus)
 
         # Test app vs skill base directories
-        self.assertIn("/apps/", test_app._settings_path)
-        self.assertIn("/skills/", test_skill._settings_path)
-        self.assertEqual(test_skill._settings_path,
-                         mycroft_skill._settings_path)
+        self.assertIn("/apps/", test_app.settings_path)
+        self.assertIn("/skills/", test_skill.settings_path)
+        self.assertEqual(test_skill.settings_path,
+                         mycroft_skill.settings_path)
         self.assertEqual(test_skill.settings.path,
                          mycroft_skill.settings.path)
         self.assertEqual(test_skill.settings, mycroft_skill.settings)
@@ -74,8 +75,8 @@ class TestApp(unittest.TestCase):
         self.assertFalse(test_app.settings['is_skill'])
 
         # Cleanup test files
-        remove(test_app._settings_path)
-        remove(test_skill._settings_path)
+        remove(test_app.settings_path)
+        remove(test_skill.settings_path)
 
     @patch("ovos_workshop.app.OVOSSkill.default_shutdown")
     def test_default_shutdown(self, skill_shutdown):
@@ -107,5 +108,5 @@ class TestApp(unittest.TestCase):
 
         self.assertIsInstance(self.app, BaseSkill)
         self.assertIsInstance(self.app, OVOSSkill)
-        self.assertIsInstance(self.app, MycroftSkill)
+        self.assertNotIsInstance(self.app, MycroftSkill)
         self.assertIsInstance(self.app, OVOSAbstractApplication)

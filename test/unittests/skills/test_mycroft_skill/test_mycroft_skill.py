@@ -20,7 +20,7 @@ from datetime import datetime
 from os.path import join, dirname, abspath
 from unittest.mock import MagicMock, patch
 
-from ovos_utils.intents import IntentBuilder
+from ovos_workshop.intents import IntentBuilder
 from ovos_bus_client import Message
 from ovos_config.config import Configuration
 
@@ -461,7 +461,7 @@ class TestMycroftSkill(unittest.TestCase):
         s = SimpleSkill1()
         s.root_dir = abspath(dirname(__file__))
 
-        self.assertEqual(s._voc_list("turn_off_test"),
+        self.assertEqual(s.voc_list("turn_off_test"),
                          ["turn off", "switch off"])
         cache_key = s.lang + "turn_off_test"
         self.assertIn(cache_key, s._voc_cache)
@@ -522,10 +522,10 @@ class TestMycroftSkill(unittest.TestCase):
         s.config_core['secondary_langs'] = ['en', 'en-us', 'en-AU',
                                             'es', 'pt-PT']
         self.assertEqual(s.lang, 'en-us')
-        self.assertEqual(s._secondary_langs, ['en', 'en-au', 'es',
+        self.assertEqual(s.secondary_langs, ['en', 'en-au', 'es',
                                               'pt-pt'])
-        self.assertEqual(len(s._native_langs), len(set(s._native_langs)))
-        self.assertEqual(set(s._native_langs), {'en-us', 'en-au', 'pt-pt'})
+        self.assertEqual(len(s.native_langs), len(set(s.native_langs)))
+        self.assertEqual(set(s.native_langs), {'en-us', 'en-au', 'pt-pt'})
         s.config_core['lang'] = lang
         s.config_core['secondary_langs'] = secondary
 

@@ -1,7 +1,9 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
+from threading import Event
 from ovos_utils.messagebus import FakeBus
+from ovos_bus_client.message import Message
 from ovos_workshop.decorators import fallback_handler
 from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.fallback import FallbackSkillV1, FallbackSkillV2, \
@@ -205,25 +207,121 @@ class TestFallbackSkillV2(TestCase):
             fallback_skill.skill_id] = 80
         self.assertEqual(fallback_skill.priority, 80)
 
+        FallbackSkillV2.fallback_config = {}
+
     def test_can_answer(self):
         self.assertFalse(self.fallback_skill.can_answer([""], "en-us"))
         # TODO
 
     def test_register_system_event_handlers(self):
-        # TODO
-        pass
+        self.assertTrue(any(["ovos.skills.fallback.ping" in tup
+                             for tup in self.fallback_skill.events]))
+        self.assertTrue(any([f"ovos.skills.fallback.{self.fallback_skill.skill_id}.request"
+                             in tup for tup in self.fallback_skill.events]))
 
     def test_handle_fallback_ack(self):
-        # TODO
-        pass
+        def mock_pong(message: Message):
+            self.assertEqual(message.data["skill_id"],
+                             self.fallback_skill.skill_id)
+            self.assertEqual(message.context["skill_id"],
+                             self.fallback_skill.skill_id)
+            self.assertEqual(message.data["can_handle"], "test")
+        
+        orig_can_answer = self.fallback_skill.can_answer
+        self.fallback_skill.can_answer = Mock(return_value="test")
+        self.fallback_skill.bus.once("ovos.skills.fallback.pong", mock_pong)
+
+        self.fallback_skill._handle_fallback_ack(Message("test"))
+        self.fallback_skill.can_answer = orig_can_answer
+        
 
     def test_handle_fallback_request(self):
-        # TODO
-        pass
+        start_event = Event()
+        handler_event = Event()
+
+        def mock_start(message: Message):
+            start_event.set()
+        
+        def mock_handler(message: Message):
+            handler_event.set()
+            return True
+        
+        def mock_resonse(message: Message):
+            self.assertTrue(message.data["result"])
+            self.assertEqual(message.data["fallback_handler"],
+                             "mock_handler")
+        
+        self.fallback_skill.bus.once(
+            f"ovos.skills.fallback.{self.fallback_skill.skill_id}.start",
+            mock_start
+        )
+        self.fallback_skill.bus.once(
+            f"ovos.skills.fallback.{self.fallback_skill.skill_id}.response",
+            mock_resonse
+        )
+        self.fallback_skill._fallback_handlers = [(100, mock_handler)]
+
+        self.fallback_skill._handle_fallback_request(Message("test"))
+        self.assertTrue(start_event.is_set())
+        self.assertTrue(handler_event.is_set())
+
+        self.fallback_skill._fallback_handlers = []
 
     def test_register_fallback(self):
-        # TODO
-        pass
+        priority = 75
+
+        def fallback_service_register(message: Message):
+            self.assertEqual(message.data["skill_id"],
+                             self.fallback_skill.skill_id)
+            self.assertEqual(message.data["priority"], priority)
+        
+        # test with f"ovos.skills.fallback.{self.skill_id}"
+        def mock_handler(_: Message):
+            return True
+            
+        self.fallback_skill.bus.once(
+            f"ovos.skills.fallback.register", fallback_service_register
+        )
+        self.fallback_skill.register_fallback(mock_handler, priority)
+        self.assertEqual(len(self.fallback_skill._fallback_handlers), 1)
+        self.assertEqual(self.fallback_skill._fallback_handlers[0][0],
+                         priority)
+        self.assertEqual(self.fallback_skill._fallback_handlers[0][1],
+                         mock_handler)
+        
+        self.fallback_skill._fallback_handlers = []
+    
+    def test_remove_fallback(self):
+
+        def mock_handler(_: Message):
+            return True
+        
+        def fallback_service_deregister(message: Message):
+            deregister_event.set()
+            self.assertEqual(message.data["skill_id"],
+                             self.fallback_skill.skill_id)
+        
+        deregister_event = Event()
+        self.fallback_skill.bus.once(
+            f"ovos.skills.fallback.deregister", fallback_service_deregister
+        )
+        self.fallback_skill._fallback_handlers = [(50, mock_handler)]
+        self.assertEqual(len(self.fallback_skill._fallback_handlers), 1)
+        self.fallback_skill.remove_fallback(mock_handler)
+        self.assertEqual(len(self.fallback_skill._fallback_handlers), 0)
+        self.assertTrue(deregister_event.is_set())
+        deregister_event.clear()
+        self.assertFalse(deregister_event.is_set())
+
+        self.fallback_skill.bus.once(
+            f"ovos.skills.fallback.deregister", fallback_service_deregister
+        )
+        self.fallback_skill._fallback_handlers = [(100, mock_handler), (50, mock_handler)]
+        self.fallback_skill.remove_fallback()
+        self.assertEqual(len(self.fallback_skill._fallback_handlers), 0)
+        self.assertTrue(deregister_event.is_set())
+
+        self.fallback_skill._fallback_handlers = []
 
     def test_default_shutdown(self):
         # TODO

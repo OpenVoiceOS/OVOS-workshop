@@ -6,7 +6,7 @@ from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
-from mycroft.skills import MycroftSkill as CoreSkill
+from ovos_workshop.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
@@ -136,8 +136,8 @@ class TestSkill(unittest.TestCase):
 
         # base skill class events exclusive to ovos-core
         if not is_classic_core():
-            default_ovos = ["skill.converse.ping",
-                            "skill.converse.request",
+            default_ovos = [f"{self.skill.skill_id}.converse.ping",
+                            f"{self.skill.skill_id}.converse.request",
                             "intent.service.skills.activated",
                             "intent.service.skills.deactivated",
                             f"{self.skill.skill_id}.activate",

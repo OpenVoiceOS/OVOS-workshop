@@ -38,11 +38,11 @@ class TestBaseSkill(unittest.TestCase):
 
     def test_00_skill_init(self):
         from ovos_workshop.settings import SkillSettingsManager
-        from ovos_workshop.skills.base import SkillGUI
+        from ovos_workshop.skills.ovos import SkillGUI
         from ovos_utils.events import EventContainer, EventSchedulerInterface
-        from ovos_utils.intents import IntentServiceInterface
+        from ovos_workshop.intents import IntentServiceInterface
         from ovos_utils.process_utils import RuntimeRequirements
-        from ovos_utils.enclosure.api import EnclosureAPI
+        from ovos_bus_client.apis.enclosure import EnclosureAPI
         from ovos_workshop.filesystem import FileSystemAccess
         from ovos_workshop.resource_files import SkillResources
 
@@ -66,8 +66,8 @@ class TestBaseSkill(unittest.TestCase):
         self.assertIsInstance(self.skill.runtime_requirements,
                               RuntimeRequirements)
         self.assertIsInstance(self.skill.voc_match_cache, dict)
-        self.assertTrue(self.skill._is_fully_initialized)
-        self.assertTrue(isdir(dirname(self.skill._settings_path)))
+        self.assertTrue(self.skill.is_fully_initialized)
+        self.assertTrue(isdir(dirname(self.skill.settings_path)))
         self.assertIsInstance(self.skill.settings, dict)
         self.assertIsNone(self.skill.dialog_renderer)
         self.assertIsInstance(self.skill.enclosure, EnclosureAPI)
@@ -79,15 +79,15 @@ class TestBaseSkill(unittest.TestCase):
         self.assertIsInstance(self.skill.location_timezone, str)
         self.assertIsInstance(self.skill.lang, str)
         self.assertEqual(len(self.skill.lang.split('-')), 2)
-        self.assertEqual(self.skill._core_lang, self.skill.lang)
-        self.assertIsInstance(self.skill._secondary_langs, list)
-        self.assertIsInstance(self.skill._native_langs, list)
-        self.assertIn(self.skill._core_lang, self.skill._native_langs)
-        self.assertIsInstance(self.skill._alphanumeric_skill_id, str)
-        self.assertIsInstance(self.skill._resources, SkillResources)
-        self.assertEqual(self.skill._resources.language, self.skill.lang)
-        self.assertFalse(self.skill._stop_is_implemented)
-        self.assertFalse(self.skill._converse_is_implemented)
+        self.assertEqual(self.skill.core_lang, self.skill.lang)
+        self.assertIsInstance(self.skill.secondary_langs, list)
+        self.assertIsInstance(self.skill.native_langs, list)
+        self.assertIn(self.skill.core_lang, self.skill.native_langs)
+        self.assertIsInstance(self.skill.alphanumeric_skill_id, str)
+        self.assertIsInstance(self.skill.resources, SkillResources)
+        self.assertEqual(self.skill.resources.language, self.skill.lang)
+        self.assertFalse(self.skill.stop_is_implemented)
+        self.assertFalse(self.skill.converse_is_implemented)
 
     def test_handle_first_run(self):
         # TODO
@@ -558,9 +558,9 @@ class TestSkillGui(unittest.TestCase):
                                "legacy": False}}
         root_dir = join(dirname(__file__), "test_gui")
 
-    @patch("ovos_workshop.skills.base.GUIInterface.__init__")
+    @patch("ovos_workshop.skills.ovos.GUIInterface.__init__")
     def test_skill_gui(self, interface_init):
-        from ovos_utils.gui import GUIInterface
+        from ovos_bus_client.apis.gui import GUIInterface
         from ovos_workshop.skills.base import SkillGUI
 
         # Old skill with `ui` directory in root

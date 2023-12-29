@@ -2,7 +2,7 @@ from abc import ABC
 
 from ovos_config import Configuration
 from ovos_plugin_manager.language import OVOSLangDetectionFactory, OVOSLangTranslationFactory
-from ovos_utils import get_handler_name
+from ovos_utils.events import get_handler_name
 from ovos_utils.log import LOG
 
 from ovos_workshop.resource_files import SkillResources
@@ -27,9 +27,6 @@ class UniversalSkill(OVOSSkill):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.lang_detector = OVOSLangDetectionFactory.create()
-        self.translator = OVOSLangTranslationFactory.create()
-
         # the skill internally only works in this language
         self.internal_language = None
         # __tags__ private value will be translated (adapt entities)

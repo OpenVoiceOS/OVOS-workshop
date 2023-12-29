@@ -15,14 +15,17 @@
 import operator
 from typing import Optional, List, Callable, Tuple
 
+from ovos_config import Configuration
+
 from ovos_bus_client import MessageBusClient
 from ovos_utils.log import LOG
-from ovos_utils.messagebus import get_handler_name, Message
+from ovos_utils.events import get_handler_name
+from ovos_bus_client.message import Message
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
-from ovos_config import Configuration
+from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.permissions import FallbackMode
-from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 class _MutableFallback(type(OVOSSkill)):
@@ -59,31 +62,22 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
     A Fallback can either observe or consume an utterance. A consumed
     utterance will not be seen by any other Fallback handlers.
     """
-    def __new__(cls, *args, **kwargs):
+    def __new__classic__(cls, *args, **kwargs):
         if cls is FallbackSkill:
-            # direct instantiation of class, dynamic wizardry or unittests
+            # direct instantiation of class, dynamic wizardry for unittests
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
+        cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
+        return super().__new__(cls, *args, **kwargs)
 
-        is_old = is_classic_core()
-        if not is_old:
-            try:
-                from mycroft.version import OVOS_VERSION_MAJOR, \
-                    OVOS_VERSION_MINOR, OVOS_VERSION_BUILD, OVOS_VERSION_ALPHA
-                if OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and \
-                        OVOS_VERSION_BUILD < 8:
-                    is_old = True
-                elif OVOS_VERSION_MAJOR == 0 and OVOS_VERSION_MINOR == 0 and \
-                        OVOS_VERSION_BUILD == 8 and 0 < OVOS_VERSION_ALPHA < 5:
-                    is_old = True
-            except ImportError:
-                pass
-        if is_old:
-            LOG.debug("Using V1 Fallback")
-            cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
-        else:
-            LOG.debug("Using V2 Fallback")
-            cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
+    @backwards_compat(classic_core=__new__classic__,
+                      pre_008=__new__classic__)
+    def __new__(cls, *args, **kwargs):
+        if cls is FallbackSkill:
+            # direct instantiation of class, dynamic wizardry for unittests
+            # return V2 as expected, V1 will eventually be dropped
+            return FallbackSkillV2(*args, **kwargs)
+        cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
         return super().__new__(cls, *args, **kwargs)
 
     @classmethod
@@ -102,10 +96,10 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     def __init__(self, name=None, bus=None, use_settings=True, **kwargs):
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
-
-        super().__init__(name, bus, use_settings, **kwargs)
         # "skill_id": priority (int)  overrides
-        self.fallback_config = self.config_core["skills"].get("fallbacks", {})
+        self.fallback_config = Configuration()["skills"].get("fallbacks", {})
+
+        super().__init__(name=name, bus=bus, **kwargs)
 
     @classmethod
     def make_intent_failure_handler(cls, bus: MessageBusClient):
@@ -197,11 +191,7 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
     def register_fallback(self, handler: Callable[[Message], None],
                           priority: int):
         """
-        Register a fallback handler method with a given priority. This will
-        account for configuration overrides of fallback priority, as well as
-        configured fallback skill whitelist/blacklist.
-        @param handler: fallback handler method that accepts a `Message` arg
-        @param priority: fallback priority
+        core >= 0.8.0 makes skill active
         """
         opmode = self.fallback_config.get("fallback_mode",
                                           FallbackMode.ACCEPT_ALL)
@@ -352,9 +342,6 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                        speak_errors=False)
         self.add_event(f"ovos.skills.fallback.{self.skill_id}.request",
                        self._handle_fallback_request, speak_errors=False)
-        self.bus.emit(Message("ovos.skills.fallback.register",
-                              {"skill_id": self.skill_id,
-                               "priority": self.priority}))
 
     def _handle_fallback_ack(self, message: Message):
         """
@@ -400,12 +387,9 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
             f"ovos.skills.fallback.{self.skill_id}.response",
             data={"result": status, "fallback_handler": handler_name}))
 
-    def register_fallback(self, handler: callable, priority: int):
+    def _old_register_fallback(self, handler: callable, priority: int):
         """
-        Register a fallback handler and add a messagebus handler to call it on
-        any fallback request.
-        @param handler: Fallback handler
-        @param priority: priority of the registered handler
+        makes the skill active, done by core >= 0.0.8
         """
 
         LOG.info(f"registering fallback handler -> "
@@ -419,6 +403,48 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
 
         self._fallback_handlers.append((priority, wrapper))
         self.bus.on(f"ovos.skills.fallback.{self.skill_id}", wrapper)
+        # register with fallback service
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id,
+                               "priority": self.priority}))
+
+    @backwards_compat(classic_core=_old_register_fallback, pre_008=_old_register_fallback)
+    def register_fallback(self, handler: callable, priority: int):
+        """
+        Register a fallback handler and add a messagebus handler to call it on
+        any fallback request.
+        @param handler: Fallback handler
+        @param priority: priority of the registered handler
+        """
+
+        LOG.info(f"registering fallback handler -> "
+                 f"ovos.skills.fallback.{self.skill_id}")
+        self._fallback_handlers.append((priority, handler))
+        self.bus.on(f"ovos.skills.fallback.{self.skill_id}", handler)
+        # register with fallback service
+        self.bus.emit(Message("ovos.skills.fallback.register",
+                              {"skill_id": self.skill_id,
+                               "priority": self.priority}))
+    
+    def remove_fallback(self, handler_to_del: Optional[callable] = None) -> bool:
+        """
+        Remove fallback registration / fallback handler.
+        @param handler_to_del: registered callback handler (or wrapped handler)
+        @return: True if at least one handler was removed, otherwise False
+        """
+        found_handler = False
+        for i in reversed(range(len(self._fallback_handlers))):
+            _, handler = self._fallback_handlers[i]
+            if handler_to_del is None or handler == handler_to_del:
+                found_handler = True
+                del self._fallback_handlers[i]
+
+        if not found_handler:
+            LOG.warning('No fallback matching {}'.format(handler_to_del))
+        if len(self._fallback_handlers) == 0:
+            self.bus.emit(Message("ovos.skills.fallback.deregister",
+                          {"skill_id": self.skill_id}))
+        return found_handler
 
     def default_shutdown(self):
         """

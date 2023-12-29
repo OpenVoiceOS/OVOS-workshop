@@ -1,5 +1,39 @@
 import enum
 
+from ovos_config.config import read_mycroft_config, update_mycroft_config
+
+
+def blacklist_skill(skill, config=None):
+    config = config or read_mycroft_config()
+    skills_config = config.get("skills", {})
+    blacklisted_skills = skills_config.get("blacklisted_skills", [])
+    if skill not in blacklisted_skills:
+        blacklisted_skills.append(skill)
+        conf = {
+            "skills": {
+                "blacklisted_skills": blacklisted_skills
+            }
+        }
+        update_mycroft_config(conf)
+        return True
+    return False
+
+
+def whitelist_skill(skill, config=None):
+    config = config or read_mycroft_config()
+    skills_config = config.get("skills", {})
+    blacklisted_skills = skills_config.get("blacklisted_skills", [])
+    if skill in blacklisted_skills:
+        blacklisted_skills.pop(skill)
+        conf = {
+            "skills": {
+                "blacklisted_skills": blacklisted_skills
+            }
+        }
+        update_mycroft_config(conf)
+        return True
+    return False
+
 
 class ConverseMode(str, enum.Enum):
     """
