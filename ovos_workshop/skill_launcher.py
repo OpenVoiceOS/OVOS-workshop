@@ -10,7 +10,7 @@ from ovos_bus_client.client import MessageBusClient
 from ovos_bus_client.message import Message
 from ovos_config.config import Configuration
 from ovos_config.locale import setup_locale
-from ovos_plugin_manager.skills import find_skill_plugins
+from ovos_plugin_manager.skills import find_skill_plugins, get_skill_directories
 from ovos_utils import wait_for_exit_signal
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.log import LOG, deprecated, log_deprecation
@@ -33,19 +33,6 @@ SKILL_BASE_CLASSES = [
 
 SKILL_MAIN_MODULE = '__init__.py'
 
-
-@deprecated("This method has moved to `ovos_plugin_manager.skills`", "0.1.0")
-def get_skill_directories(conf=None):
-    conf = conf or Configuration()
-    from ovos_plugin_manager.skills import get_skill_directories as _get_skill_dirs
-    return _get_skill_dirs(conf)
-
-
-@deprecated("This method has moved to `ovos_plugin_manager.skills`", "0.1.0")
-def get_default_skills_directory(conf=None):
-    from ovos_plugin_manager.skills import get_default_skills_directory
-    conf = conf or Configuration()
-    return get_default_skills_directory(conf)
 
 
 def remove_submodule_refs(module_name: str):
@@ -563,7 +550,7 @@ class SkillContainer:
         self.bus = bus
         self.skill_id = skill_id
         if not skill_directory:  # preference to local skills instead of plugins
-            for p in _get_skill_dirs():
+            for p in get_skill_directories():
                 if isdir(f"{p}/{skill_id}"):
                     skill_directory = f"{p}/{skill_id}"
                     LOG.debug(f"found local skill {skill_id}: {skill_directory}")
