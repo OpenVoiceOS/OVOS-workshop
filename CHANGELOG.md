@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.15a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a5) (2023-12-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15a4...0.0.15a5)
+
+**Fixed bugs:**
+
+- if it quacks like a duck... [\#164](https://github.com/OpenVoiceOS/OVOS-workshop/pull/164) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.15a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a4) (2023-12-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15a3...0.0.15a4)
