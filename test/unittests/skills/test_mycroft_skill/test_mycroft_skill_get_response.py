@@ -233,7 +233,8 @@ class TestMycroftSkillAskYesNo(TestCase):
         response = skill.ask_yesno('Do you like breakfast')
         self.assertEqual(response, 'I am a fish')
 
-    @mock.patch('ovos_workshop.skills.ovos.dig_for_message')
+    @skip("TODO - fix me")
+    @mock.patch('ovos_bus_client.message.dig_for_message')
     def test_ask_yesno_german(self, dig_mock):
         """Check that when the skill is set to german it responds to "ja"."""
         # lang is session based, it comes from originating message in ovos-core

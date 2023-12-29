@@ -4,7 +4,7 @@ from os.path import join, dirname
 from os import remove
 from unittest.mock import Mock, patch
 
-from ovos_utils.gui import GUIInterface
+from ovos_bus_client.apis.gui import GUIInterface
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.app import OVOSAbstractApplication
 from json_database import JsonStorage
