@@ -1205,13 +1205,19 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         @param intent_list: List of intents associated with the intent layer
         """
         for intent_file in intent_list:
-            if IntentBuilder is not None and isinstance(intent_file, IntentBuilder):
-                intent = intent_file.build()
-                name = intent.name
-            elif Intent is not None and isinstance(intent_file, Intent):
-                name = intent_file.name
-            else:
+            if isinstance(intent_file, str):
                 name = f'{self.skill_id}:{intent_file}'
+            else:
+                if hasattr(intent_file, "build"):
+                    try:
+                        intent_file = intent_file.build()
+                    except:
+                        pass
+                try:
+                    name = intent_file.name
+                except:
+                    name = f'{self.skill_id}:{intent_file}'
+
             self.intent_layers.update_layer(layer_name, [name])
 
     def register_intent(self, intent_parser: Union[IntentBuilder, Intent, str],
@@ -1413,10 +1419,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             intent_parser: Intent object to parse utterance for the handler.
             handler (func): function to register with intent
         """
-        if isinstance(intent_parser, IntentBuilder):
-            intent_parser = intent_parser.build()
-        elif not isinstance(intent_parser, Intent):
-            raise ValueError('"' + str(intent_parser) + '" is not an Intent')
+        if hasattr(intent_parser, "build"):
+            try:
+                intent_parser = intent_parser.build()
+            except:
+                pass
 
         # Default to the handler's function name if none given
         is_anonymous = not intent_parser.name
