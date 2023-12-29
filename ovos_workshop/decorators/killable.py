@@ -1,8 +1,7 @@
-from typing import Callable, Optional, Type
+from typing import Optional, Type
 
-import time
 from ovos_utils import create_killable_daemon
-from ovos_utils.messagebus import Message
+from ovos_utils.fakebus import Message
 import threading
 from inspect import signature
 from functools import wraps
