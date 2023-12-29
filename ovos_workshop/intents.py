@@ -12,7 +12,7 @@ except ImportError:
     # adapt is optional
 
     class Intent:
-        def __init__(self, name, requires, at_least_one, optional):
+        def __init__(self, name, requires=None, at_least_one=None, optional=None):
             """Create Intent object
             Args:
                 name(str): Name for Intent
@@ -21,9 +21,9 @@ except ImportError:
                 optional(list): Optional Entities used by the intent
             """
             self.name = name
-            self.requires = requires
-            self.at_least_one = at_least_one
-            self.optional = optional
+            self.requires = requires or []
+            self.at_least_one = at_least_one or []
+            self.optional = optional or []
 
         def validate(self, tags, confidence):
             """Using this method removes tags from the result of validate_with_tags
@@ -488,9 +488,6 @@ def open_intent_envelope(message):
     """
     Convert dictionary received over messagebus to Intent.
     """
-    # TODO can this method be fully removed from ovos_utils ?
-    from adapt.intent import Intent
-
     intent_dict = message.data
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),

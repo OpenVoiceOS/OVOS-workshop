@@ -27,16 +27,16 @@ from ovos_bus_client.apis.gui import GUIInterface
 from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
+from ovos_bus_client.util import get_message_lang
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.events import EventContainer, EventSchedulerInterface
-from ovos_utils.file_utils import FileWatcher
+from ovos_utils.events import get_handler_name, create_wrapper
+from ovos_utils.file_utils import FileWatcher, resolve_resource_file
 from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG, log_deprecation, deprecated
-from ovos_utils.events import get_handler_name, create_wrapper
-from ovos_bus_client.util import get_message_lang
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
@@ -1224,14 +1224,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                            file to parse utterance for the handler.
             handler (func): function to register with intent
         """
-        if isinstance(intent_parser, IntentBuilder):
-            intent_parser = intent_parser.build()
         if (isinstance(intent_parser, str) and
                 intent_parser.endswith('.intent')):
             return self.register_intent_file(intent_parser, handler)
-        elif not isinstance(intent_parser, Intent):
-            raise ValueError('"' + str(intent_parser) + '" is not an Intent')
-
         return self._register_adapt_intent(intent_parser, handler)
 
     def register_intent_file(self, intent_file: str, handler: callable):
@@ -1418,6 +1413,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             intent_parser: Intent object to parse utterance for the handler.
             handler (func): function to register with intent
         """
+        if isinstance(intent_parser, IntentBuilder):
+            intent_parser = intent_parser.build()
+        elif not isinstance(intent_parser, Intent):
+            raise ValueError('"' + str(intent_parser) + '" is not an Intent')
+
         # Default to the handler's function name if none given
         is_anonymous = not intent_parser.name
         name = intent_parser.name or handler.__name__
@@ -1882,8 +1882,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             else:
                 self.bus.emit(message.reply('mycroft.mic.listen'))
 
-    @staticmethod
-    def __acknowledge_classic():
+    def __acknowledge_classic(self):
         """
         Acknowledge a successful request.
 
@@ -1891,10 +1890,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         require a verbal response. This is intended to provide simple feedback
         to the user that their request was handled successfully.
         """
-        # DEPRECATED - note that this is a staticmethod and uses the old endpoint
-        # the OVOSSkill class does things properly
-        from ovos_utils.sound import play_acknowledge_sound
-        return play_acknowledge_sound()
+        audio_file = self.config_core.get('sounds', {}).get('acknowledge',
+                                                            'snd/acknowledge.mp3')
+        audio_file = resolve_resource_file(audio_file)
+        if audio_file:
+            return play_audio(audio_file)
 
     @backwards_compat(classic_core=__acknowledge_classic)
     def acknowledge(self):
