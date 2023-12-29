@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.15a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a2) (2023-12-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15a1...0.0.15a2)
+
+**Fixed bugs:**
+
+- fix skill\_directories [\#161](https://github.com/OpenVoiceOS/OVOS-workshop/pull/161) ([JarbasAl](https://github.com/JarbasAl))
+
+**Closed issues:**
+
+- `NameError: name '_get_skill_dirs' is not defined.` [\#159](https://github.com/OpenVoiceOS/OVOS-workshop/issues/159)
+
 ## [0.0.15a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a1) (2023-12-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.14...0.0.15a1)
