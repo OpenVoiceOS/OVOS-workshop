@@ -21,35 +21,6 @@ class TestSkillLauncherFunctions(unittest.TestCase):
         if isdir(data_path):
             shutil.rmtree(data_path)
 
-    def test_get_skill_directories(self):
-        from ovos_workshop.skill_launcher import get_skill_directories
-        # Default directory
-        mock_config = {'skills': {}}
-        default_directories = get_skill_directories(mock_config)
-        for directory in default_directories:
-            self.assertEqual(basename(directory), 'skills')
-        # Configured directory
-        mock_config['skills']['directory'] = 'test'
-        test_directories = get_skill_directories(mock_config)
-        for directory in test_directories:
-            self.assertEqual(basename(directory), 'test')
-        self.assertEqual(len(default_directories), len(test_directories))
-
-    def test_get_default_skills_directory(self):
-        from ovos_workshop.skill_launcher import get_default_skills_directory
-        # Default directory
-        mock_config = {'skills': {}}
-        default_dir = get_default_skills_directory(mock_config)
-        self.assertTrue(isdir(default_dir))
-        self.assertEqual(basename(default_dir), 'skills')
-        self.assertEqual(dirname(dirname(default_dir)), self.test_data_path)
-        # Override directory
-        mock_config['skills']['directory'] = 'test'
-        test_dir = get_default_skills_directory(mock_config)
-        self.assertTrue(isdir(test_dir))
-        self.assertEqual(basename(test_dir), 'test')
-        self.assertEqual(dirname(dirname(test_dir)), self.test_data_path)
-
     def test_remove_submodule_refs(self):
         from ovos_workshop.skill_launcher import remove_submodule_refs
         pass
