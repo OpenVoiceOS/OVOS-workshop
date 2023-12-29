@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.15a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a3) (2023-12-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15a2...0.0.15a3)
+
+**Fixed bugs:**
+
+- adapt backwards compat [\#162](https://github.com/OpenVoiceOS/OVOS-workshop/pull/162) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.15a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.15a2) (2023-12-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15a1...0.0.15a2)
