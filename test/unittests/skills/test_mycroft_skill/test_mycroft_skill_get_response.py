@@ -44,11 +44,12 @@ def create_converse_responder(response, skill):
     return wait_for_new_converse
 
 
-@mock.patch('mycroft.configuration.Configuration')
+@mock.patch('ovos_workshop.skills.ovos.Configuration')
 def create_skill(mock_conf, lang='en-us'):
     cfg = base_config()
     cfg["lang"] = lang
     mock_conf.get.return_value = cfg
+    mock_conf.return_value = cfg
     bus = mock.Mock()
     skill = MycroftSkill(name='test_skill')
     skill.root_dir = join(dirname(__file__), 'test_skill')
@@ -233,7 +234,6 @@ class TestMycroftSkillAskYesNo(TestCase):
         response = skill.ask_yesno('Do you like breakfast')
         self.assertEqual(response, 'I am a fish')
 
-    @skip("TODO - fix me")
     @mock.patch('ovos_bus_client.message.dig_for_message')
     def test_ask_yesno_german(self, dig_mock):
         """Check that when the skill is set to german it responds to "ja"."""
