@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a2) (2023-12-30)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a1...0.0.16a2)
+
+**Fixed bugs:**
+
+- fix/loading\_failure\_logs\_even\_if\_loaded [\#168](https://github.com/OpenVoiceOS/OVOS-workshop/pull/168) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a1) (2023-12-29)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.15...0.0.16a1)
