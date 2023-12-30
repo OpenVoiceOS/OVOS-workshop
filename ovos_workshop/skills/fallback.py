@@ -68,7 +68,7 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
         cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     @backwards_compat(classic_core=__new__classic__,
                       pre_008=__new__classic__)
@@ -78,7 +78,7 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
         cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     @classmethod
     def make_intent_failure_handler(cls, bus: MessageBusClient):
