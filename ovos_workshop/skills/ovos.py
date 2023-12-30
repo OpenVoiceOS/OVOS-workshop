@@ -315,7 +315,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         True if this skill implements a `stop` method
         """
-        return self.__class__.stop is not OVOSSkill.stop
+        return self.__class__.stop is not OVOSSkill.stop or \
+            self.__class__.stop_session is not OVOSSkill.stop_session
 
     @property
     def converse_is_implemented(self) -> bool:
@@ -945,11 +946,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Register default messagebus event handlers
         """
-        # Only register stop if it's been implemented
-        if self.stop_is_implemented:
-            self.add_event('mycroft.stop', self.__handle_stop,
-                           speak_errors=False)
-        # TODO: deprectate 0.0.9
+        self.add_event('mycroft.stop', self.__handle_stop, speak_errors=False)
+        self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
+        self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
+
+        # TODO: deprecate 0.0.9
         self.add_event("skill.converse.ping", self._handle_converse_ack,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack,
@@ -1118,17 +1119,47 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         )
         self.bus.emit(message)
 
+    def _handle_stop_ack(self, message: Message):
+        """
+        Inform skills service if we want to handle stop. Individual skills
+        may override the property self.stop_is_implemented to enable or
+        disable stop support.
+        @param message: `{self.skill_id}.stop.ping` Message
+        """
+        self.bus.emit(message.reply(
+            "skill.stop.pong",
+            data={"skill_id": self.skill_id,
+                  "can_handle": self.stop_is_implemented},
+            context={"skill_id": self.skill_id}))
+
+    def stop_session(self, session: Session):
+        """skill devs can subclass this if their skill is Session aware
+        skill should stop any activity related to this session
+        this is called before self.stop , if it returns True  the global self.stop won't be called"""
+        return False
+
+    def _handle_session_stop(self, message: Message):
+        message.context['skill_id'] = self.skill_id
+        sess = SessionManager.get(message)
+        data = {"skill_id": self.skill_id, "result": False}
+        try:
+            data["result"] = self.stop_session(sess)
+        except Exception as e:
+            data["error"] = str(e)
+            self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
+        self.bus.emit(message.reply(f"{self.skill_id}.stop.response", data))
+
     def __handle_stop(self, message):
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
         message.context['skill_id'] = self.skill_id
         self.bus.emit(message.forward(self.skill_id + ".stop"))
+        sess = SessionManager.get(message)
         try:
-            if self.stop():
+            if self.stop_session(sess) or self.stop():
                 self.bus.emit(message.reply("mycroft.stop.handled",
-                                            {"by": "skill:" + self.skill_id},
-                                            {"skill_id": self.skill_id}))
+                                            {"by": "skill:" + self.skill_id}))
         except Exception as e:
             self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
 
