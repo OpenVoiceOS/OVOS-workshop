@@ -389,6 +389,12 @@ class SkillLoader:
         except Exception as e:
             LOG.exception(f'Unhandled exception occurred while reloading '
                           f'{self.skill_directory}: {e}')
+            LOG.error("Unloading skill - this may produce errors")
+            # Call unload to allow the broken skill to at least try
+            # and shutdown cleanly. Eg any threads spawned in
+            # __init__() before whatever went wrong.
+            self._unload()
+            LOG.error("Unloaded skill as well as possible")
 
     def _prepare_for_load(self):
         """
