@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a4) (2024-01-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a3...0.0.16a4)
+
+**Fixed bugs:**
+
+- When a skill reload fails then try and clean up [\#173](https://github.com/OpenVoiceOS/OVOS-workshop/pull/173) ([lbt](https://github.com/lbt))
+
 ## [0.0.16a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a3) (2024-01-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a2...0.0.16a3)
