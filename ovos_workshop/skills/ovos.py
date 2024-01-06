@@ -169,7 +169,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # include any logic needed to handle the updated settings.
         self.settings_change_callback = None
 
-        # fully initialized when self.skill_id is set
+        # fully initialized when self. is set
         self._file_system = None
 
         self.reload_skill = True  # allow reloading (default True)
@@ -198,8 +198,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self._threads = []  # for killable events decorator
 
         # yay, following python best practices again!
-        if self.skill_id and bus:
-            self._startup(bus, self.skill_id)
+        if self. and bus:
+            self._startup(bus, self.)
 
     # skill developer abstract methods
     # devs are meant to override these
@@ -223,7 +223,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Called when this skill is considered active by the intent service;
         converse method will be called with every utterance.
         Override this method to do any optional preparation.
-        @param message: `{self.skill_id}.activate` Message
+        @param message: `{self.}.activate` Message
         """
 
     def handle_deactivate(self, message: Message):
@@ -231,7 +231,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Called when this skill is no longer considered active by the intent
         service; converse method will not be called until skill is active again.
         Override this method to do any optional cleanup.
-        @param message: `{self.skill_id}.deactivate` Message
+        @param message: `{self.}.deactivate` Message
         """
 
     def converse(self, message: Optional[Message] = None) -> bool:
@@ -325,15 +325,15 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         return self.__class__.converse is not OVOSSkill.converse or \
             self._original_converse != self.converse
 
-    # safe skill_id/bus wrapper properties
+    # safe /bus wrapper properties
     @property
-    def alphanumeric_skill_id(self) -> str:
+    def alphanumeric_(self) -> str:
         """
         Skill id converted to only alphanumeric characters and "_".
         Non alphanumeric characters are converted to "_"
         """
         return ''.join(c if c.isalnum() else '_'
-                       for c in str(self.skill_id))
+                       for c in str(self.))
 
     @property
     def lang_detector(self):
@@ -364,7 +364,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Absolute file path of this skill's `settings.json` (file may not exist)
         """
-        return join(get_xdg_config_save_path(), 'skills', self.skill_id,
+        return join(get_xdg_config_save_path(), 'skills', self.,
                     'settings.json')
 
     @property
@@ -378,7 +378,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized. Only default values '
                              'can be set, no settings can be read or changed.'
                              f"to correct this add kwargs "
-                             f"__init__(bus=None, skill_id='') "
+                             f"__init__(bus=None, ='') "
                              f"to skill class {self.__class__.__name__}")
             self.log.error(simple_trace(traceback.format_stack()))
             return self._initial_settings
@@ -1185,7 +1185,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                            f'error: {e}')
 
         self.bus.emit(
-            Message('detach_skill', {'skill_id': self.skill_id}))
+            Message('detach_skill', {'skill_id': self.skill_id}, 
+                    {'skill_id': self.skill_id}))
 
     def detach(self):
         """
