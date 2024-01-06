@@ -231,7 +231,7 @@ class FallbackSkillV1(_MetaFB, metaclass=_MutableFallback):
                 del cls.fallback_handlers[priority]
 
         if not found_handler:
-            LOG.warning('No fallback matching {}'.format(wrapper_to_del))
+            LOG.warning(f'No fallback matching {wrapper_to_del}')
         return found_handler
 
     @classmethod
@@ -439,7 +439,7 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                 del self._fallback_handlers[i]
 
         if not found_handler:
-            LOG.warning('No fallback matching {}'.format(handler_to_del))
+            LOG.warning(f'No fallback matching {handler_to_del}')
         if len(self._fallback_handlers) == 0:
             self.bus.emit(Message("ovos.skills.fallback.deregister",
                           {"skill_id": self.skill_id}))

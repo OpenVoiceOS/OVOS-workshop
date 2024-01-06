@@ -75,7 +75,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
             "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
 
-        self.ocp_matchers = {l: KeywordFeatures() for l in self.native_langs}
+        self.ocp_matchers = {l: KeywordFeatures(l) for l in self.native_langs}
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -191,7 +191,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         langs = langs or self.native_langs
         for l in langs:
             if l not in self.ocp_matchers:
-                self.ocp_matchers[l] = KeywordFeatures()
+                self.ocp_matchers[l] = KeywordFeatures(l)
             self.ocp_matchers[l].register_entity(label, samples)
 
         self.bus.emit(

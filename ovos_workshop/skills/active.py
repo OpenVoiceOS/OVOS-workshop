@@ -3,7 +3,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 
 class ActiveSkill(OVOSSkill):
     def bind(self, bus):
-        super(ActiveSkill, self).bind(bus)
+        super().bind(bus)
         if bus:
             """ insert skill in active skill list on load """
             self.make_active()
