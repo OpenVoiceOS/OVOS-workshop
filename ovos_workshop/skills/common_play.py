@@ -55,7 +55,6 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         # NOTE: derived skills will likely want to override this list
         self.supported_media = [MediaType.GENERIC]
         skill_name = camel_case_split(self.__class__.__name__)
@@ -77,7 +76,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
             "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
 
-        self.ocp_matchers = {l: KeywordFeatures() for l in self.native_langs}
+        self.ocp_matchers = {}
+        super().__init__(*args, **kwargs)
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -174,21 +174,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         lang = lang or self.lang
         if lang not in self.ocp_matchers:
             return {}
-        return self.ocp_matchers[lang].extract(utterance)
+        matches = {}
+        for k, v in self.ocp_matchers[lang].match(utterance):
+            if k not in matches or len(v) > len(matches[k]):
+                matches[k] = v
+        return matches
 
-    def register_ocp_keyword(self, label: str, samples: List, langs: List[str] = None):
+    def register_ocp_keyword(self, media_type: MediaType, label: str,
+                             samples: List, langs: List[str] = None):
         """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
 
         ocp keywords can be efficiently matched with self.ocp_match helper method
         that uses Aho–Corasick algorithm
-
-        if the label is a valid OCP entity known by the classifier it will help
-        the classifier disambiguate between media_types
-
-        a full list can be found in ocp_nlp.constants.OCP_ENTITIES
-
-        eg, if OCP finds a movie name in user utterances it will
-            prefer to search netflix instead of spotify
         """
         langs = langs or self.native_langs
         for l in langs:
@@ -196,12 +193,21 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 self.ocp_matchers[l] = KeywordFeatures()
             self.ocp_matchers[l].register_entity(label, samples)
 
-        self.bus.emit(
-            Message('ovos.common_play.register_keyword',
-                    {"skill_id": self.skill_id,
-                     "label": label,  # if in OCP_ENTITIES it influences classifier
-                     "langs": langs,
-                     "samples": samples}))
+        # TODO - send bus message once Pipeline is in
+        #  if the label is a valid OCP entity known by the classifier it will help
+        #  the classifier disambiguate between media_types
+        #  eg, if OCP finds a movie name in user utterances it will
+        #      prefer to search netflix instead of spotify
+        # right now only used for internal matching
+        # NB: consider sending a file path,
+        # bus messages with thousands of entities dont work well
+        #self.bus.emit(
+        #    Message('ovos.common_play.register_keyword',
+        #            {"skill_id": self.skill_id,
+        #             "label": label,  # if in OCP_ENTITIES it influences classifier
+        #             "langs": langs,
+        #             "samples": samples,
+        #             "media_type": media_type}))
 
     def deregister_ocp_keyword(self, media_type: MediaType, label: str,
                                langs: List[str] = None):
@@ -209,12 +215,19 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         for l in langs:
             if l in self.ocp_matchers:
                 self.ocp_matchers[l].deregister_entity(label)
-        self.bus.emit(
-            Message('ovos.common_play.deregister_keyword',
-                    {"skill_id": self.skill_id,
-                     "label": label,
-                     "langs": langs,
-                     "media_type": media_type}))
+
+        # TODO - send bus message once Pipeline is in
+        #  if the label is a valid OCP entity known by the classifier it will help
+        #  the classifier disambiguate between media_types
+        #  eg, if OCP finds a movie name in user utterances it will
+        #      prefer to search netflix instead of spotify
+        # right now only used for internal matching
+        #self.bus.emit(
+        #    Message('ovos.common_play.deregister_keyword',
+        #            {"skill_id": self.skill_id,
+        #             "label": label,
+        #             "langs": langs,
+        #             "media_type": media_type}))
 
     def _register_decorated(self):
         # register search handlers
