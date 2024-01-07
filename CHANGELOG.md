@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.16a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a4) (2024-01-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a3...0.0.16a4)
+
+**Fixed bugs:**
+
+- When a skill reload fails then try and clean up [\#173](https://github.com/OpenVoiceOS/OVOS-workshop/pull/173) ([lbt](https://github.com/lbt))
+
+## [0.0.16a3](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a3) (2024-01-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a2...0.0.16a3)
+
+**Fixed bugs:**
+
+- FallbackSkill `__new__()` fails for FallbackSkillV1 [\#170](https://github.com/OpenVoiceOS/OVOS-workshop/issues/170)
+- Just publish the skill\_id without the extra ":" [\#171](https://github.com/OpenVoiceOS/OVOS-workshop/pull/171) ([lbt](https://github.com/lbt))
+
 ## [0.0.16a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a2) (2023-12-30)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a1...0.0.16a2)

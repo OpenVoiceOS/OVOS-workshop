@@ -1185,8 +1185,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                            f'error: {e}')
 
         self.bus.emit(
-            Message('detach_skill', {'skill_id': f"{self.skill_id}:"},
-                    {"skill_id": self.skill_id}))
+            Message('detach_skill', {'skill_id': self.skill_id},
+                    {'skill_id': self.skill_id}))
 
     def detach(self):
         """
