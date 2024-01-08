@@ -1,6 +1,7 @@
-ovos-utils < 0.2.0, >=0.0.37
+ovos-utils >= 0.1.0a7, < 0.2.0
+ovos-bus-client < 0.1.0, >=0.0.9a2
 ovos_config < 0.2.0,>=0.0.12
-ovos_bus_client < 0.2.0, >=0.0.8
 ovos_backend_client < 0.2.0, >=0.1.0
 ovos-lingua-franca~=0.4, >=0.4.6
+ovos_classifiers>=0.0.0a46
 rapidfuzz
