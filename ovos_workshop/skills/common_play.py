@@ -180,6 +180,24 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 matches[k] = v
         return matches
 
+    def load_ocp_keyword_from_csv(self, csv_path: str, lang: str):
+        """ load entities from a .csv file for usage with self.ocp_voc_match
+        see the ocp_entities.csv datatsets for example files built from wikidata SPARQL queries
+
+        examples contents of csv file
+
+            label,entity
+            film_genre,swashbuckler film
+            film_genre,neo-noir
+            film_genre,actual play film
+            film_genre,alternate history film
+            film_genre,spy film
+            ...
+        """
+        if lang not in self.ocp_matchers:
+            self.ocp_matchers[lang] = KeywordFeatures()
+        self.ocp_matchers[lang].load_entities(csv_path)
+
     def register_ocp_keyword(self, media_type: MediaType, label: str,
                              samples: List, langs: List[str] = None):
         """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
