@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a5) (2024-01-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a4...0.0.16a5)
+
+**Implemented enhancements:**
+
+- feat/ocp\_voc\_match [\#172](https://github.com/OpenVoiceOS/OVOS-workshop/pull/172) ([NeonJarbas](https://github.com/NeonJarbas))
+
 ## [0.0.16a4](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a4) (2024-01-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a3...0.0.16a4)
