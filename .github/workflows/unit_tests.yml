@@ -12,7 +12,7 @@ on:
       - 'LICENSE'
       - 'CHANGELOG.md'
       - 'MANIFEST.in'
-      - 'readme.md'
+      - 'README.md'
       - 'scripts/**'
   push:
     branches:
@@ -26,7 +26,7 @@ on:
       - 'LICENSE'
       - 'CHANGELOG.md'
       - 'MANIFEST.in'
-      - 'readme.md'
+      - 'README.md'
       - 'scripts/**'
   workflow_dispatch:
 
@@ -52,13 +52,13 @@ jobs:
           sudo apt-get update
           sudo apt install python3-dev
           python -m pip install build wheel
-      - name: Install ovos workshop
-        run: |
-          pip install -e .
       - name: Install test dependencies
         run: |
           sudo apt install libssl-dev libfann-dev portaudio19-dev libpulse-dev
           pip install -r requirements/test.txt
+      - name: Install ovos workshop
+        run: |
+          pip install -e .
       - name: Run unittests
         run: |
           pytest --cov=ovos_workshop --cov-report xml test/unittests
