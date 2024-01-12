@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a6) (2024-01-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a5...0.0.16a6)
+
+**Implemented enhancements:**
+
+- feat/OCP csv keyword files support [\#174](https://github.com/OpenVoiceOS/OVOS-workshop/pull/174) ([NeonJarbas](https://github.com/NeonJarbas))
+
 ## [0.0.16a5](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a5) (2024-01-08)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a4...0.0.16a5)
