@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a8) (2024-01-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a7...0.0.16a8)
+
+**Implemented enhancements:**
+
+- feat/stop\_per\_session [\#169](https://github.com/OpenVoiceOS/OVOS-workshop/pull/169) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.16a7](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a7) (2024-01-12)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a6...0.0.16a7)
+
 ## [0.0.16a6](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a6) (2024-01-12)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a5...0.0.16a6)
