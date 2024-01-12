@@ -18,8 +18,9 @@ from typing import List, Optional, Tuple
 from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG, log_deprecation
-from ovos_workshop.skills.ovos import OVOSSkill
+
 from ovos_workshop.decorators.compat import backwards_compat
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 class CQSMatchLevel(IntEnum):
@@ -58,14 +59,14 @@ class CommonQuerySkill(OVOSSkill):
     answers from several skills presenting the best one available.
     """
 
-    def __init__(self, name=None, bus=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         # these should probably be configurable
         self.level_confidence = {
             CQSMatchLevel.EXACT: 0.9,
             CQSMatchLevel.CATEGORY: 0.6,
             CQSMatchLevel.GENERAL: 0.5
         }
-        OVOSSkill.__init__(self, name, bus, **kwargs)
+        super().__init__(*args, **kwargs)
 
         noise_words_filepath = f"text/{self.lang}/noise_words.list"
         default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}" \
@@ -109,6 +110,15 @@ class CommonQuerySkill(OVOSSkill):
                            speak_errors=False)
             self.add_event('question:action', self.__handle_query_action,
                            speak_errors=False)
+            self.add_event("ovos.common_query.ping", self.__handle_common_query_ping,
+                           speak_errors=False)
+            self.__handle_common_query_ping(Message("ovos.common_query.ping"))
+
+    # announce skill to ovos-core
+    def __handle_common_query_ping(self, message):
+        self.bus.emit(message.reply("ovos.common_query.pong",
+                                    {"skill_id": self.skill_id},
+                                    {"skill_id": self.skill_id}))
 
     def __handle_question_query(self, message: Message):
         """
@@ -255,6 +265,7 @@ class CommonQuerySkill(OVOSSkill):
         self.CQS_action(phrase, data)
         self.bus.emit(message.forward("mycroft.skill.handler.complete",
                                       {"handler": "common_query"}))
+
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \
             Optional[Tuple[str, CQSMatchLevel, Optional[dict]]]:
