@@ -12,8 +12,9 @@ from ovos_classifiers.skovos.features import KeywordFeatures
 from ovos_config.locations import get_xdg_cache_save_path
 from ovos_workshop.skills.ovos import OVOSSkill
 
-
 # backwards compat imports, do not delete, skills import from here
+from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
+    ocp_previous, ocp_featured_media
 
 
 def get_non_properties(obj):
