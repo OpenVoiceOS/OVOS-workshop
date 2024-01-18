@@ -5,7 +5,8 @@ from os.path import isdir
 from inspect import isclass
 from types import ModuleType
 from typing import Optional
-from time import time
+from time import time, sleep
+import random
 from ovos_bus_client.client import MessageBusClient
 from ovos_bus_client.message import Message
 from ovos_config.config import Configuration
@@ -648,6 +649,11 @@ def _launch_script():
     Console script entrypoint
     USAGE: ovos-skill-launcher {skill_id} [path/to/my/skill_id]
     """
+    # HACK: this delays each skill by up to 5 seconds
+    # ensuring they dont all launch at once and cause high cpu usage
+    # TODO drop in 0.1.0
+    sleep(random.randint(0, 5000) / 1000) 
+    
     args_count = len(sys.argv)
     if args_count == 2:
         skill_id = sys.argv[1]
