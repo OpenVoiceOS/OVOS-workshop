@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a9) (2024-01-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a8...0.0.16a9)
+
+**Fixed bugs:**
+
+- fix/self.name usages [\#177](https://github.com/OpenVoiceOS/OVOS-workshop/pull/177) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a8](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a8) (2024-01-12)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a7...0.0.16a8)
