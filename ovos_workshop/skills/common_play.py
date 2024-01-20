@@ -341,7 +341,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.bus.emit(
             Message('ovos.common_play.announce',
                     {"skill_id": self.skill_id,
-                     "skill_name": self.name,
+                     "skill_name": self.skill_aliases[0],
                      "thumbnail": self.skill_icon,
                      "media_types": self.supported_media,
                      "featured_tracks": len(self._featured_handlers) >= 1}))
@@ -354,7 +354,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.bus.emit(Message("ovos.common_play.query.response",
                                   {"phrase": self._current_query,
                                    "skill_id": self.skill_id,
-                                   "skill_name": self.name,
+                                   "skill_name": self.skill_aliases[0],
                                    "thumbnail": self.skill_icon,
                                    "timeout": timeout,
                                    "searching": True}))
@@ -436,7 +436,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         self.bus.emit(message.reply("ovos.common_play.skill.search_start",
                                     {"skill_id": self.skill_id,
-                                     "skill_name": self.name,
+                                     "skill_name": self.skill_aliases[0],
                                      "thumbnail": self.skill_icon, }))
 
         # invoke the media search handlesr to let the skill perform its search
@@ -460,7 +460,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     results[idx]["skill_id"] = self.skill_id
                 self.bus.emit(message.response({"phrase": search_phrase,
                                                 "skill_id": self.skill_id,
-                                                "skill_name": self.name,
+                                                "skill_name": self.skill_aliases[0],
                                                 "thumbnail": self.skill_icon,
                                                 "results": results,
                                                 "searching": False}))
@@ -472,7 +472,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                     r["skill_id"] = self.skill_id
                     self.bus.emit(message.response({"phrase": search_phrase,
                                                     "skill_id": self.skill_id,
-                                                    "skill_name": self.name,
+                                                    "skill_name": self.skill_aliases[0],
                                                     "thumbnail": self.skill_icon,
                                                     "results": [r],
                                                     "searching": False}))
@@ -484,7 +484,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             # Signal we are done (can't handle it)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
-                                            "skill_name": self.name,
+                                            "skill_name": self.skill_aliases[0],
                                             "thumbnail": self.skill_icon,
                                             "searching": False}))
         self.bus.emit(message.reply("ovos.common_play.skill.search_end",
@@ -510,7 +510,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 results[idx]["skill_id"] = self.skill_id
             self.bus.emit(Message("ovos.common_play.skill.play",
                                   {"skill_id": self.skill_id,
-                                   "skill_name": self.name,
+                                   "skill_name": self.skill_aliases[0],
                                    "thumbnail": self.skill_icon,
                                    "playlist": results}))
 
