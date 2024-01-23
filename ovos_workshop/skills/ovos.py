@@ -1596,7 +1596,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             mtype = "mycroft.audio.queue"
 
-        if not send_binary:
+        if not send_binary or not isfile(filename):
             data = {"uri": filename}
         else:
             with open(filename, "rb") as f:
