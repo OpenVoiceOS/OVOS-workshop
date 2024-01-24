@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.16a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a10) (2024-01-24)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a9...0.0.16a10)
+
+**Fixed bugs:**
+
+- fix/skill\_name [\#179](https://github.com/OpenVoiceOS/OVOS-workshop/pull/179) ([JarbasAl](https://github.com/JarbasAl))
+- fix/sounds\_in\_docker [\#178](https://github.com/OpenVoiceOS/OVOS-workshop/pull/178) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a9](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a9) (2024-01-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a8...0.0.16a9)
