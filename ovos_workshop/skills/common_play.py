@@ -147,7 +147,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.bus.emit(
             message.reply('ovos.common_play.announce',
                           {"skill_id": self.skill_id,
-                           "skill_name": self.skill_name,
+                           "skill_name": self.skill_aliases[0],
                            "aliases": self.skill_aliases,
                            "thumbnail": self.skill_icon,
                            "media_type": self.supported_media,
