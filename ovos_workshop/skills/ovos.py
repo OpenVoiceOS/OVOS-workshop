@@ -138,7 +138,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
-        self.resting_name = None
         self.skill_id = skill_id  # set by SkillLoader, guaranteed unique
         self._settings_meta = None  # DEPRECATED - backwards compat only
         self.settings_manager = None
@@ -782,22 +781,45 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         This only allows one screen and if two is registered only one
         will be used.
         """
+        resting_name = None
         for attr_name in get_non_properties(self):
-            method = getattr(self, attr_name)
-            if hasattr(method, 'resting_handler'):
-                self.resting_name = method.resting_handler
-                self.log.info(f'Registering resting screen {method} for {self.resting_name}.')
+            handler = getattr(self, attr_name)
+            if hasattr(handler, 'resting_handler'):
+                resting_name = handler.resting_handler
 
-                # Register for handling resting screen
-                self.add_event(f'{self.skill_id}.idle', method, speak_errors=False)
-                # Register handler for resting screen collect message
-                self.add_event('mycroft.mark2.collect_idle',
-                               self._handle_collect_resting, speak_errors=False)
+                def register(message=None):
+                    self.log.info(f'Registering resting screen {resting_name} for {self.skill_id}.')
+                    self.bus.emit(Message("homescreen.manager.add",
+                                          {"class": "IdleDisplaySkill",  # TODO - rm in ovos-gui, only for compat
+                                           "name": resting_name,
+                                           "id": self.skill_id}))
 
-                # Do a send at load to make sure the skill is registered
-                # if reloaded
-                self._handle_collect_resting()
-                break
+                register()  # initial registering
+
+                self.add_event("homescreen.manager.reload.list", register,
+                               speak_errors=False)
+
+                def wrapper(message):
+                    if message.data["homescreen_id"] == self.skill_id:
+                        handler(message)
+
+                self.add_event("homescreen.manager.activate.display", wrapper,
+                               speak_errors=False)
+
+                def shutdown_handler(message):
+                    if message.data["id"] == self.skill_id:
+                        msg = message.forward("homescreen.manager.remove",
+                                              {"id": self.skill_id})
+                        self.bus.emit(msg)
+
+                self.add_event("mycroft.skills.shutdown", shutdown_handler,
+                               speak_errors=False)
+
+                # backwards compat listener
+                self.add_event(f'{self.skill_id}.idle', handler,
+                               speak_errors=False)
+
+                return
 
     def _start_filewatcher(self):
         """
@@ -1103,21 +1125,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
                                          "result": False}))
-
-    def _handle_collect_resting(self, message: Optional[Message] = None):
-        """
-        Handler for collect resting screen messages.
-
-        Sends info on how to trigger this skill's resting page.
-        """
-        self.log.info('Registering resting screen')
-        msg = message or Message("")
-        message = msg.reply(
-            'mycroft.mark2.register_idle',
-            data={'name': self.resting_name, 'id': self.skill_id},
-            context={"skill_id": self.skill_id}
-        )
-        self.bus.emit(message)
 
     def _handle_stop_ack(self, message: Message):
         """
