@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import abc
+
 from ovos_bus_client.message import Message
 from ovos_utils.log import LOG
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -60,10 +61,9 @@ class IdleDisplaySkill(OVOSSkill):
         @param message: optional Message associated with request
         """
         LOG.debug(f"Registering Homescreen {self.skill_id}")
-        msg = message.forward("homescreen.manager.add",
+        self.bus.emit(Message("homescreen.manager.add",
                               {"class": "IdleDisplaySkill",  # TODO - rm in ovos-gui, only for compat
-                               "id": self.skill_id})
-        self.bus.emit(msg)
+                               "id": self.skill_id}))
 
     def remove_homescreen(self, message: Message):
         """
