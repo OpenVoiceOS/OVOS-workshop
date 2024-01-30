@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a12) (2024-01-30)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a11...0.0.16a12)
+
+**Implemented enhancements:**
+
+- refactor/homescreen [\#182](https://github.com/OpenVoiceOS/OVOS-workshop/pull/182) ([NeonJarbas](https://github.com/NeonJarbas))
+
+## [0.0.16a11](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a11) (2024-01-24)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a10...0.0.16a11)
+
 ## [0.0.16a10](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a10) (2024-01-24)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a9...0.0.16a10)
