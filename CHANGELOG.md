@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a13) (2024-01-31)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a12...0.0.16a13)
+
+**Fixed bugs:**
+
+- BaseSkill.schedule\_repeating\_event has wrong type annotation [\#128](https://github.com/OpenVoiceOS/OVOS-workshop/issues/128)
+
+**Merged pull requests:**
+
+- chore: fix type hints [\#183](https://github.com/OpenVoiceOS/OVOS-workshop/pull/183) ([mikejgray](https://github.com/mikejgray))
+
 ## [0.0.16a12](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a12) (2024-01-30)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a11...0.0.16a12)
