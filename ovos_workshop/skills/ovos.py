@@ -2183,8 +2183,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         return self.event_scheduler.schedule_event(handler, when, data, name,
                                                    context=context)
 
-    def schedule_repeating_event(self, handler: callable,
-                                 when: Union[int, float, datetime.datetime],
+    def schedule_repeating_event(self, handler: Callable,
+                                 when: Optional[Union[int, float, datetime.datetime]],
                                  frequency: Union[int, float],
                                  data: Optional[dict] = None,
                                  name: Optional[str] = None,
@@ -2193,17 +2193,17 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Schedule a repeating event.
 
         Args:
-            handler:                method to be called
-            when (datetime):        time (in system timezone) for first
-                                    calling the handler, or None to
-                                    initially trigger <frequency> seconds
-                                    from now
-            frequency (float/int):  time in seconds between calls
-            data (dict, optional):  data to send when the handler is called
-            name (str, optional):   reference name, must be unique
-            context (dict, optional): context (dict, optional): message
-                                      context to send when the handler
-                                      is called
+            handler (callable):         method to be called
+            when (datetime, optional):  time (in system timezone) for first
+                                        calling the handler, or None to
+                                        initially trigger <frequency> seconds
+                                        from now
+            frequency (float/int):      time in seconds between calls
+            data (dict, optional):      data to send when the handler is called
+            name (str, optional):       reference name, must be unique
+            context (dict, optional):   context (dict, optional): message
+                                        context to send when the handler
+                                        is called
         """
         message = dig_for_message()
         context = context or message.context if message else {}
