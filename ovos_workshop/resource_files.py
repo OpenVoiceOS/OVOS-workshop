@@ -780,6 +780,49 @@ class SkillResources:
         )
 
         return skill_regexes
+    
+    @staticmethod
+    def get_available_languages(skill_directory: str) -> List[str]:
+        """
+        Get all available languages for a skill
+        @param skill_directory: skill base directory
+        @return: list of available languages
+        """
+        base_dirs = locate_base_directories(skill_directory, "locale")
+        languages = []
+        for directory in base_dirs:
+            for folder in directory.iterdir():
+                languages.append(folder.name)
+        return languages
+
+    def get_inventory(self, specific_type: str = "", language: str = "en-us"):
+        """
+        Get all available resources for a skill
+        @param specific_type: optional, filter by resource type
+        @param language: BCP-47 language code, defaults to en-us
+        @return: dict of available resources
+        """
+        languages = SkillResources.get_available_languages(self.skill_directory)
+        if language not in languages:
+            raise ValueError(f"Language {language} not available for skill")
+
+        inventory = dict()        
+        for type_ in self.types:
+            if specific_type and type_.resource_type != specific_type:
+                continue
+
+            inventory[type_.resource_type] = list()
+            
+            # search all files in the directory and subdirectories and dump its name in a list
+            base_dirs = locate_lang_directories(language, self.skill_directory)
+            for directory in base_dirs:
+                for file in directory.iterdir():
+                    if file.suffix == type_.file_extension:
+                        inventory[type_.resource_type].append(file.stem)
+        
+        inventory["languages"] = languages
+        
+        return inventory
 
     @staticmethod
     def _make_unique_regex_group(regexes: List[str],
