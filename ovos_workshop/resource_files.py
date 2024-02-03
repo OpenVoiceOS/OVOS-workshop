@@ -792,7 +792,8 @@ class SkillResources:
         languages = []
         for directory in base_dirs:
             for folder in directory.iterdir():
-                languages.append(folder.name)
+                if folder.name not in languages:
+                    languages.append(folder.name)
         return languages
 
     def get_inventory(self, specific_type: str = "", language: str = "en-us"):
