@@ -26,6 +26,7 @@ from ovos_config.locations import get_xdg_data_dirs, \
     get_xdg_data_save_path
 from ovos_config.meta import get_xdg_base
 from ovos_utils.bracket_expansion import expand_options
+from ovos_utils import flatten_list
 from ovos_utils.dialog import MustacheDialogRenderer, load_dialogs
 from ovos_utils.log import LOG
 
@@ -453,6 +454,43 @@ class VocabularyFile(ResourceFile):
         return vocabulary
 
 
+class IntentFile(ResourceFile):
+    """Defines an intent file, which skill use to form intents."""
+    def __init__(self, resource_type, resource_name):
+        super().__init__(resource_type, resource_name)
+        self.data = None
+
+    def load(self, entities: bool = True) -> List[str]:
+        """Load file containing intents.
+
+        Args:
+            entities: include mustache entities, default True
+        Returns:
+            A list representation of the records in the file.
+        """
+        intents = []
+        if self.file_path is not None:
+            for line in self._read():
+                line = line.replace("{{", "{").replace("}}", "}")
+                intents.extend(flatten_list(expand_options(line.lower())))
+            if not entities:
+                intents = [re.sub(r'{.*?}\s?', '', intent).strip() for intent in intents]
+            elif self.data:
+                intents = [intent.format(**self.data) for intent in intents]
+        return intents
+
+    def render(self, dialog_renderer):
+        """Renders a random phrase from a dialog file.
+
+        If no file is found, the requested phrase is returned as the string. This
+        will use the default language for translations.
+
+        Returns:
+            str: a randomized version of the phrase
+        """
+        return dialog_renderer.render(self.resource_name, self.data)
+
+
 class NamedValueFile(ResourceFile):
     """Defines a named value file, which maps a variable to a values."""
 
@@ -615,6 +653,28 @@ class SkillResources:
         dialog_file = DialogFile(self.types.dialog, name)
         dialog_file.data = data
         return dialog_file.load()
+    
+    def load_intent_file(self, name: str,
+                               data: Optional[dict] = None,
+                               entities: bool = True) -> List[str]:
+        """
+        Loads the contents of an intent file.
+
+        Named entities in the intent are populated with values found in the
+        data dictionary (if entities is True, default: True).
+
+        If entities is False, the entities will be removed from the intent
+
+        Args:
+            name: name of the dialog file (no extension needed)
+            data: optional keyword arguments used to populate entities
+            entities: include mustache entities, default True
+        Returns:
+            A list of intent phrases
+        """
+        intent_file = IntentFile(self.types.intent, name)
+        intent_file.data = data
+        return intent_file.load(entities)
 
     def locate_qml_file(self, name: str) -> str:
         qml_file = QmlFile(self.types.qml, name)
@@ -781,13 +841,19 @@ class SkillResources:
 
         return skill_regexes
     
-    @staticmethod
-    def get_available_languages(skill_directory: str) -> List[str]:
+    @classmethod
+    def get_available_languages(cls, skill_directory: Optional[str] = None) -> List[str]:
         """
         Get all available languages for a skill
         @param skill_directory: skill base directory
         @return: list of available languages
         """
+        if skill_directory is None and hasattr(cls, 'skill_directory'):
+            skill_directory = cls.skill_directory
+        
+        if skill_directory is None:
+            raise ValueError("No skill directory provided")
+
         base_dirs = locate_base_directories(skill_directory, "locale")
         languages = []
         for directory in base_dirs:
