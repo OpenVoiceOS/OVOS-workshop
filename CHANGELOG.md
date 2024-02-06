@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a14](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a14) (2024-02-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a13...0.0.16a14)
+
+**Implemented enhancements:**
+
+- add skill ressources inventory [\#184](https://github.com/OpenVoiceOS/OVOS-workshop/pull/184) ([emphasize](https://github.com/emphasize))
+
+**Closed issues:**
+
+- SkillResources: add method to create resource/intent test yaml files [\#180](https://github.com/OpenVoiceOS/OVOS-workshop/issues/180)
+
 ## [0.0.16a13](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a13) (2024-01-31)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a12...0.0.16a13)
