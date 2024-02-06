@@ -842,18 +842,12 @@ class SkillResources:
         return skill_regexes
     
     @classmethod
-    def get_available_languages(cls, skill_directory: Optional[str] = None) -> List[str]:
+    def get_available_languages(cls, skill_directory: str) -> List[str]:
         """
         Get all available languages for a skill
         @param skill_directory: skill base directory
         @return: list of available languages
         """
-        if skill_directory is None and hasattr(cls, 'skill_directory'):
-            skill_directory = cls.skill_directory
-        
-        if skill_directory is None:
-            raise ValueError("No skill directory provided")
-
         base_dirs = locate_base_directories(skill_directory, "locale")
         languages = []
         for directory in base_dirs:
