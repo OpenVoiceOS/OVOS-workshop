@@ -1,21 +1,16 @@
 import os
 from inspect import signature
-from threading import Event
-from typing import List
-
-from ovos_utils import camel_case_split
-from ovos_utils.log import LOG
-
 from ovos_bus_client import Message
 from ovos_classifiers.skovos.features import KeywordFeatures
 from ovos_config.locations import get_xdg_cache_save_path
-from ovos_workshop.skills.ovos import OVOSSkill
-
+from ovos_utils import camel_case_split
+from ovos_utils.log import LOG
 # backwards compat imports, do not delete, skills import from here
-from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
-    ocp_previous, ocp_featured_media
-from ovos_utils.ocp import MediaType, MediaState, MatchConfidence, \
-    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState
+from ovos_utils.ocp import MediaType, PlayerState
+from threading import Event
+from typing import List
+
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 def get_non_properties(obj):
@@ -57,9 +52,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, *args, **kwargs):
-        # NOTE: derived skills will likely want to override this list
-        self.supported_media = [MediaType.GENERIC]
+    def __init__(self, supported_media=None, skill_icon="", *args, **kwargs):
+        self.supported_media = supported_media or [MediaType.GENERIC]
         skill_name = camel_case_split(self.__class__.__name__)
         alt = skill_name.replace(" skill", "").replace(" Skill", "")
         self.skill_aliases = [skill_name, alt]
@@ -74,10 +68,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.__resume_handler = None
         self._stop_event = Event()
         self._playing = Event()
-        # TODO replace with new default
-        self.skill_icon = \
-            "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
-            "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
+        # TODO new default icon
+        self.skill_icon = skill_icon or ""
 
         self.ocp_matchers = {}
         super().__init__(*args, **kwargs)
