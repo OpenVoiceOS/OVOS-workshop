@@ -1,16 +1,21 @@
 import os
 from inspect import signature
-from ovos_bus_client import Message
-from ovos_classifiers.skovos.features import KeywordFeatures
-from ovos_config.locations import get_xdg_cache_save_path
-from ovos_utils import camel_case_split
-from ovos_utils.log import LOG
-# backwards compat imports, do not delete, skills import from here
-from ovos_utils.ocp import MediaType, PlayerState
 from threading import Event
 from typing import List
 
+from ovos_utils import camel_case_split
+from ovos_utils.log import LOG
+
+from ovos_bus_client import Message
+from ovos_classifiers.skovos.features import KeywordFeatures
+from ovos_config.locations import get_xdg_cache_save_path
 from ovos_workshop.skills.ovos import OVOSSkill
+
+# backwards compat imports, do not delete, skills import from here
+from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
+    ocp_previous, ocp_featured_media
+from ovos_utils.ocp import MediaType, MediaState, MatchConfidence, \
+    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState
 
 
 def get_non_properties(obj):
