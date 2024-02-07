@@ -57,9 +57,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, *args, **kwargs):
-        # NOTE: derived skills will likely want to override this list
-        self.supported_media = [MediaType.GENERIC]
+    def __init__(self, supported_media=None, skill_icon="", *args, **kwargs):
+        self.supported_media = supported_media or [MediaType.GENERIC]
         skill_name = camel_case_split(self.__class__.__name__)
         alt = skill_name.replace(" skill", "").replace(" Skill", "")
         self.skill_aliases = [skill_name, alt]
@@ -74,10 +73,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.__resume_handler = None
         self._stop_event = Event()
         self._playing = Event()
-        # TODO replace with new default
-        self.skill_icon = \
-            "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
-            "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
+        # TODO new default icon
+        self.skill_icon = skill_icon or ""
 
         self.ocp_matchers = {}
         super().__init__(*args, **kwargs)
