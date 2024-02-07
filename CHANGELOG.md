@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a15](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a15) (2024-02-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a14...0.0.16a15)
+
+**Merged pull requests:**
+
+- ocp metadata in init method [\#185](https://github.com/OpenVoiceOS/OVOS-workshop/pull/185) ([NeonJarbas](https://github.com/NeonJarbas))
+
 ## [0.0.16a14](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a14) (2024-02-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a13...0.0.16a14)
