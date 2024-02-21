@@ -485,15 +485,16 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     def location(self) -> dict:
         """
         Get the JSON data struction holding location information.
+        This info may come from Session, eg, injected by a voice satellite
         """
-        # TODO: Allow Enclosure to override this for devices that
-        #       contain a GPS.
-        return self.config_core.get('location')
+        sess = SessionManager.get()
+        return sess.location_preferences
 
     @property
     def location_pretty(self) -> Optional[str]:
         """
         Get a speakable city from the location config if available
+        This info may come from Session, eg, injected by a voice satellite
         """
         loc = self.location
         if type(loc) is dict and loc['city']:
@@ -504,6 +505,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     def location_timezone(self) -> Optional[str]:
         """
         Get the timezone code, such as 'America/Los_Angeles'
+        This info may come from Session, eg, injected by a voice satellite
         """
         loc = self.location
         if type(loc) is dict and loc['timezone']:
@@ -513,8 +515,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     @property
     def lang(self) -> str:
         """
-        Get the current language as a BCP-47 language code. This will consider
-        current session data if available, else Configuration.
+        Get the current language as a BCP-47 language code.
+        This info may come from Session, eg, injected by a voice satellite
         """
         lang = self.core_lang
         message = dig_for_message()
@@ -1164,7 +1166,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.bus.emit(message.forward(self.skill_id + ".stop"))
         sess = SessionManager.get(message)
         try:
-            if self.stop_session(sess) or self.stop():
+            stopped = self.stop_session(sess) or self.stop()
+            print(f"{self.skill_id} stopped: {stopped}")
+            if stopped:
                 self.bus.emit(message.reply("mycroft.stop.handled",
                                             {"by": "skill:" + self.skill_id}))
         except Exception as e:
