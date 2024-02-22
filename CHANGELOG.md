@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a17](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a17) (2024-02-22)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a16...0.0.16a17)
+
+**Fixed bugs:**
+
+- fix: universal skills [\#187](https://github.com/OpenVoiceOS/OVOS-workshop/pull/187) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a16](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a16) (2024-02-21)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a15...0.0.16a16)
