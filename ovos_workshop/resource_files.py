@@ -28,8 +28,7 @@ from ovos_config.meta import get_xdg_base
 from ovos_utils.bracket_expansion import expand_options
 from ovos_utils import flatten_list
 from ovos_utils.dialog import MustacheDialogRenderer, load_dialogs
-from ovos_utils.log import LOG
-
+from ovos_utils.log import LOG, log_deprecation
 
 SkillResourceTypes = namedtuple(
     "SkillResourceTypes",
@@ -121,9 +120,8 @@ def resolve_resource_file(res_name: str) -> Optional[str]:
     Returns:
         (str) path to resource or None if no resource found
     """
-    # TODO: Deprecate in 0.1.0
-    LOG.warning(f"This method has moved to `ovos_utils.file_utils` and will be"
-                f"removed in a future release.")
+    log_deprecation(f"This method has moved to `ovos_utils.file_utils`",
+                    "0.1.0")
     from ovos_utils.file_utils import resolve_resource_file
     config = Configuration()
     return resolve_resource_file(res_name, config=config)
