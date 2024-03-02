@@ -2,7 +2,7 @@ import unittest
 import shutil
 
 from os import environ
-from os.path import isdir, join, dirname
+from os.path import isdir, join, dirname, isfile
 
 
 class TestResourceFiles(unittest.TestCase):
@@ -20,6 +20,25 @@ class TestResourceFiles(unittest.TestCase):
 
     def test_find_resource(self):
         from ovos_workshop.resource_files import find_resource
+        test_dir = join(dirname(__file__), "test_res")
+
+        # Test valid nested request
+        valid_dialog = find_resource("test.dialog", test_dir, "dialog", "en-us")
+        self.assertEqual(valid_dialog, join(test_dir, "en-us", "dialog",
+                                            "test.dialog"))
+
+        # Test valid top-level lang resource
+        valid_vocab = find_resource("test.voc", test_dir, "vocab", "en-us")
+        self.assertEqual(valid_vocab, join(test_dir, "en-us", "test.voc"))
+
+        # Test lang-agnostic resource
+        valid_ui = find_resource("test.qml", test_dir, "ui")
+        self.assertEqual(valid_ui, join(test_dir, "ui", "test.qml"))
+
+        # Test invalid resource
+        invalid_resource = find_resource("test.dialog", test_dir, "vocab",
+                                         "de-de")
+        self.assertIsNone(invalid_resource)
 
 
 class TestResourceType(unittest.TestCase):

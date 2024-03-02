@@ -153,10 +153,16 @@ def find_resource(res_name: str, root_dir: str, res_dirname: str,
         Path: The full path to the resource file or None if not found
     """
     if lang:
-        for directory in locate_lang_directories(lang, root_dir, res_dirname):
+        for directory in locate_lang_directories(lang, root_dir):
+            # Iterate over nodes in the language directory
             for x in directory.iterdir():
                 if x.is_file() and res_name == x.name:
                     return x
+                elif x.is_dir() and x.name == res_dirname:
+                    for y in x.iterdir():
+                        # Iterate over resource subdirectories within a lang dir
+                        if y.is_file() and res_name == y.name:
+                            return y
 
     for directory in locate_base_directories(root_dir, res_dirname):
         for d, _, file_names in walk(directory):
