@@ -308,6 +308,7 @@ class ResourceFile:
         by the skill author.  Walk the directory and any subdirectories to
         find the resource file.
         """
+        from ovos_utils.file_utils import resolve_resource_file
         file_path = None
         if self.resource_name.endswith(self.resource_type.file_extension):
             file_name = self.resource_name
@@ -333,11 +334,13 @@ class ResourceFile:
         # check the core resources
         if file_path is None and self.resource_type.language:
             sub_path = Path("text", self.resource_type.language, file_name)
-            file_path = resolve_resource_file(str(sub_path))
+            file_path = resolve_resource_file(str(sub_path),
+                                              config=Configuration())
 
         # check non-lang specific core resources
         if file_path is None:
-            file_path = resolve_resource_file(file_name)
+            file_path = resolve_resource_file(file_name,
+                                              config=Configuration())
 
         if file_path is None:
             LOG.error(f"Could not find resource file {file_name}")
@@ -360,6 +363,7 @@ class ResourceFile:
 class QmlFile(ResourceFile):
     def _locate(self):
         """ QML files are special because we do not want to walk the directory """
+        from ovos_utils.file_utils import resolve_resource_file
         file_path = None
         if self.resource_name.endswith(self.resource_type.file_extension):
             file_name = self.resource_name
@@ -382,8 +386,10 @@ class QmlFile(ResourceFile):
 
         # check the core resources
         if file_path is None:
-            file_path = resolve_resource_file(file_name) or \
-                        resolve_resource_file(f"ui/{file_name}")
+            file_path = resolve_resource_file(file_name,
+                                              config=Configuration()) or \
+                        resolve_resource_file(f"ui/{file_name}",
+                                              config=Configuration())
 
         if file_path is None:
             LOG.error(f"Could not find resource file {file_name}")
