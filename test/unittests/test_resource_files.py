@@ -2,7 +2,8 @@ import unittest
 import shutil
 
 from os import environ
-from os.path import isdir, join, dirname, isfile
+from os.path import isdir, join, dirname
+from pathlib import Path
 
 
 class TestResourceFiles(unittest.TestCase):
@@ -24,16 +25,16 @@ class TestResourceFiles(unittest.TestCase):
 
         # Test valid nested request
         valid_dialog = find_resource("test.dialog", test_dir, "dialog", "en-us")
-        self.assertEqual(valid_dialog, join(test_dir, "en-us", "dialog",
+        self.assertEqual(valid_dialog, Path(test_dir, "en-us", "dialog",
                                             "test.dialog"))
 
         # Test valid top-level lang resource
         valid_vocab = find_resource("test.voc", test_dir, "vocab", "en-us")
-        self.assertEqual(valid_vocab, join(test_dir, "en-us", "test.voc"))
+        self.assertEqual(valid_vocab, Path(test_dir, "en-us", "test.voc"))
 
         # Test lang-agnostic resource
         valid_ui = find_resource("test.qml", test_dir, "ui")
-        self.assertEqual(valid_ui, join(test_dir, "ui", "test.qml"))
+        self.assertEqual(valid_ui, Path(test_dir, "ui", "test.qml"))
 
         # Test invalid resource
         invalid_resource = find_resource("test.dialog", test_dir, "vocab",
