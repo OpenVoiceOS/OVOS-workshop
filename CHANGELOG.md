@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a18) (2024-03-04)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a17...0.0.16a18)
+
+**Fixed bugs:**
+
+- Add bugfix with tests for `find_resource` [\#189](https://github.com/OpenVoiceOS/OVOS-workshop/pull/189) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.16a17](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a17) (2024-02-22)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a16...0.0.16a17)
