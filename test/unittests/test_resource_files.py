@@ -36,6 +36,11 @@ class TestResourceFiles(unittest.TestCase):
         valid_ui = find_resource("test.qml", test_dir, "ui")
         self.assertEqual(valid_ui, Path(test_dir, "ui", "test.qml"))
 
+        # Test valid in other locale
+        valid_dialog = find_resource("test.dialog", test_dir, "dialog", "en-gb")
+        self.assertEqual(valid_dialog, Path(test_dir, "en-us", "dialog",
+                                            "test.dialog"))
+
         # Test invalid resource
         invalid_resource = find_resource("test.dialog", test_dir, "vocab",
                                          "de-de")
