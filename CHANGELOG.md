@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a19](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a19) (2024-03-05)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a18...0.0.16a19)
+
+**Merged pull requests:**
+
+- Update warning log to use `log_deprecation` helper [\#188](https://github.com/OpenVoiceOS/OVOS-workshop/pull/188) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.16a18](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a18) (2024-03-04)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a17...0.0.16a18)
