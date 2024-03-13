@@ -1494,6 +1494,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         sessid = session.session_id
         event = Event()
 
+        # TODO - if not self.is_speaking(session): return
         def handle_output_end(msg):
             nonlocal sessid, event
             sess = SessionManager.get(msg)
