@@ -17,9 +17,6 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_config_save_path
-
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
@@ -28,6 +25,8 @@ from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_config_save_path
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -41,6 +40,7 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_audio
+
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
@@ -1488,6 +1488,22 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.add_event(intent_parser.name, handler,
                            'mycroft.skill.handler')
 
+    def wait_while_speaking(self, timeout=15, session: Session = None):
+        """ wait until audio service reports end of audio output """
+        session = session or SessionManager.get()
+        sessid = session.session_id
+        event = Event()
+
+        def handle_output_end(msg):
+            nonlocal sessid, event
+            sess = SessionManager.get(msg)
+            if sessid == sess.session_id:
+                event.set()
+
+        self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
+        event.wait(timeout=timeout)
+        self.bus.remove("recognizer_loop:audio_output_end", handle_output_end)
+
     # skill developer facing utils
     def speak(self, utterance: str, expect_response: bool = False,
               wait: Union[bool, int] = False, meta: Optional[dict] = None):
@@ -1528,18 +1544,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         if wait:
             timeout = wait if isinstance(wait, int) else 15
-            sessid = SessionManager.get(m).session_id
-            event = Event()
-
-            def handle_output_end(msg):
-                sess = SessionManager.get(msg)
-                if sessid == sess.session_id:
-                    event.set()
-
-            self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
-            event.wait(timeout=timeout)
-            self.bus.remove("recognizer_loop:audio_output_end",
-                            handle_output_end)
+            sess = SessionManager.get(m)
+            self.wait_while_speaking(timeout, sess)
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
                      expect_response: bool = False, wait: Union[bool, int] = False):
@@ -1589,11 +1595,15 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         play_audio(filename).wait()
 
     @backwards_compat(pre_008=_play_audio_old, classic_core=_play_audio_classic)
-    def play_audio(self, filename: str, instant: bool = False):
+    def play_audio(self, filename: str, instant: bool = False,
+                   wait: Union[bool, int] = False):
         """
         Queue and audio file for playback
         @param filename: File to play
         @param instant: if True audio will be played instantly instead of queued with TTS
+        @param wait: set to True to block while the audio
+                                 is being played for 15 seconds. Alternatively, set
+                                 to an integer to specify a timeout in seconds.
         """
         message = dig_for_message() or Message("")
         # if running in docker we need to send binary data to the ovos-audio container
@@ -1616,6 +1626,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                     "binary_data": bindata}
 
         self.bus.emit(message.forward(mtype, data))
+        if wait:
+            timeout = wait if isinstance(wait, int) else 30
+            sess = SessionManager.get(message)
+            self.wait_while_speaking(timeout, sess)
 
     def __get_response_v1(self, session=None):
         """Helper to get a response from the user
