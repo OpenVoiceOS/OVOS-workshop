@@ -1576,7 +1576,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             )
             self.speak(key, expect_response, wait, {})
 
-    def _play_audio_old(self, filename: str, instant: bool = False):
+    def _play_audio_old(self, filename: str, instant: bool = False,
+                   wait: Union[bool, int] = False):
         """ compat for ovos-core <= 0.0.7 """
         if instant:
             LOG.warning("self.play_audio instant flag requires ovos-core >= 0.0.8, "
@@ -1588,8 +1589,14 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                           {"filename": filename,  # TODO - deprecate filename in ovos-audio
                                            "uri": filename  # new namespace
                                            }))
+            if wait:
+                timeout = wait if isinstance(wait, int) else 30
+                sess = SessionManager.get(message)
+                self.wait_while_speaking(timeout, sess)
+            
 
-    def _play_audio_classic(self, filename: str, instant: bool = False):
+    def _play_audio_classic(self, filename: str, instant: bool = False,
+                   wait: Union[bool, int] = False):
         """ compat for classic mycroft-core """
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4, "
                     "falling back to local skill playback")
