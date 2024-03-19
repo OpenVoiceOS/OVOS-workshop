@@ -771,7 +771,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     @property
     def _monitor_own_settings(self):
         # account for isolated setups where skills might not share a filesystem with core
-        if os.environ.get("IS_OVOS_CONTAINER") or is_classic_core():
+        if is_classic_core():
             return True
         return self.settings.get("monitor_own_settings", True) # TODO - default to False in core 0.1.0
 
