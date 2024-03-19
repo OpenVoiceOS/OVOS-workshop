@@ -850,7 +850,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self._settings_watchdog = \
                 FileWatcher([self._settings.path],
                             callback=self._handle_settings_file_change,
-                            recursive=True,
                             ignore_creation=True)
 
     def _register_decorated(self):
