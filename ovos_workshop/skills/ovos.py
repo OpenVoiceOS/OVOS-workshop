@@ -773,7 +773,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # account for isolated setups where skills might not share a filesystem with core
         if is_classic_core():
             return True
-        return self.settings.get("monitor_own_settings", True) # TODO - default to False in core 0.1.0
+        return self.settings.get("monitor_own_settings", False)
 
     def _handle_settings_changed(self, message):
         """external signal to reload skill settings"""
