@@ -258,16 +258,15 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         self.add_event(name, handler, 'mycroft.skill.handler')
 
-    def _handle_converse_intents(self, message=None):
+    def _handle_converse_intents(self, message):
         """ called before converse method
         this gives active skills a chance to parse their own intents and
         consume the utterance, see conversational_intent decorator for usage
         """
-        message = message or dig_for_message()
-        best_score = 0
         if self.lang not in self.converse_matchers:
             return False
 
+        best_score = 0
         response = None
 
         for utt in message.data['utterances']:
