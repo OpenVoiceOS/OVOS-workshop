@@ -761,7 +761,25 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                         self._settings[k] = v
             self._initial_settings = copy(self.settings)
 
-        self._start_filewatcher()
+        # starting on ovos-core 0.0.8 a bus event is emitted
+        # all settings.json files are monitored for changes in ovos-core
+        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed)
+
+        if self._monitor_own_settings:
+            self._start_filewatcher()
+
+    @property
+    def _monitor_own_settings(self):
+        # account for isolated setups where skills might not share a filesystem with core
+        if is_classic_core():
+            return True
+        return self.settings.get("monitor_own_settings", False)
+
+    def _handle_settings_changed(self, message):
+        """external signal to reload skill settings"""
+        skill_id = message.data.get("skill_id", "")
+        if skill_id == self.skill_id:
+            self._handle_settings_file_change(self._settings.path)
 
     def _init_skill_gui(self):
         """
