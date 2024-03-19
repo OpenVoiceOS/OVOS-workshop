@@ -17,9 +17,6 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_config_save_path
-
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
@@ -28,6 +25,8 @@ from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_config_save_path
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -41,6 +40,8 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_audio
+from padacioso import IntentContainer
+
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
@@ -186,6 +187,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.intent_service = IntentServiceInterface()
         self.audio_service = None
         self.intent_layers = IntentLayers()
+        self.converse_matchers = {}
 
         # Skill Public API
         self.public_api: Dict[str, dict] = {}
@@ -232,6 +234,53 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Override this method to do any optional cleanup.
         @param message: `{self.skill_id}.deactivate` Message
         """
+
+    def register_converse_intent(self, intent_file, handler):
+        """ converse padacioso intents """
+        name = f'{self.skill_id}.converse:{intent_file}'
+        fuzzy = not self.settings.get("strict_intents", False)
+
+        for lang in self.native_langs:
+            self.converse_matchers[lang] = IntentContainer(fuzz=fuzzy)
+
+            resources = self.load_lang(self.res_dir, lang)
+            resource_file = ResourceFile(resources.types.intent, intent_file)
+            if resource_file.file_path is None:
+                self.log.error(f'Unable to find "{intent_file}"')
+                continue
+            filename = str(resource_file.file_path)
+
+            with open(filename) as f:
+                samples = [l.strip() for l in f.read().split("\n")
+                           if l and not l.startswith("#")]
+
+            self.converse_matchers[lang].add_intent(name, samples)
+
+        self.add_event(name, handler, 'mycroft.skill.handler')
+
+    def _handle_converse_intents(self, message):
+        """ called before converse method
+        this gives active skills a chance to parse their own intents and
+        consume the utterance, see conversational_intent decorator for usage
+        """
+        if self.lang not in self.converse_matchers:
+            return False
+
+        best_score = 0
+        response = None
+
+        for utt in message.data['utterances']:
+            match = self.converse_matchers[self.lang].calc_intent(utt)
+            if match and match["conf"] > best_score:
+                best_score = match["conf"]
+                response = message.forward(match["name"], match["entities"])
+
+        if not response or best_score < self.settings.get("min_intent_conf", 0.5):
+            return False
+
+        # send intent event
+        self.bus.emit(response)
+        return True
 
     def converse(self, message: Optional[Message] = None) -> bool:
         """
@@ -880,6 +929,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             if hasattr(method, 'converse'):
                 self.converse = method
 
+            if hasattr(method, 'converse_intents'):
+                for intent_file in getattr(method, 'converse_intents'):
+                    self.register_converse_intent(intent_file, method)
+
     def _upload_settings(self):
         """
         Upload settings to a remote backend if configured.
@@ -1128,6 +1181,13 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 "0.0.9")
             if message.data.get("skill_id") != self.skill_id:
                 return  # not for us!
+
+        # check if a conversational intent triggered
+        # these are skill specific intents that may trigger instead of converse
+        if self._handle_converse_intents(message):
+            self.bus.emit(message.reply('skill.converse.response',
+                                        {"skill_id": self.skill_id, "result": True}))
+            return
 
         try:
             # converse can have multiple signatures
