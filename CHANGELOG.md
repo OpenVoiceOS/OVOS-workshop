@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a22](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a22) (2024-03-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a21...0.0.16a22)
+
+**Fixed bugs:**
+
+- fix/universal converse [\#192](https://github.com/OpenVoiceOS/OVOS-workshop/pull/192) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.16a21](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a21) (2024-03-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a20...0.0.16a21)
+
 ## [0.0.16a20](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a20) (2024-03-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a19...0.0.16a20)
