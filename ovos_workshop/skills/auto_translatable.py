@@ -306,6 +306,10 @@ class UniversalSkill(OVOSSkill):
             kwargs["meta"] = meta
         super().speak(utterance, *args, **kwargs)
 
+    def _handle_converse_request(self, message: Message):
+        message = self.translate_message(message)
+        super()._handle_converse_request(message)
+
 
 class UniversalFallback(UniversalSkill, FallbackSkillV2):
     """
