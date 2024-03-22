@@ -271,7 +271,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         for utt in message.data['utterances']:
             match = self.converse_matchers[self.lang].calc_intent(utt)
-            if match and match["conf"] > best_score:
+            if match.get("conf", 0) > best_score:
                 best_score = match["conf"]
                 response = message.forward(match["name"], match["entities"])
 
