@@ -102,6 +102,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             super().bind(bus)
             self.add_event('ovos.common_play.query',
                            self.__handle_ocp_query)
+            self.add_event(f'ovos.common_play.query.{self.skill_id}',
+                           self.__handle_ocp_query)
             self.add_event('ovos.common_play.featured_tracks.play',
                            self.__handle_ocp_featured)
             self.add_event('ovos.common_play.skills.get',
@@ -420,7 +422,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self._stop_event.set()
 
     # @killable_event("ovos.common_play.search.stop", react_to_stop=True)
-    def __handle_ocp_query(self, message):
+    def __handle_ocp_query(self, message: Message):
         """Query skill if it can start playback from given phrase."""
         self._stop_event.clear()
         search_phrase = message.data["phrase"]
@@ -428,7 +430,11 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         media_type = message.data.get("question_type",
                                       MediaType.GENERIC)
 
-        if media_type not in self.supported_media:
+        if message.msg_type == f'ovos.common_play.query.{self.skill_id}':
+            # make message.response work as usual
+            message.msg_type = f'ovos.common_play.query'
+        elif media_type not in self.supported_media:
+            # skip this skill, it doesn't handle this media type
             return
 
         self.bus.emit(message.reply("ovos.common_play.skill.search_start",
