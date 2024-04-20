@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a25](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a25) (2024-04-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a24...0.0.16a25)
+
+**Implemented enhancements:**
+
+- feat/units\_from\_session [\#197](https://github.com/OpenVoiceOS/OVOS-workshop/pull/197) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a24](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a24) (2024-04-09)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a23...0.0.16a24)
