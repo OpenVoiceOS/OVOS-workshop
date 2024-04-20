@@ -529,7 +529,34 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         session or else from Configuration.
         """
         return self.resources.dialog_renderer
+        
+    @property
+    def system_unit(self) -> str:
+        """
+        Get the units preference (metric vs imperial)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.system_unit
+        
+    @property
+    def date_format(self) -> str:
+        """
+        Get the date format (DMY/MDY/YMD)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.date_format
 
+    @property
+    def time_format(self) -> str:
+        """
+        Get the time format (half vs full)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.time_format
+        
     @property
     def location(self) -> dict:
         """
