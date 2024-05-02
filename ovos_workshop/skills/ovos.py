@@ -1081,7 +1081,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.add_event("skill.converse.request", self._handle_converse_request,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
-                       speak_errors=False)
+                       speak_errors=False, activation=True)
         self.add_event(f"{self.skill_id}.activate", self.handle_activate,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate,
@@ -1103,7 +1103,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         # TODO: deprecate 0.0.9
         self.add_event("skill.converse.get_response", self.__handle_get_response, speak_errors=False)
-        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
+                       speak_errors=False, activation=True)
 
     def _send_public_api(self, message: Message):
         """
@@ -1418,7 +1419,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             filename = str(resource_file.file_path)
             self.intent_service.register_padatious_intent(name, filename, lang)
         if handler:
-            self.add_event(name, handler, 'mycroft.skill.handler')
+            self.add_event(name, handler, 'mycroft.skill.handler',
+                           activation=True)
 
     def register_entity_file(self, entity_file: str):
         """
@@ -1514,15 +1516,21 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.remove_context(context)
 
     def _on_event_start(self, message: Message, handler_info: str,
-                        skill_data: dict):
+                        skill_data: dict, activation: Optional[bool] = None):
         """
         Indicate that the skill handler is starting.
+
+        activation  (bool, optional): activate skill if True, deactivate if False, do nothing if None
         """
         if handler_info:
             # Indicate that the skill handler is starting if requested
             msg_type = handler_info + '.start'
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
+        if activation is True:
+            self.activate()
+        elif activation is False:
+            self.deactivate()
 
     def _on_event_end(self, message: Message, handler_info: str,
                       skill_data: dict):
@@ -1591,7 +1599,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
             self.add_event(intent_parser.name, handler,
-                           'mycroft.skill.handler')
+                           'mycroft.skill.handler',
+                           activation=True)
 
     # skill developer facing utils
     def speak(self, utterance: str, expect_response: bool = False,
@@ -2219,7 +2228,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     # event related skill developer facing utils
     def add_event(self, name: str, handler: callable,
                   handler_info: Optional[str] = None, once: bool = False,
-                  speak_errors: bool = True):
+                  speak_errors: bool = True, activation: Optional[bool] = None):
         """
         Create event handler for executing intent or other event.
 
@@ -2233,6 +2242,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             speak_errors (bool, optional): Determines if an error dialog should be
                                            spoken to inform the user whenever
                                            an exception happens inside the handler
+            activation  (bool, optional): activate skill if True, deactivate if False, do nothing if None
         """
         skill_data = {'name': get_handler_name(handler)}
 
@@ -2245,7 +2255,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                  speak_errors)
 
         def on_start(message):
-            self._on_event_start(message, handler_info, skill_data)
+            self._on_event_start(message, handler_info,
+                                 skill_data, activation)
 
         def on_end(message):
             self._on_event_end(message, handler_info, skill_data)
