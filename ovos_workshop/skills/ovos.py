@@ -1081,7 +1081,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.add_event("skill.converse.request", self._handle_converse_request,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
-                       speak_errors=False, activation=True)
+                       speak_errors=False)
         self.add_event(f"{self.skill_id}.activate", self.handle_activate,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate,
@@ -1104,7 +1104,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # TODO: deprecate 0.0.9
         self.add_event("skill.converse.get_response", self.__handle_get_response, speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
-                       speak_errors=False, activation=True)
+                       speak_errors=False)
 
     def _send_public_api(self, message: Message):
         """
@@ -1225,6 +1225,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                       "lang": message.data['lang']}
             kwargs = {k: v for k, v in kwargs.items() if k in params}
             result = self.converse(**kwargs)
+            if result:
+                self.activate()  # renew activation
+
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
                                          "result": result}))
@@ -1811,12 +1814,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Returns:
             str: user's response or None on a timeout
         """
-        # during alpha 0.0.8 this check is here to handle the edge case missed by the decorator
-        # TODO - remove before 0.0.8 stable
-        from ovos_core.version import OVOS_VERSION_ALPHA
-        if OVOS_VERSION_ALPHA < 40:  # introduced in 0.0.8a40
-            return self.__get_response_v1()
-
         srcm = dig_for_message() or Message("", context={"source": "skills",
                                                          "skill_id": self.skill_id})
         srcm.context["session"] = session.serialize()
