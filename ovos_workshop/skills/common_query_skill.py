@@ -240,6 +240,7 @@ class CommonQuerySkill(OVOSSkill):
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
+        self.activate()
         phrase = message.data["phrase"]
         data = message.data.get("callback_data") or {}
         # Invoke derived class to provide playback data
@@ -257,6 +258,7 @@ class CommonQuerySkill(OVOSSkill):
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
+        self.activate()
         phrase = message.data["phrase"]
         data = message.data.get("callback_data") or {}
         if data.get("answer"):
