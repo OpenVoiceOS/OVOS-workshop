@@ -2394,13 +2394,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                "timeout": duration_minutes})
         self.bus.emit(m1)
 
-        # backwards compat with mycroft-core
-        # TODO - remove soon
-        m2 = msg.forward("active_skill_request",
-                         data={"skill_id": self.skill_id,
-                               "timeout": duration_minutes})
-        self.bus.emit(m2)
-
     def deactivate(self):
         """
         Mark this skill as inactive and remove from the active skills list.
