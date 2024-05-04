@@ -373,11 +373,11 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                                  key=operator.itemgetter(0))
         for prio, handler in sorted_handlers:
             try:
-                if handler(message):
+                # call handler, conditionally activating the skill
+                status = self._conditional_activate(handler, message=message)
+                if status:
                     # indicate completion
-                    status = True
                     handler_name = get_handler_name(handler)
-                    self.activate()  # activate skill for converse
                     break
             except Exception:
                 LOG.exception('Exception in fallback.')
