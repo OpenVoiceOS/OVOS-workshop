@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a26](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a26) (2024-05-04)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a25...0.0.16a26)
+
+**Fixed bugs:**
+
+- refactor/skill\_activation\_before\_events [\#198](https://github.com/OpenVoiceOS/OVOS-workshop/pull/198) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a25](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a25) (2024-04-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a24...0.0.16a25)
