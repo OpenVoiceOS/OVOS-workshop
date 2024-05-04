@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a27](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a27) (2024-05-04)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a26...0.0.16a27)
+
+**Fixed bugs:**
+
+- fix/deactivate\_in\_converse/fallback [\#199](https://github.com/OpenVoiceOS/OVOS-workshop/pull/199) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a26](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a26) (2024-05-04)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a25...0.0.16a26)
