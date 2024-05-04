@@ -377,6 +377,7 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                     # indicate completion
                     status = True
                     handler_name = get_handler_name(handler)
+                    self.activate()  # activate skill for converse
                     break
             except Exception:
                 LOG.exception('Exception in fallback.')
@@ -388,9 +389,7 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
             data={"result": status, "fallback_handler": handler_name}))
 
     def _old_register_fallback(self, handler: callable, priority: int):
-        """
-        makes the skill active, done by core >= 0.0.8
-        """
+        """ core < 0.0.8 """
 
         LOG.info(f"registering fallback handler -> "
                  f"ovos.skills.fallback.{self.skill_id}")
@@ -416,7 +415,6 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         @param handler: Fallback handler
         @param priority: priority of the registered handler
         """
-
         LOG.info(f"registering fallback handler -> "
                  f"ovos.skills.fallback.{self.skill_id}")
         self._fallback_handlers.append((priority, handler))
