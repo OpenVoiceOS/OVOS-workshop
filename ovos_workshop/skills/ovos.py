@@ -1197,6 +1197,27 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                   "can_handle": self.converse_is_implemented},
             context={"skill_id": self.skill_id}))
 
+    def _conditional_activate(self, handler, *args, **kwargs):
+        """internal helper method, only calls self.activate()
+        if the handler returns True and does not call self.deactivate()"""
+        # if handler calls self.deactivate() we do
+        # NOT want to reactivate the skill
+        was_deactivated = False
+
+        def on_deac(message):
+            nonlocal was_deactivated
+            if message.data.get("skill_id") == self.skill_id:
+                was_deactivated = True
+
+        self.bus.on("intent.service.skills.deactivate", on_deac)
+        # call skill method
+        result = handler(*args, **kwargs)
+        # conditional activation
+        if not was_deactivated and result:
+            self.activate()  # renew activation
+        self.bus.remove("intent.service.skills.deactivate", on_deac)
+        return result
+
     def _handle_converse_request(self, message: Message):
         """
         If this skill is requested and supports converse, handle the user input
@@ -1224,9 +1245,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                       "utterances": message.data['utterances'],
                       "lang": message.data['lang']}
             kwargs = {k: v for k, v in kwargs.items() if k in params}
-            result = self.converse(**kwargs)
-            if result:
-                self.activate()  # renew activation
+
+            # call skill converse method, conditionally activating the skill
+            result = self._conditional_activate(self.converse, **kwargs)
 
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
