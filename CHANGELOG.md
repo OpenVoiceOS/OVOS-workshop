@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a28](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a28) (2024-05-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a27...0.0.16a28)
+
+**Implemented enhancements:**
+
+- feat/wait\_while\_speaking [\#190](https://github.com/OpenVoiceOS/OVOS-workshop/pull/190) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a27](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a27) (2024-05-04)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a26...0.0.16a27)
