@@ -5,7 +5,7 @@ try:
 except ImportError:
     from ovos_utils.log import LOG
     from enum import IntEnum
-    LOG.warning("ovos-utils~=0.1 not installed. Patching missing imports")
+    LOG.warning("Please update to ovos-utils~=0.1. Patching missing imports")
 
 
     class MediaType(IntEnum):
