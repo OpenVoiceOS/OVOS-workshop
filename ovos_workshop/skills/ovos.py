@@ -529,7 +529,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         session or else from Configuration.
         """
         return self.resources.dialog_renderer
-        
+
     @property
     def system_unit(self) -> str:
         """
@@ -538,7 +538,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         sess = SessionManager.get()
         return sess.system_unit
-        
+
     @property
     def date_format(self) -> str:
         """
@@ -556,7 +556,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         sess = SessionManager.get()
         return sess.time_format
-        
+
     @property
     def location(self) -> dict:
         """
@@ -1666,18 +1666,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         if wait:
             timeout = wait if isinstance(wait, int) else 15
-            sessid = SessionManager.get(m).session_id
-            event = Event()
-
-            def handle_output_end(msg):
-                sess = SessionManager.get(msg)
-                if sessid == sess.session_id:
-                    event.set()
-
-            self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
-            event.wait(timeout=timeout)
-            self.bus.remove("recognizer_loop:audio_output_end",
-                            handle_output_end)
+            sess = SessionManager.get(m)
+            sess.is_speaking = True
+            SessionManager.wait_while_speaking(timeout, sess)
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
                      expect_response: bool = False, wait: Union[bool, int] = False):
@@ -1707,7 +1698,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             )
             self.speak(key, expect_response, wait, {})
 
-    def _play_audio_old(self, filename: str, instant: bool = False):
+    def _play_audio_old(self, filename: str, instant: bool = False,
+                        wait: Union[bool, int] = False):
         """ compat for ovos-core <= 0.0.7 """
         if instant:
             LOG.warning("self.play_audio instant flag requires ovos-core >= 0.0.8, "
@@ -1719,19 +1711,29 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                           {"filename": filename,  # TODO - deprecate filename in ovos-audio
                                            "uri": filename  # new namespace
                                            }))
+            if wait:
+                timeout = wait if isinstance(wait, int) else 30
+                sess = SessionManager.get(message)
+                sess.is_speaking = True
+                SessionManager.wait_while_speaking(timeout, sess)
 
-    def _play_audio_classic(self, filename: str, instant: bool = False):
+    def _play_audio_classic(self, filename: str, instant: bool = False,
+                            wait: Union[bool, int] = False):
         """ compat for classic mycroft-core """
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4, "
                     "falling back to local skill playback")
         play_audio(filename).wait()
 
     @backwards_compat(pre_008=_play_audio_old, classic_core=_play_audio_classic)
-    def play_audio(self, filename: str, instant: bool = False):
+    def play_audio(self, filename: str, instant: bool = False,
+                   wait: Union[bool, int] = False):
         """
         Queue and audio file for playback
         @param filename: File to play
         @param instant: if True audio will be played instantly instead of queued with TTS
+        @param wait: set to True to block while the audio
+                                 is being played for 15 seconds. Alternatively, set
+                                 to an integer to specify a timeout in seconds.
         """
         message = dig_for_message() or Message("")
         # if running in docker we need to send binary data to the ovos-audio container
@@ -1754,6 +1756,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                     "binary_data": bindata}
 
         self.bus.emit(message.forward(mtype, data))
+        if wait:
+            timeout = wait if isinstance(wait, int) else 30
+            sess = SessionManager.get(message)
+            sess.is_speaking = True
+            SessionManager.wait_while_speaking(timeout, sess)
 
     def __get_response_v1(self, session=None):
         """Helper to get a response from the user

@@ -1,5 +1,5 @@
 ovos-utils >= 0.1.0a7, < 0.2.0
-ovos-bus-client < 0.1.0, >=0.0.9a17
+ovos-bus-client < 0.1.0, >=0.0.9a19
 ovos_config < 0.2.0,>=0.0.12
 ovos_backend_client < 0.2.0, >=0.1.0
 ovos-lingua-franca~=0.4, >=0.4.6
