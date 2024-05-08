@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.16a29](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a29) (2024-05-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a28...0.0.16a29)
+
+**Closed issues:**
+
+- add support for utils 0.0.38 [\#200](https://github.com/OpenVoiceOS/OVOS-workshop/issues/200)
+
+**Merged pull requests:**
+
+- Update imports to support ovos-utils~=0.0.x with compat. warnings [\#201](https://github.com/OpenVoiceOS/OVOS-workshop/pull/201) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [0.0.16a28](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a28) (2024-05-07)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a27...0.0.16a28)
@@ -63,10 +75,6 @@
 ## [0.0.16a20](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a20) (2024-03-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a19...0.0.16a20)
-
-**Implemented enhancements:**
-
-- refactor/skill\_settings\_change [\#92](https://github.com/OpenVoiceOS/OVOS-workshop/pull/92) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [0.0.16a19](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a19) (2024-03-05)
 
