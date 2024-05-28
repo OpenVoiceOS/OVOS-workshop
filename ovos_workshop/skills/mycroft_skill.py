@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import shutil
-from os.path import join, exists
+from os.path import join, exists, dirname
 
 from json_database import JsonStorage
 from ovos_bus_client import MessageBusClient, Message
 from ovos_utils.log import LOG, log_deprecation, deprecated
+
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.filesystem import FileSystemAccess
-from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core, _OVOSSkillMetaclass
+from ovos_workshop.skills.ovos import OVOSSkill, _OVOSSkillMetaclass
 
 
 class _SkillMetaclass(_OVOSSkillMetaclass):
@@ -95,18 +97,12 @@ class _SkillMetaclass(_OVOSSkillMetaclass):
                     skill_id = a
 
             if not skill_id:
-                LOG.warning("skill initialized without bus!! this is legacy "
-                            "behaviour and requires you to call skill.bind(bus)"
-                            " or skill._startup(skill_id, bus)\n"
-                            "bus will be required starting on ovos-core 0.1.0")
-                return super().__call__(*args, **kwargs)
-
+                LOG.error("skill initialized without skill_id!! this is legacy "
+                          "behaviour. skill_id will be required starting on ovos-core 0.1.0")
                 # by convention skill_id is the folder name
                 # usually repo.author
-                # TODO - uncomment once above is deprecated
-                # skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
-                # LOG.warning(f"missing skill_id, assuming folder name "
-                #             f"convention: {skill_id}")
+                skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
+                LOG.warning(f"missing skill_id, assuming folder name convention: {skill_id}")
 
         try:
             # skill follows latest best practices,
