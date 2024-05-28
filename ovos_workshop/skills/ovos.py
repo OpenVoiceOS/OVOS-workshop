@@ -476,7 +476,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                              f"to correct this add kwargs __init__(bus=None, skill_id='') "
                              f"to skill class {self.__class__.__name__}")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.file_system in __init__')
+            raise Exception('Accessed OVOSSkill.file_system in __init__')
 
     @file_system.setter
     def file_system(self, fs: FileSystemAccess):
