@@ -1444,7 +1444,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.intent_service.register_padatious_intent(name, filename, lang)
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler',
-                           activation=True)
+                           activation=True, is_intent=True)
 
     def register_entity_file(self, entity_file: str):
         """
@@ -1557,7 +1557,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.deactivate()
 
     def _on_event_end(self, message: Message, handler_info: str,
-                      skill_data: dict):
+                      skill_data: dict, is_intent: bool = False):
         """
         Store settings (if changed) and indicate that the skill handler has
         completed.
@@ -1569,6 +1569,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             msg_type = handler_info + '.complete'
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
+        if is_intent:
+            self.bus.emit(message.forward("ovos.utterance.handled", skill_data))
 
     def _on_event_error(self, error: str, message: Message, handler_info: str,
                         skill_data: dict, speak_errors: bool):
@@ -1624,7 +1626,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         if handler:
             self.add_event(intent_parser.name, handler,
                            'mycroft.skill.handler',
-                           activation=True)
+                           activation=True, is_intent=True)
 
     # skill developer facing utils
     def speak(self, utterance: str, expect_response: bool = False,
@@ -2253,7 +2255,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     # event related skill developer facing utils
     def add_event(self, name: str, handler: callable,
                   handler_info: Optional[str] = None, once: bool = False,
-                  speak_errors: bool = True, activation: Optional[bool] = None):
+                  speak_errors: bool = True, activation: Optional[bool] = None,
+                  is_intent: bool = False):
         """
         Create event handler for executing intent or other event.
 
@@ -2274,7 +2277,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         def on_error(error, message):
             if isinstance(error, AbortEvent):
                 self.log.info("Skill execution aborted")
-                self._on_event_end(message, handler_info, skill_data)
+                self._on_event_end(message, handler_info, skill_data,
+                                   is_intent=is_intent)
                 return
             self._on_event_error(error, message, handler_info, skill_data,
                                  speak_errors)
@@ -2284,7 +2288,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                  skill_data, activation)
 
         def on_end(message):
-            self._on_event_end(message, handler_info, skill_data)
+            self._on_event_end(message, handler_info, skill_data,
+                               is_intent=is_intent)
 
         wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
                                  on_error)
