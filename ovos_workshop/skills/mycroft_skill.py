@@ -22,7 +22,7 @@ from ovos_utils.log import LOG, log_deprecation, deprecated
 
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.filesystem import FileSystemAccess
-from ovos_workshop.skills.ovos import OVOSSkill, _OVOSSkillMetaclass
+from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core, _OVOSSkillMetaclass
 
 
 class _SkillMetaclass(_OVOSSkillMetaclass):
