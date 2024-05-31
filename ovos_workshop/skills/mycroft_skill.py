@@ -176,7 +176,12 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
             self._file_system = FileSystemAccess(join('skills', self.name))
         LOG.warning(f"with MycroftSkill self.file_system does not respect self.skill_id, path: {self._file_system.path}")
         return self._file_system
-
+        
+    @file_system.setter
+    def file_system(self, val):
+        LOG.warning("you are not supposed to override self.file_system, expect breakage!")
+        self._file_system = val
+        
     @property
     def settings(self) -> dict:
         """
@@ -187,7 +192,12 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
                                          disable_lock=True)
         LOG.warning(f"with MycroftSkill self.settings may not respect self.skill_id, path: {self._settings.path}")
         return self._settings
-
+        
+    @settings.setter
+    def settings(self, val):
+        LOG.warning("you are not supposed to override self.settings, expect breakage!")
+        self._settings = val
+        
     def _init_settings(self):
         """
         Set up skill settings. Defines settings in the specified file path,
