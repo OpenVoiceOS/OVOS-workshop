@@ -206,7 +206,7 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
 
     # patched due to functional (internal) differences under mycroft-core
     def __on_end_classic(self, message: Message, handler_info: str,
-                         skill_data: dict):
+                         skill_data: dict, is_intent=False):
         # mycroft-core style settings
         if self.settings != self._initial_settings:
             try:
@@ -222,7 +222,7 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
 
     @backwards_compat(classic_core=__on_end_classic)
     def _on_event_end(self, message: Message, handler_info: str,
-                      skill_data: dict):
+                      skill_data: dict, is_intent=False):
         """
         Store settings and indicate that the skill handler has completed
         """
