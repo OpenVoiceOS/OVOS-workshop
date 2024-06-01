@@ -438,6 +438,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Update settings specific to this skill
         """
+        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
         assert isinstance(val, dict)
         # init method
         if self._settings is None:
@@ -489,8 +490,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         system directory.
         @param fs: new FileSystemAccess object to use
         """
-        self.log.warning(f"Skill manually overriding file_system path to: "
-                         f"{fs.path}")
+        LOG.warning(f"Skill manually overriding file_system path to: {fs.path}")
         self._file_system = fs
 
     @property
