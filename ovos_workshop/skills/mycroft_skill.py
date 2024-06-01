@@ -195,7 +195,7 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
         
     @settings.setter
     def settings(self, val):
-        LOG.warning("you are not supposed to override self.settings, expect breakage!")
+        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
         self._settings = val
         
     def _init_settings(self):
