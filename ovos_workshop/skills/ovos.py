@@ -428,7 +428,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                              'can be set, no settings can be read or changed.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} "
+                             "You can only use self.settings after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             return self._initial_settings
 
@@ -458,9 +459,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__}." 
+                             "You can only use self.enclosure after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.enclosure in __init__')
+            raise Exception('Accessed OVOSSkill.enclosure in __init__')
 
     @property
     def file_system(self) -> FileSystemAccess:
@@ -474,7 +476,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs __init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} " 
+                             "You can only use self.file_system after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed OVOSSkill.file_system in __init__')
 
@@ -501,9 +504,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} "
+                             "You can only use self.bus after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.bus in __init__')
+            raise Exception('Accessed OVOSSkill.bus in __init__')
 
     @bus.setter
     def bus(self, value: MessageBusClient):
