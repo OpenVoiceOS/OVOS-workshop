@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import shutil
-from os.path import join, exists
+from os.path import join, exists, dirname
 
+from json_database import JsonStorage
 from ovos_bus_client import MessageBusClient, Message
 from ovos_utils.log import LOG, log_deprecation, deprecated
+
 from ovos_workshop.decorators.compat import backwards_compat
+from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.skills.ovos import OVOSSkill, is_classic_core, _OVOSSkillMetaclass
 
 
@@ -93,18 +97,12 @@ class _SkillMetaclass(_OVOSSkillMetaclass):
                     skill_id = a
 
             if not skill_id:
-                LOG.warning("skill initialized without bus!! this is legacy "
-                            "behaviour and requires you to call skill.bind(bus)"
-                            " or skill._startup(skill_id, bus)\n"
-                            "bus will be required starting on ovos-core 0.1.0")
-                return super().__call__(*args, **kwargs)
-
+                LOG.error("skill initialized without skill_id!! this is legacy "
+                          "behaviour. skill_id will be required starting on ovos-core 0.1.0")
                 # by convention skill_id is the folder name
                 # usually repo.author
-                # TODO - uncomment once above is deprecated
-                # skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
-                # LOG.warning(f"missing skill_id, assuming folder name "
-                #             f"convention: {skill_id}")
+                skill_id = dirname(inspect.getfile(cls)).split("/")[-1]
+                LOG.warning(f"missing skill_id, assuming folder name convention: {skill_id}")
 
         try:
             # skill follows latest best practices,
@@ -169,6 +167,56 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
         self.settings_write_path = None
         self.settings_manager = None
 
+    @property
+    def file_system(self) -> FileSystemAccess:
+        """
+        Get an object that provides managed access to a local Filesystem.
+        """
+        if not self._file_system:
+            self._file_system = FileSystemAccess(join('skills', self.name))
+        LOG.warning(f"with MycroftSkill self.file_system does not respect self.skill_id, path: {self._file_system.path}")
+        return self._file_system
+        
+    @file_system.setter
+    def file_system(self, val):
+        LOG.warning("you are not supposed to override self.file_system, expect breakage!")
+        self._file_system = val
+        
+    @property
+    def settings(self) -> dict:
+        """
+        Get settings specific to this skill
+        """
+        if self._settings is None:
+            self._settings = JsonStorage(self.settings_write_path,
+                                         disable_lock=True)
+        LOG.warning(f"with MycroftSkill self.settings may not respect self.skill_id, path: {self._settings.path}")
+        return self._settings
+        
+    @settings.setter
+    def settings(self, val):
+        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
+        self._settings = val
+        
+    def _init_settings(self):
+        """
+        Set up skill settings. Defines settings in the specified file path,
+        handles any settings passed to skill init, and starts watching the
+        settings file for changes.
+        """
+        self.log.debug(f"initializing skill settings for {self.skill_id}")
+
+        if self._settings is None:
+            self._settings = JsonStorage(self.settings_write_path,
+                                         disable_lock=True)
+
+        # starting on ovos-core 0.0.8 a bus event is emitted
+        # all settings.json files are monitored for changes in ovos-core
+        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed)
+
+        if self._monitor_own_settings:
+            self._start_filewatcher()
+
     def __init_settings_manager_classic(self):
         super()._init_settings_manager()
         from mycroft.skills.settings import SettingsMetaUploader
@@ -206,7 +254,7 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
 
     # patched due to functional (internal) differences under mycroft-core
     def __on_end_classic(self, message: Message, handler_info: str,
-                         skill_data: dict, is_intent=False):
+                         skill_data: dict, is_intent: bool = False):
         # mycroft-core style settings
         if self.settings != self._initial_settings:
             try:
@@ -222,11 +270,11 @@ class MycroftSkill(OVOSSkill, metaclass=_SkillMetaclass):
 
     @backwards_compat(classic_core=__on_end_classic)
     def _on_event_end(self, message: Message, handler_info: str,
-                      skill_data: dict, is_intent=False):
+                      skill_data: dict, is_intent: bool = False):
         """
         Store settings and indicate that the skill handler has completed
         """
-        return super()._on_event_end(message, handler_info, skill_data)
+        return super()._on_event_end(message, handler_info, skill_data, is_intent)
 
     # refactored - backwards compat + log warnings
     @property
