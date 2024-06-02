@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a32](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a32) (2024-06-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a31...0.0.16a32)
+
+**Fixed bugs:**
+
+- fix/mycroft\_backwards\_compat [\#206](https://github.com/OpenVoiceOS/OVOS-workshop/pull/206) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a31](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a31) (2024-05-31)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a30...0.0.16a31)
