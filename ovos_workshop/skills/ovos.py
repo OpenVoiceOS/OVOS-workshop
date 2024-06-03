@@ -2251,9 +2251,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         if utt:
             # Check for matches against complete words
-            for i in self.voc_list(voc_filename, lang):
+            voc_list = self.voc_list(voc_filename, lang)
+            # From longest to shortest to replace composite terms first
+            for i in sorted(voc_list, key=len, reverse=True):
                 # Substitute only whole words matching the token
-                utt = re.sub(r'\b' + i + r"\b", "", utt)
+                utt = re.sub(r'\b' + i + r'\b', '', utt)
         return utt
 
     # event related skill developer facing utils
