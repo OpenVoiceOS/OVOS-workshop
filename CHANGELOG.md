@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a33](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a33) (2024-06-03)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a32...0.0.16a33)
+
+**Implemented enhancements:**
+
+- Remove vocab terms in order from longest to shortest [\#208](https://github.com/OpenVoiceOS/OVOS-workshop/pull/208) ([femelo](https://github.com/femelo))
+
 ## [0.0.16a32](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a32) (2024-06-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a31...0.0.16a32)
