@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a34](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a34) (2024-06-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a33...0.0.16a34)
+
+**Merged pull requests:**
+
+- chore: don't drag ovos-classifiers [\#209](https://github.com/OpenVoiceOS/OVOS-workshop/pull/209) ([mikejgray](https://github.com/mikejgray))
+
 ## [0.0.16a33](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a33) (2024-06-03)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a32...0.0.16a33)
@@ -696,10 +704,6 @@
 ## [V0.0.12a29](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a29) (2023-06-15)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a28...V0.0.12a29)
-
-**Merged pull requests:**
-
-- Update AudioInterface reference to resolve deprecation warning [\#98](https://github.com/OpenVoiceOS/OVOS-workshop/pull/98) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a28](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a28) (2023-06-14)
 
