@@ -7,7 +7,6 @@ from ovos_utils import camel_case_split
 from ovos_utils.log import LOG
 
 from ovos_bus_client import Message
-from ovos_classifiers.skovos.features import KeywordFeatures
 from ovos_config.locations import get_xdg_cache_save_path
 from ovos_workshop.skills.ovos import OVOSSkill
 
@@ -205,6 +204,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             film_genre,spy film
             ...
         """
+        from ovos_classifiers.skovos.features import KeywordFeatures
         if lang is None:
             for lang in self.native_langs:
                 if lang not in self.ocp_matchers:
@@ -240,6 +240,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         ocp keywords can be efficiently matched with self.ocp_match helper method
         that uses Aho–Corasick algorithm
         """
+        from ovos_classifiers.skovos.features import KeywordFeatures
         samples = list(set(samples))
         langs = langs or self.native_langs
         for l in langs:
