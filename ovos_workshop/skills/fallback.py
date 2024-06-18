@@ -360,8 +360,8 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
     def _on_timeout(self):
         message = dig_for_message()
         self.bus.emit(message.forward(
-            f"ovos.skills.fallback.{self.skill_id}.response",
-            data={"result": False, "error": "timed out"}))
+            f"ovos.skills.fallback.{self.skill_id}.killed",
+            data={"error": "timed out"}))
 
     @killable_event("ovos.skills.fallback.force_timeout", callback=_on_timeout)
     def _handle_fallback_request(self, message: Message):
