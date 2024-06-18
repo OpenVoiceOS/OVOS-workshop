@@ -1,10 +1,12 @@
+import threading
+from functools import wraps
+from inspect import signature
 from typing import Optional, Type
 
+from ovos_bus_client.session import SessionManager
 from ovos_utils import create_killable_daemon
 from ovos_utils.fakebus import Message
-import threading
-from inspect import signature
-from functools import wraps
+from ovos_utils.log import LOG
 
 
 class AbortEvent(StopIteration):
@@ -56,9 +58,15 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
         def call_function(*args, **kwargs):
             skill = args[0]
             t = create_killable_daemon(func, args, kwargs, autostart=False)
+            sess = SessionManager.get()
 
-            def abort(_):
+            def abort(m: Message):
                 if not t.is_alive():
+                    return
+                # check if session matches (dont kill events from other sessions)
+                sess2 = SessionManager.get(m)
+                if sess.session_id != sess2.session_id:
+                    LOG.debug(f"ignoring '{msg}' kill event, event listener not created by this session")
                     return
                 if stop_tts:
                     skill.bus.emit(Message("mycroft.audio.speech.stop"))
