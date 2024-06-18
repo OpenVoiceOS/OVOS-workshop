@@ -145,7 +145,7 @@ class TestBaseSkill(unittest.TestCase):
             stop_time = time()
             stop_event.set()
             thread.join()
-            self.assertAlmostEquals(self.skill.settings["test_val"], stop_time,
+            self.assertAlmostEqual(self.skill.settings["test_val"], stop_time,
                                     0, f"run {i}")
             self.assertNotEqual(self.skill.settings["test_val"],
                                 self.skill._initial_settings["test_val"],

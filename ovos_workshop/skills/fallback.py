@@ -16,13 +16,14 @@ import operator
 from typing import Optional, List, Callable, Tuple
 
 from ovos_bus_client import MessageBusClient
-from ovos_bus_client.message import Message
+from ovos_bus_client.message import Message, dig_for_message
 from ovos_config import Configuration
 from ovos_utils.events import get_handler_name
 from ovos_utils.log import LOG
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
 
+from ovos_workshop.decorators.killable import killable_event
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -356,6 +357,13 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                   "can_handle": self.can_answer(utts, lang)},
             context={"skill_id": self.skill_id}))
 
+    def _on_timeout(self):
+        message = dig_for_message()
+        self.bus.emit(message.forward(
+            f"ovos.skills.fallback.{self.skill_id}.killed",
+            data={"error": "timed out"}))
+
+    @killable_event("ovos.skills.fallback.force_timeout", callback=_on_timeout)
     def _handle_fallback_request(self, message: Message):
         """
         Handle a fallback request, calling any registered handlers in priority
