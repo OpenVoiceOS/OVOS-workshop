@@ -1,3 +1,4 @@
+import time
 from unittest import TestCase
 from unittest.mock import patch, Mock
 
@@ -262,6 +263,8 @@ class TestFallbackSkillV2(TestCase):
         self.fallback_skill._fallback_handlers = [(100, mock_handler)]
 
         self.fallback_skill._handle_fallback_request(Message("test"))
+        time.sleep(0.2)  # above runs in a killable thread
+
         self.assertTrue(start_event.is_set())
         self.assertTrue(handler_event.is_set())
 
