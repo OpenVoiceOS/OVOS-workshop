@@ -1855,17 +1855,34 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         LOG.debug(f"get_response session: {session.session_id}")
         ans = []
 
-        # NOTE: a threading.Event is not used otherwise we can't raise the
-        # AbortEvent exception to kill the thread
-        # this is for compat with killable_intents decorators
         start = time.time()
+
+        def on_extension(msg):
+            nonlocal start
+            s = SessionManager.get(msg)
+            if s.session_id == session.session_id:
+                # this helps with slower voice satellites or in cases of very long responses
+                LOG.debug(f"Extending get_response wait time: {msg.msg_type}")
+                start = time.time()
+
+        # if we have indications listener is busy, we allow extra time
+        self.bus.on("recognizer_loop:record_begin", on_extension)
+        self.bus.on("recognizer_loop:record_end", on_extension)
+
         while time.time() - start <= 15 and not ans:
             ans = self.__responses[session.session_id]
+            # NOTE: a threading.Event is not used otherwise we can't raise the
+            # AbortEvent exception to kill the thread
+            # this is for compat with killable_intents decorators
+            # a busy loop is needed to be able to raise an exception
             time.sleep(0.1)
             if ans is None:
                 # aborted externally (if None)
                 self.log.debug("get_response aborted")
                 break
+
+        self.bus.remove("recognizer_loop:record_begin", on_extension)
+        self.bus.remove("recognizer_loop:record_end", on_extension)
         return ans
 
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
