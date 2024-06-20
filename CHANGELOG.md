@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a37](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a37) (2024-06-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a36...0.0.16a37)
+
+**Implemented enhancements:**
+
+- feat/get\_response\_dynamic\_timeout [\#211](https://github.com/OpenVoiceOS/OVOS-workshop/pull/211) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a36](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a36) (2024-06-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a35...0.0.16a36)
@@ -700,10 +708,6 @@
 ## [V0.0.12a31](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a31) (2023-06-19)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a30...V0.0.12a31)
-
-**Fixed bugs:**
-
-- fix: skill reloading broken [\#101](https://github.com/OpenVoiceOS/OVOS-workshop/pull/101) ([fidesachates](https://github.com/fidesachates))
 
 ## [V0.0.12a30](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a30) (2023-06-16)
 
