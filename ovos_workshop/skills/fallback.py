@@ -23,7 +23,7 @@ from ovos_utils.log import LOG
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
 
-from ovos_workshop.decorators.killable import killable_event
+from ovos_workshop.decorators.killable import AbortEvent, killable_event
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -382,12 +382,14 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                                  key=operator.itemgetter(0))
         for prio, handler in sorted_handlers:
             try:
+                handler_name = get_handler_name(handler)
                 # call handler, conditionally activating the skill
                 status = self._conditional_activate(handler, message=message)
                 if status:
                     # indicate completion
-                    handler_name = get_handler_name(handler)
                     break
+            except AbortEvent:
+                LOG.debug(f"fallback handler '{handler_name}' killed because it timed out!")
             except Exception:
                 LOG.exception('Exception in fallback.')
         else:
