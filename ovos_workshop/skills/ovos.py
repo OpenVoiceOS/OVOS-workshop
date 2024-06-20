@@ -1548,17 +1548,29 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Indicate that the skill handler is starting.
 
-        activation  (bool, optional): activate skill if True, deactivate if False, do nothing if None
+        activation  (bool, optional): activate skill if True,
+                                      deactivate if False,
+                                      do nothing if None
         """
         if handler_info:
             # Indicate that the skill handler is starting if requested
             msg_type = handler_info + '.start'
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
-        if activation is True:
+
+        # in latest versions of ovos-core the skill is
+        # activated by the intent service and this step is no longer needed
+        sess = SessionManager.get(message)
+        is_active = any([s[0] == self.skill_id
+                         for s in sess.active_skills])
+        if not is_active and activation is True:
             self.activate()
-        elif activation is False:
+            sess.activate_skill(self.skill_id)
+            message.context["session"] = sess.serialize()
+        elif is_active and activation is False:
             self.deactivate()
+            sess.deactivate_skill(self.skill_id)
+            message.context["session"] = sess.serialize()
 
     def _on_event_end(self, message: Message, handler_info: str,
                       skill_data: dict, is_intent: bool = False):
