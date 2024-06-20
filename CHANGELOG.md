@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a38) (2024-06-20)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a37...0.0.16a38)
+
+**Merged pull requests:**
+
+- refactor/logs [\#213](https://github.com/OpenVoiceOS/OVOS-workshop/pull/213) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a37](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a37) (2024-06-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a36...0.0.16a37)
@@ -700,10 +708,6 @@
 ## [V0.0.12a32](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a32) (2023-06-24)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a31...V0.0.12a32)
-
-**Implemented enhancements:**
-
-- feat/session\_id\_wait\_while\_speaking [\#102](https://github.com/OpenVoiceOS/OVOS-workshop/pull/102) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [V0.0.12a31](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a31) (2023-06-19)
 
