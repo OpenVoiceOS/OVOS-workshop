@@ -256,6 +256,22 @@ except ImportError:
         image: str = ""
         skill_icon: str = ""
 
+        def extract_uri(self, video=True) -> str:
+            from ovos_plugin_manager.ocp import load_stream_extractors
+            xtract = load_stream_extractors()
+            meta = xtract.extract_stream(f"{self.extractor_id}//{self.stream}",
+                                         video=video)
+            return meta["uri"]
+
+        def extract_media_entry(self, video=True) -> MediaEntry:
+            from ovos_plugin_manager.ocp import load_stream_extractors
+            xtract = load_stream_extractors()
+            meta = xtract.extract_stream(f"{self.extractor_id}//{self.stream}",
+                                         video=video)
+            kwargs = {k: v for k, v in meta.items()
+                      if k in inspect.signature(MediaEntry).parameters}
+            return MediaEntry(**kwargs)
+
         @property
         def infocard(self) -> dict:
             """
@@ -299,16 +315,7 @@ except ImportError:
 
 
     @dataclass
-    class _Listdataclass(list):
-        """this is needed for proper **kwarg resolution
-         of a dataclass that is a subclass of a list"""
-
-        def __init__(self, *args, **kwargs):
-            list.__init__(self, *args)
-
-
-    @dataclass
-    class Playlist(_Listdataclass):
+    class Playlist(list):
         title: str = ""
         artist: str = ""
         position: int = 0
@@ -318,6 +325,16 @@ except ImportError:
         skill_icon: str = ""
         playback: PlaybackType = PlaybackType.UNDEFINED
         media_type: MediaType = MediaType.GENERIC
+
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            for k, v in kwargs.items():
+                if hasattr(self, k):
+                    self.__setattr__(k, v)
+            if len(args) == 1 and isinstance(args[0], list):
+                args = args[0]
+            for e in args:
+                self.add_entry(e)
 
         @property
         def length(self):
