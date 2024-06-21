@@ -256,6 +256,22 @@ except ImportError:
         image: str = ""
         skill_icon: str = ""
 
+        def extract_uri(self, video=True) -> str:
+            from ovos_plugin_manager.ocp import load_stream_extractors
+            xtract = load_stream_extractors()
+            meta = xtract.extract_stream(f"{self.extractor_id}//{self.stream}",
+                                         video=video)
+            return meta["uri"]
+
+        def extract_media_entry(self, video=True) -> MediaEntry:
+            from ovos_plugin_manager.ocp import load_stream_extractors
+            xtract = load_stream_extractors()
+            meta = xtract.extract_stream(f"{self.extractor_id}//{self.stream}",
+                                         video=video)
+            kwargs = {k: v for k, v in meta.items()
+                      if k in inspect.signature(MediaEntry).parameters}
+            return MediaEntry(**kwargs)
+
         @property
         def infocard(self) -> dict:
             """
