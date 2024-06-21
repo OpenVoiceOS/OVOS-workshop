@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a39) (2024-06-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a38...0.0.16a39)
+
+**Fixed bugs:**
+
+- fix/allow\_ocp\_objects [\#214](https://github.com/OpenVoiceOS/OVOS-workshop/pull/214) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a38) (2024-06-20)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a37...0.0.16a38)
