@@ -12,8 +12,9 @@ from ovos_workshop.skills.ovos import OVOSSkill
 
 # backwards compat imports, do not delete, skills import from here
 from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
-    ocp_previous, ocp_featured_media, MediaType, MediaState, MatchConfidence, \
-    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState
+    ocp_previous, ocp_featured_media
+from ovos_workshop.backwards_compat import MediaType, MediaState, MatchConfidence, \
+    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState, Playlist, PluginStream, MediaEntry
 
 
 def get_non_properties(obj):
@@ -460,6 +461,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 # inject skill id in individual results, will be needed later
                 # for proper playback handling
                 for idx, r in enumerate(results):
+                    if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                        results[idx] = r.as_dict
                     results[idx]["skill_id"] = self.skill_id
                 self.bus.emit(message.response({"phrase": search_phrase,
                                                 "skill_id": self.skill_id,
@@ -470,6 +473,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 found = True
             else:  # generator, keeps returning results
                 for r in results:
+                    if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                        r = r.as_dict
                     # inject skill id in individual results, will be needed later
                     # for proper playback handling
                     r["skill_id"] = self.skill_id
