@@ -1878,9 +1878,19 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 LOG.debug(f"Extending get_response wait time: {msg.msg_type}")
                 start = time.time()  # reset timer
 
+        def on_abort(msg):
+            nonlocal start
+            s = SessionManager.get(msg)
+            if s.session_id == session.session_id:
+                # ovos-utterance-cancel-plugin usually
+                LOG.debug("Aborting get_response")
+                self.__responses[session.session_id] = None
+                start = time.time() + timeout + 1
+                
         # if we have indications listener is busy, we allow extra time
         self.bus.on("recognizer_loop:record_begin", on_extension)
         self.bus.on("recognizer_loop:record_end", on_extension)
+        self.bus.on("ovos.utterance.cancelled", on_abort)
 
         while time.time() - start <= timeout and not ans:
             ans = self.__responses[session.session_id]
@@ -1896,6 +1906,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         self.bus.remove("recognizer_loop:record_begin", on_extension)
         self.bus.remove("recognizer_loop:record_end", on_extension)
+        self.bus.remove("ovos.utterance.cancelled", on_abort)
         return ans
 
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
