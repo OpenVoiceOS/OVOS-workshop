@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a41](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a41) (2024-06-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a40...0.0.16a41)
+
+**Fixed bugs:**
+
+- fix/ocp\_timeout [\#218](https://github.com/OpenVoiceOS/OVOS-workshop/pull/218) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a40](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a40) (2024-06-21)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a39...0.0.16a40)
@@ -708,10 +716,6 @@
 ## [V0.0.12a34](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a34) (2023-07-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a33...V0.0.12a34)
-
-**Merged pull requests:**
-
-- Refactor `SkillGUI` with unit tests [\#106](https://github.com/OpenVoiceOS/OVOS-workshop/pull/106) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a33](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a33) (2023-07-04)
 
