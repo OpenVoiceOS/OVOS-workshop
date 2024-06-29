@@ -434,59 +434,60 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         if message.msg_type == f'ovos.common_play.query.{self.skill_id}':
             # make message.response work as usual
             message.msg_type = f'ovos.common_play.query'
-        elif media_type not in self.supported_media:
-            # skip this skill, it doesn't handle this media type
-            return
 
         self.bus.emit(message.reply("ovos.common_play.skill.search_start",
                                     {"skill_id": self.skill_id,
                                      "skill_name": self.skill_aliases[0],
                                      "thumbnail": self.skill_icon, }))
 
-        # invoke the media search handlesr to let the skill perform its search
-        found = False
-        for handler in self._search_handlers:
-            if self._stop_event.is_set():
-                break
-            # @ocp_search
-            # def handle_search(...):
-            if len(signature(handler).parameters) == 1:
-                # no optional media_type argument
-                results = handler(search_phrase) or []
-            else:
-                results = handler(search_phrase, media_type) or []
+        # search this skill if MediaType is supported
+        if media_type in self.supported_media:
+            # invoke the media search handlers to let the skill perform its search
+            found = False
+            for handler in self._search_handlers:
+                if self._stop_event.is_set():
+                    break
+                # @ocp_search
+                # def handle_search(...):
+                if len(signature(handler).parameters) == 1:
+                    # no optional media_type argument
+                    results = handler(search_phrase) or []
+                else:
+                    results = handler(search_phrase, media_type) or []
 
-            # handler might return a generator or a list
-            if isinstance(results, list):
-                # inject skill id in individual results, will be needed later
-                # for proper playback handling
-                for idx, r in enumerate(results):
-                    if isinstance(r, (MediaEntry, Playlist, PluginStream)):
-                        results[idx] = r.as_dict
-                    results[idx]["skill_id"] = self.skill_id
-                self.bus.emit(message.response({"phrase": search_phrase,
-                                                "skill_id": self.skill_id,
-                                                "skill_name": self.skill_aliases[0],
-                                                "thumbnail": self.skill_icon,
-                                                "results": results,
-                                                "searching": False}))
-                found = True
-            else:  # generator, keeps returning results
-                for r in results:
-                    if isinstance(r, (MediaEntry, Playlist, PluginStream)):
-                        r = r.as_dict
+                # handler might return a generator or a list
+                if isinstance(results, list):
                     # inject skill id in individual results, will be needed later
                     # for proper playback handling
-                    r["skill_id"] = self.skill_id
+                    for idx, r in enumerate(results):
+                        if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                            results[idx] = r.as_dict
+                        results[idx]["skill_id"] = self.skill_id
                     self.bus.emit(message.response({"phrase": search_phrase,
                                                     "skill_id": self.skill_id,
                                                     "skill_name": self.skill_aliases[0],
                                                     "thumbnail": self.skill_icon,
-                                                    "results": [r],
+                                                    "results": results,
                                                     "searching": False}))
                     found = True
-                    if self._stop_event.is_set():
-                        break
+                else:  # generator, keeps returning results
+                    for r in results:
+                        if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                            r = r.as_dict
+                        # inject skill id in individual results, will be needed later
+                        # for proper playback handling
+                        r["skill_id"] = self.skill_id
+                        self.bus.emit(message.response({"phrase": search_phrase,
+                                                        "skill_id": self.skill_id,
+                                                        "skill_name": self.skill_aliases[0],
+                                                        "thumbnail": self.skill_icon,
+                                                        "results": [r],
+                                                        "searching": False}))
+                        found = True
+                        if self._stop_event.is_set():
+                            break
+            else:  # skip this skill, it doesn't handle this media type
+                found = False
 
         if not found:
             # Signal we are done (can't handle it)
