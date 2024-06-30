@@ -440,6 +440,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                      "skill_name": self.skill_aliases[0],
                                      "thumbnail": self.skill_icon, }))
 
+        found = False
         # search this skill if MediaType is supported
         if media_type in self.supported_media:
             # invoke the media search handlers to let the skill perform its search
@@ -487,7 +488,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                         if self._stop_event.is_set():
                             break
             else:  # skip this skill, it doesn't handle this media type
-                found = False
+                LOG.debug(f"skipping {self.skill_id}, it does not support media type: {media_type}")
 
         if not found:
             # Signal we are done (can't handle it)
