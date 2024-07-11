@@ -62,8 +62,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                  *args, **kwargs):
         self.supported_media = supported_media or [MediaType.GENERIC]
         self.skill_aliases = []
-        self._read_skill_name_voc(skill_voc_filename)
-
+        self.skill_voc_filename = skill_voc_filename
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
         self._current_query = None
@@ -80,17 +79,17 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.ocp_matchers = {}
         super().__init__(*args, **kwargs)
 
-    def _read_skill_name_voc(self, skill_voc_filename: str):
+    def _read_skill_name_voc(self):
         """read voc file to allow requesting a skill by name"""
-        if skill_voc_filename:
+        if self.skill_voc_filename:
             for lang in self.native_langs:
-                self.skill_aliases += self.voc_list(skill_voc_filename, lang)
-        else:
+                self.skill_aliases += self.voc_list(self.skill_voc_filename, lang)
+        if not self.skill_aliases:
             skill_name = camel_case_split(self.__class__.__name__)
             alt = skill_name.replace(" skill", "").replace(" Skill", "")
             self.skill_aliases = [skill_name, alt]
-        # deduplicate
-        self.skill_aliases = list(set(self.skill_aliases))
+        # deduplicate and sort by str len
+        self.skill_aliases = sorted(list(set(self.skill_aliases)), reverse=True)
 
     @property
     def ocp_cache_dir(self):
@@ -352,11 +351,14 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         super()._register_decorated()
 
+        # needs to be after super() because it needs self.config_core
+        self._read_skill_name_voc()
         # volunteer info to OCP
         self.bus.emit(
             Message('ovos.common_play.announce',
                     {"skill_id": self.skill_id,
                      "skill_name": self.skill_aliases[0],
+                     "aliases": self.skill_aliases,
                      "thumbnail": self.skill_icon,
                      "media_types": self.supported_media,
                      "featured_tracks": len(self._featured_handlers) >= 1}))
