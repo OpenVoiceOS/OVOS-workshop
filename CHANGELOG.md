@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a44](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a44) (2024-07-11)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a43...0.0.16a44)
+
+**Fixed bugs:**
+
+- fix/wrong\_log\_due\_identation\_error [\#223](https://github.com/OpenVoiceOS/OVOS-workshop/pull/223) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a43](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a43) (2024-07-11)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a42...0.0.16a43)
