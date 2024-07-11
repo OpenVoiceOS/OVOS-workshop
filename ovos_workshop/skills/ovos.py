@@ -1222,6 +1222,15 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.bus.remove("intent.service.skills.deactivate", on_deac)
         return result
 
+    def _on_timeout(self):
+        """_handle_converse_request timed out and was forcefully killed by ovos-core"""
+        message = dig_for_message()
+        self.bus.emit(message.forward(
+            f"{self.skill_id}.converse.killed",
+            data={"error": "timed out"}))
+
+    @killable_event("ovos.skills.converse.force_timeout",
+                    callback=_on_timeout, check_skill_id=True)
     def _handle_converse_request(self, message: Message):
         """
         If this skill is requested and supports converse, handle the user input

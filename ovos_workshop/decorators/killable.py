@@ -41,7 +41,8 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
                    exc: Type[Exception] = AbortEvent,
                    callback: Optional[callable] = None,
                    react_to_stop: bool = False, call_stop: bool = False,
-                   stop_tts: bool = False):
+                   stop_tts: bool = False,
+                   check_skill_id: bool = False):
     """
     Decorator to mark a method that can be terminated during execution.
     @param msg: Message name to terminate on
@@ -50,6 +51,7 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
     @param react_to_stop: If true, also terminate on `stop` Messages
     @param call_stop: If true, also call `Class.stop` method
     @param stop_tts: If true, emit message to stop TTS audio playback
+    @param check_skill_id: If true, require skill_id in message.data to match this skill
     """
     # Begin wrapper
     def create_killable(func):
@@ -68,6 +70,12 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
                 if sess.session_id != sess2.session_id:
                     LOG.debug(f"ignoring '{msg}' kill event, event listener not created by this session")
                     return
+                if check_skill_id:
+                    skill_id = m.data.get("skill_id", "")
+                    if skill_id and skill_id != skill.skill_id:
+                        LOG.debug(f"ignoring '{msg}' kill event, event targeted to {skill_id}")
+                        return
+
                 if stop_tts:
                     skill.bus.emit(Message("mycroft.audio.speech.stop"))
                 if call_stop:
