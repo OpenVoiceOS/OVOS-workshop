@@ -504,8 +504,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                         found = True
                         if self._stop_event.is_set():
                             break
-            else:  # skip this skill, it doesn't handle this media type
-                LOG.debug(f"skipping {self.skill_id}, it does not support media type: {media_type}")
+        else:  # skip this skill, it doesn't handle this media type
+            LOG.debug(f"skipping {self.skill_id}, it does not support media type: {media_type}")
 
         if not found:
             # Signal we are done (can't handle it)
