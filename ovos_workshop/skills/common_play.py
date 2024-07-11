@@ -56,11 +56,13 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, supported_media=None, skill_icon="", *args, **kwargs):
+    def __init__(self, supported_media: List[MediaType] = None,
+                 skill_icon: str = "",
+                 skill_voc_filename: str = "",
+                 *args, **kwargs):
         self.supported_media = supported_media or [MediaType.GENERIC]
-        skill_name = camel_case_split(self.__class__.__name__)
-        alt = skill_name.replace(" skill", "").replace(" Skill", "")
-        self.skill_aliases = [skill_name, alt]
+        self.skill_aliases = []
+        self._read_skill_name_voc(skill_voc_filename)
 
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
@@ -77,6 +79,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
         self.ocp_matchers = {}
         super().__init__(*args, **kwargs)
+
+    def _read_skill_name_voc(self, skill_voc_filename: str):
+        """read voc file to allow requesting a skill by name"""
+        if skill_voc_filename:
+            for lang in self.native_langs:
+                self.skill_aliases += self.voc_list(skill_voc_filename, lang)
+        else:
+            skill_name = camel_case_split(self.__class__.__name__)
+            alt = skill_name.replace(" skill", "").replace(" Skill", "")
+            self.skill_aliases = [skill_name, alt]
+        # deduplicate
+        self.skill_aliases = list(set(self.skill_aliases))
 
     @property
     def ocp_cache_dir(self):
@@ -142,6 +156,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                 it will search netflix instead of spotify
          """
         message = message or Message("")
+        # TODO - aliases per lang
         self.bus.emit(
             message.reply('ovos.common_play.announce',
                           {"skill_id": self.skill_id,
