@@ -568,6 +568,25 @@ class SkillContainer:
         self.skill_directory = skill_directory
         self.skill_loader = None
 
+    def do_unload(self, message):
+        """compat with legacy api from skill manager in core"""
+        if message.msg_type == 'skillmanager.keep':
+            if message.data['skill'] == self.skill_id:
+                return
+        elif message.data['skill'] != self.skill_id:
+            return
+        if self.skill_loader:
+            LOG.info("unloading skill")
+            self.skill_loader._unload()
+
+    def do_load(self, message):
+        """compat with legacy api from skill manager in core"""
+        if message.data['skill'] != self.skill_id:
+            return
+        if self.skill_loader:
+            LOG.info("reloading skill")
+            self.skill_loader._load()
+
     def _connect_to_core(self):
         """
         Initialize messagebus connection and register event to load skill once
@@ -589,6 +608,9 @@ class SkillContainer:
             LOG.warning("Skills service not ready yet. Load on ready event.")
 
         self.bus.on("mycroft.ready", self.load_skill)
+        self.bus.on("skillmanager.activate", self.do_load)
+        self.bus.on("skillmanager.deactivate", self.do_unload)
+        self.bus.on("skillmanager.keep", self.do_unload)
 
     def load_skill(self, message: Optional[Message] = None):
         """
