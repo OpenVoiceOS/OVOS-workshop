@@ -82,11 +82,15 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
                     # call stop on parent skill
                     skill.stop()
 
-                # ensure no orphan get_response daemons
-                # this is the only killable daemon that core itself will
-                # create, users should also account for this condition with
-                # callbacks if using the decorator for other purposes
-                skill._handle_killed_wait_response()
+                LOG.debug(f"killing {func} - callback {callback}")
+
+                def cb():
+                    if callback is not None:
+                        if len(signature(callback).parameters) == 1:
+                            # class method, needs self
+                            callback(skill)
+                        else:
+                            callback()
 
                 try:
                     while t.is_alive():
@@ -95,13 +99,16 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
                 except threading.ThreadError:
                     pass  # already killed
                 except AssertionError:
+                    LOG.exception("could not determine thread id")
                     pass  # could not determine thread id ?
-                if callback is not None:
-                    if len(signature(callback).parameters) == 1:
-                        # class method, needs self
-                        callback(skill)
-                    else:
-                        callback()
+                except exc:
+                    # this is the exception we raised ourselves to kill the thread
+                    # usually it doesnt propagate this far, if it does we need to re-raise it
+                    # (reproducible with killable get_response)
+                    LOG.debug(f"Killed thread {t}")
+                    cb()
+                    raise
+                cb()
 
             # save reference to threads so they can be killed later
             if not hasattr(skill, "_threads"):
