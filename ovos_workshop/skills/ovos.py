@@ -1265,10 +1265,16 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
                                          "result": result}))
+        except (AbortQuestion, AbortEvent):
+            self.bus.emit(message.reply('skill.converse.response',
+                                        {"skill_id": self.skill_id,
+                                         "error": "killed",
+                                         "result": False}))
         except Exception as e:
             LOG.error(e)
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
+                                         "error": repr(e),
                                          "result": False}))
 
     def _handle_stop_ack(self, message: Message):

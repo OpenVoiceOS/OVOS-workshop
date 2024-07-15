@@ -99,7 +99,6 @@ def killable_event(msg: str = "mycroft.skills.abort_execution",
                 except threading.ThreadError:
                     pass  # already killed
                 except AssertionError:
-                    LOG.exception("could not determine thread id")
                     pass  # could not determine thread id ?
                 except exc:
                     # this is the exception we raised ourselves to kill the thread
