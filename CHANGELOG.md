@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16a45](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a45) (2024-07-15)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a44...0.0.16a45)
+
+**Fixed bugs:**
+
+- fix/killable\_converse [\#221](https://github.com/OpenVoiceOS/OVOS-workshop/pull/221) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a44](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a44) (2024-07-11)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a43...0.0.16a44)
@@ -716,10 +724,6 @@
 ## [V0.0.12a37](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a37) (2023-07-10)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a36...V0.0.12a37)
-
-**Merged pull requests:**
-
-- Add docstrings and unit tests for app.py [\#110](https://github.com/OpenVoiceOS/OVOS-workshop/pull/110) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a36](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a36) (2023-07-10)
 
