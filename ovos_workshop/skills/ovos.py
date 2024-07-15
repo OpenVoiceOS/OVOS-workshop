@@ -2059,9 +2059,12 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.__responses = {k: None for k in self.__responses}
         self.__validated_responses = {k: None for k in self.__validated_responses}
         self.converse = self._original_converse
+        message = dig_for_message()
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.killed"))
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
-                    callback=_handle_killed_wait_response, react_to_stop=True)
+                    callback=_handle_killed_wait_response, react_to_stop=True,
+                    check_skill_id=True)
     def _real_wait_response(self, is_cancel, validator, on_fail, num_retries,
                             message: Message):
         """
@@ -2073,10 +2076,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         Arguments:
             is_cancel (callable): function checking cancel criteria
-            validator (callbale): function checking for a valid response
+            validator (callable): function checking for a valid response
             on_fail (callable): function handling retries
 
         """
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.waiting"))
         sess = SessionManager.get(message)
 
         num_fails = 0
