@@ -1222,6 +1222,15 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.bus.remove("intent.service.skills.deactivate", on_deac)
         return result
 
+    def _on_timeout(self):
+        """_handle_converse_request timed out and was forcefully killed by ovos-core"""
+        message = dig_for_message()
+        self.bus.emit(message.forward(
+            f"{self.skill_id}.converse.killed",
+            data={"error": "timed out"}))
+
+    @killable_event("ovos.skills.converse.force_timeout",
+                    callback=_on_timeout, check_skill_id=True)
     def _handle_converse_request(self, message: Message):
         """
         If this skill is requested and supports converse, handle the user input
@@ -1256,10 +1265,16 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
                                          "result": result}))
+        except (AbortQuestion, AbortEvent):
+            self.bus.emit(message.reply('skill.converse.response',
+                                        {"skill_id": self.skill_id,
+                                         "error": "killed",
+                                         "result": False}))
         except Exception as e:
             LOG.error(e)
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
+                                         "error": repr(e),
                                          "result": False}))
 
     def _handle_stop_ack(self, message: Message):
@@ -2050,9 +2065,12 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.__responses = {k: None for k in self.__responses}
         self.__validated_responses = {k: None for k in self.__validated_responses}
         self.converse = self._original_converse
+        message = dig_for_message()
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.killed"))
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
-                    callback=_handle_killed_wait_response, react_to_stop=True)
+                    callback=_handle_killed_wait_response, react_to_stop=True,
+                    check_skill_id=True)
     def _real_wait_response(self, is_cancel, validator, on_fail, num_retries,
                             message: Message):
         """
@@ -2064,10 +2082,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         Arguments:
             is_cancel (callable): function checking cancel criteria
-            validator (callbale): function checking for a valid response
+            validator (callable): function checking for a valid response
             on_fail (callable): function handling retries
 
         """
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.waiting"))
         sess = SessionManager.get(message)
 
         num_fails = 0
