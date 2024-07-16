@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.16a46](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a46) (2024-07-16)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a45...0.0.16a46)
+
+**Fixed bugs:**
+
+- Standalone skill and intent.service.skills.\(deactivate|activate\), skillmanager.list [\#204](https://github.com/OpenVoiceOS/OVOS-workshop/issues/204)
+- fix/skillmanager\_api [\#222](https://github.com/OpenVoiceOS/OVOS-workshop/pull/222) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a45](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a45) (2024-07-15)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a44...0.0.16a45)
@@ -703,7 +712,6 @@
 **Merged pull requests:**
 
 - Update `default_shutdown` with unit tests [\#115](https://github.com/OpenVoiceOS/OVOS-workshop/pull/115) ([NeonDaniel](https://github.com/NeonDaniel))
-- Docstrings, Annotation, and Outlined unit tests [\#111](https://github.com/OpenVoiceOS/OVOS-workshop/pull/111) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a39) (2023-07-12)
 
@@ -716,10 +724,6 @@
 ## [V0.0.12a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a38) (2023-07-12)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a37...V0.0.12a38)
-
-**Merged pull requests:**
-
-- Update requirements.txt [\#112](https://github.com/OpenVoiceOS/OVOS-workshop/pull/112) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [V0.0.12a37](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a37) (2023-07-10)
 
