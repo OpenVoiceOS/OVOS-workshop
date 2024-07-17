@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.16a47](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a47) (2024-07-17)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a46...0.0.16a47)
+
+**Fixed bugs:**
+
+- ovos.utterance.cancelled should abort get\_response [\#216](https://github.com/OpenVoiceOS/OVOS-workshop/issues/216)
+- fix/featured\_media [\#224](https://github.com/OpenVoiceOS/OVOS-workshop/pull/224) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.16a46](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.0.16a46) (2024-07-16)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.0.16a45...0.0.16a46)
@@ -709,17 +718,9 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a39...V0.0.12a40)
 
-**Merged pull requests:**
-
-- Update `default_shutdown` with unit tests [\#115](https://github.com/OpenVoiceOS/OVOS-workshop/pull/115) ([NeonDaniel](https://github.com/NeonDaniel))
-
 ## [V0.0.12a39](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a39) (2023-07-12)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/V0.0.12a38...V0.0.12a39)
-
-**Merged pull requests:**
-
-- Add locking around skill settings changes [\#114](https://github.com/OpenVoiceOS/OVOS-workshop/pull/114) ([NeonDaniel](https://github.com/NeonDaniel))
 
 ## [V0.0.12a38](https://github.com/OpenVoiceOS/OVOS-workshop/tree/V0.0.12a38) (2023-07-12)
 
