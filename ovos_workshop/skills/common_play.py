@@ -534,6 +534,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         else:
             # inject skill id in individual results
             for idx, r in enumerate(results):
+                if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                    results[idx] = r.as_dict
                 results[idx]["skill_id"] = self.skill_id
             self.bus.emit(Message("ovos.common_play.skill.play",
                                   {"skill_id": self.skill_id,
