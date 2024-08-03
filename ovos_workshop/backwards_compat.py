@@ -165,7 +165,7 @@ except ImportError:
             @param newonly: if True, only adds new keys; existing keys are unchanged
             """
             skipkeys = skipkeys or []
-            if isinstance(entry, MediaEntry):
+            if isinstance(entry, (MediaEntry, PluginStream)):
                 entry = entry.as_dict
             entry = entry or {}
             for k, v in entry.items():
@@ -266,8 +266,17 @@ except ImportError:
         def extract_media_entry(self, video=True) -> MediaEntry:
             from ovos_plugin_manager.ocp import load_stream_extractors
             xtract = load_stream_extractors()
+            if self.extractor_id not in xtract.supported_seis:
+                raise ImportError(f"stream extractor not installed, extractor_id: {self.extractor_id}\navailable plugins: {list(xtract.extractors)}")
+
             meta = xtract.extract_stream(f"{self.extractor_id}//{self.stream}",
                                          video=video)
+            p = meta.get("playback", self.playback)
+            if p == PlaybackType.UNDEFINED:
+                meta["playback"] = PlaybackType.VIDEO if video else PlaybackType.AUDIO
+            for k, v in self.as_dict.items():
+                if not meta.get(k):
+                    meta[k] = v
             kwargs = {k: v for k, v in meta.items()
                       if k in inspect.signature(MediaEntry).parameters}
             return MediaEntry(**kwargs)
@@ -330,7 +339,10 @@ except ImportError:
             super().__init__()
             for k, v in kwargs.items():
                 if hasattr(self, k):
-                    self.__setattr__(k, v)
+                    try:
+                        self.__setattr__(k, v)
+                    except AttributeError:
+                        continue
             if len(args) == 1 and isinstance(args[0], list):
                 args = args[0]
             for e in args:
@@ -360,9 +372,7 @@ except ImportError:
         def from_dict(track: dict) -> 'Playlist':
             if "playlist" not in track:
                 raise ValueError("track dictionary does not contain 'playlist' entries, it is not a valid Playlist")
-            kwargs = {k: v for k, v in track.items()
-                      if k in inspect.signature(Playlist).parameters}
-            playlist = Playlist(**kwargs)
+            playlist = Playlist(**track)
             for e in track.get("playlist", []):
                 playlist.add_entry(e)
             return playlist
