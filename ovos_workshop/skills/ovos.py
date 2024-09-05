@@ -1076,13 +1076,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
 
-        # TODO: deprecate 0.0.9
-        self.add_event("skill.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
-        # TODO: deprecate 0.0.9
-        self.add_event("skill.converse.request", self._handle_converse_request,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
                        speak_errors=False)
@@ -1105,8 +1099,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.add_event('mycroft.skills.settings.changed',
                        self.handle_settings_change, speak_errors=False)
 
-        # TODO: deprecate 0.0.9
-        self.add_event("skill.converse.get_response", self.__handle_get_response, speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
                        speak_errors=False)
 
@@ -1189,12 +1181,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         `active` status.
         @param message: `{self.skill_id}.converse.ping` Message
         """
-        if message.msg_type == "skill.converse.ping":
-            log_deprecation(
-                "Support for message type `skill.converse.ping` is deprecated, use `{skill_id}.converse.ping`", "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
-
         self.bus.emit(message.reply(
             "skill.converse.pong",
             data={"skill_id": self.skill_id,
@@ -1237,13 +1223,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         with `converse`.
         @param message: `{self.skill_id}.converse.request` Message
         """
-        if message.msg_type == "skill.converse.request":
-            log_deprecation(
-                "Support for message type `skill.converse.request` is deprecated, use `{skill_id}.converse.request`",
-                "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
-
         # check if a conversational intent triggered
         # these are skill specific intents that may trigger instead of converse
         if self._handle_converse_intents(message):
@@ -1847,13 +1826,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Handle the response message to a previous get_response / speak call
         sent from the intent service
         """
-        if message.msg_type == "skill.converse.get_response":
-            log_deprecation(
-                "Support for message type `skill.converse.get_response` is deprecated, use `{skill_id}.converse.get_response`",
-                "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
-
         # validate session_id to ensure this isnt another
         # user querying the skill at same time
         sess2 = SessionManager.get(message)
