@@ -178,7 +178,7 @@ class TestSkillNew(unittest.TestCase):
         # a legacy skill not accepting args at all
         with self.assertRaises(Exception) as ctxt:
             BadLegacySkill()  # accesses self.bus in __init__
-        self.assertTrue("Accessed MycroftSkill.bus in __init__" in str(ctxt.exception))
+        self.assertTrue("Accessed OVOSSkill.bus in __init__" in str(ctxt.exception))
 
         legacynoargs = LegacySkill()  # no exception this time because bus is not used in init
         self.assertTrue(legacynoargs.inited)

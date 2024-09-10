@@ -17,9 +17,6 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_config_save_path
-
 from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
@@ -28,6 +25,8 @@ from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_config_save_path
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -41,6 +40,8 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_utils.sound import play_audio
+from padacioso import IntentContainer
+
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
@@ -138,7 +139,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
-        self.resting_name = None
         self.skill_id = skill_id  # set by SkillLoader, guaranteed unique
         self._settings_meta = None  # DEPRECATED - backwards compat only
         self.settings_manager = None
@@ -187,6 +187,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.intent_service = IntentServiceInterface()
         self.audio_service = None
         self.intent_layers = IntentLayers()
+        self.converse_matchers = {}
 
         # Skill Public API
         self.public_api: Dict[str, dict] = {}
@@ -233,6 +234,53 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Override this method to do any optional cleanup.
         @param message: `{self.skill_id}.deactivate` Message
         """
+
+    def register_converse_intent(self, intent_file, handler):
+        """ converse padacioso intents """
+        name = f'{self.skill_id}.converse:{intent_file}'
+        fuzzy = not self.settings.get("strict_intents", False)
+
+        for lang in self.native_langs:
+            self.converse_matchers[lang] = IntentContainer(fuzz=fuzzy)
+
+            resources = self.load_lang(self.res_dir, lang)
+            resource_file = ResourceFile(resources.types.intent, intent_file)
+            if resource_file.file_path is None:
+                self.log.error(f'Unable to find "{intent_file}"')
+                continue
+            filename = str(resource_file.file_path)
+
+            with open(filename) as f:
+                samples = [l.strip() for l in f.read().split("\n")
+                           if l and not l.startswith("#")]
+
+            self.converse_matchers[lang].add_intent(name, samples)
+
+        self.add_event(name, handler, 'mycroft.skill.handler')
+
+    def _handle_converse_intents(self, message):
+        """ called before converse method
+        this gives active skills a chance to parse their own intents and
+        consume the utterance, see conversational_intent decorator for usage
+        """
+        if self.lang not in self.converse_matchers:
+            return False
+
+        best_score = 0
+        response = None
+
+        for utt in message.data['utterances']:
+            match = self.converse_matchers[self.lang].calc_intent(utt)
+            if match.get("conf", 0) > best_score:
+                best_score = match["conf"]
+                response = message.forward(match["name"], match["entities"])
+
+        if not response or best_score < self.settings.get("min_intent_conf", 0.5):
+            return False
+
+        # send intent event
+        self.bus.emit(response)
+        return True
 
     def converse(self, message: Optional[Message] = None) -> bool:
         """
@@ -315,7 +363,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         True if this skill implements a `stop` method
         """
-        return self.__class__.stop is not OVOSSkill.stop
+        return self.__class__.stop is not OVOSSkill.stop or \
+            self.__class__.stop_session is not OVOSSkill.stop_session
 
     @property
     def converse_is_implemented(self) -> bool:
@@ -379,7 +428,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                              'can be set, no settings can be read or changed.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} "
+                             "You can only use self.settings after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             return self._initial_settings
 
@@ -388,6 +438,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Update settings specific to this skill
         """
+        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
         assert isinstance(val, dict)
         # init method
         if self._settings is None:
@@ -409,9 +460,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__}." 
+                             "You can only use self.enclosure after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.enclosure in __init__')
+            raise Exception('Accessed OVOSSkill.enclosure in __init__')
 
     @property
     def file_system(self) -> FileSystemAccess:
@@ -425,9 +477,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs __init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} " 
+                             "You can only use self.file_system after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.file_system in __init__')
+            raise Exception('Accessed OVOSSkill.file_system in __init__')
 
     @file_system.setter
     def file_system(self, fs: FileSystemAccess):
@@ -437,8 +490,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         system directory.
         @param fs: new FileSystemAccess object to use
         """
-        self.log.warning(f"Skill manually overriding file_system path to: "
-                         f"{fs.path}")
+        LOG.warning(f"Skill manually overriding file_system path to: {fs.path}")
         self._file_system = fs
 
     @property
@@ -452,9 +504,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}")
+                             f"to skill class {self.__class__.__name__} "
+                             "You can only use self.bus after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
-            raise Exception('Accessed MycroftSkill.bus in __init__')
+            raise Exception('Accessed OVOSSkill.bus in __init__')
 
     @bus.setter
     def bus(self, value: MessageBusClient):
@@ -482,18 +535,46 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         return self.resources.dialog_renderer
 
     @property
+    def system_unit(self) -> str:
+        """
+        Get the units preference (metric vs imperial)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.system_unit
+
+    @property
+    def date_format(self) -> str:
+        """
+        Get the date format (DMY/MDY/YMD)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.date_format
+
+    @property
+    def time_format(self) -> str:
+        """
+        Get the time format (half vs full)
+        This info may come from Session, eg, injected by a voice satellite
+        """
+        sess = SessionManager.get()
+        return sess.time_format
+
+    @property
     def location(self) -> dict:
         """
         Get the JSON data struction holding location information.
+        This info may come from Session, eg, injected by a voice satellite
         """
-        # TODO: Allow Enclosure to override this for devices that
-        #       contain a GPS.
-        return self.config_core.get('location')
+        sess = SessionManager.get()
+        return sess.location_preferences
 
     @property
     def location_pretty(self) -> Optional[str]:
         """
         Get a speakable city from the location config if available
+        This info may come from Session, eg, injected by a voice satellite
         """
         loc = self.location
         if type(loc) is dict and loc['city']:
@@ -504,6 +585,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     def location_timezone(self) -> Optional[str]:
         """
         Get the timezone code, such as 'America/Los_Angeles'
+        This info may come from Session, eg, injected by a voice satellite
         """
         loc = self.location
         if type(loc) is dict and loc['timezone']:
@@ -513,8 +595,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     @property
     def lang(self) -> str:
         """
-        Get the current language as a BCP-47 language code. This will consider
-        current session data if available, else Configuration.
+        Get the current language as a BCP-47 language code.
+        This info may come from Session, eg, injected by a voice satellite
         """
         lang = self.core_lang
         message = dig_for_message()
@@ -759,7 +841,25 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                         self._settings[k] = v
             self._initial_settings = copy(self.settings)
 
-        self._start_filewatcher()
+        # starting on ovos-core 0.0.8 a bus event is emitted
+        # all settings.json files are monitored for changes in ovos-core
+        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed)
+
+        if self._monitor_own_settings:
+            self._start_filewatcher()
+
+    @property
+    def _monitor_own_settings(self):
+        # account for isolated setups where skills might not share a filesystem with core
+        if is_classic_core():
+            return True
+        return self.settings.get("monitor_own_settings", False)
+
+    def _handle_settings_changed(self, message):
+        """external signal to reload skill settings"""
+        skill_id = message.data.get("skill_id", "")
+        if skill_id == self.skill_id:
+            self._handle_settings_file_change(self._settings.path)
 
     def _init_skill_gui(self):
         """
@@ -781,22 +881,45 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         This only allows one screen and if two is registered only one
         will be used.
         """
+        resting_name = None
         for attr_name in get_non_properties(self):
-            method = getattr(self, attr_name)
-            if hasattr(method, 'resting_handler'):
-                self.resting_name = method.resting_handler
-                self.log.info(f'Registering resting screen {method} for {self.resting_name}.')
+            handler = getattr(self, attr_name)
+            if hasattr(handler, 'resting_handler'):
+                resting_name = handler.resting_handler
 
-                # Register for handling resting screen
-                self.add_event(f'{self.skill_id}.idle', method, speak_errors=False)
-                # Register handler for resting screen collect message
-                self.add_event('mycroft.mark2.collect_idle',
-                               self._handle_collect_resting, speak_errors=False)
+                def register(message=None):
+                    self.log.info(f'Registering resting screen {resting_name} for {self.skill_id}.')
+                    self.bus.emit(Message("homescreen.manager.add",
+                                          {"class": "IdleDisplaySkill",  # TODO - rm in ovos-gui, only for compat
+                                           "name": resting_name,
+                                           "id": self.skill_id}))
 
-                # Do a send at load to make sure the skill is registered
-                # if reloaded
-                self._handle_collect_resting()
-                break
+                register()  # initial registering
+
+                self.add_event("homescreen.manager.reload.list", register,
+                               speak_errors=False)
+
+                def wrapper(message):
+                    if message.data["homescreen_id"] == self.skill_id:
+                        handler(message)
+
+                self.add_event("homescreen.manager.activate.display", wrapper,
+                               speak_errors=False)
+
+                def shutdown_handler(message):
+                    if message.data["id"] == self.skill_id:
+                        msg = message.forward("homescreen.manager.remove",
+                                              {"id": self.skill_id})
+                        self.bus.emit(msg)
+
+                self.add_event("mycroft.skills.shutdown", shutdown_handler,
+                               speak_errors=False)
+
+                # backwards compat listener
+                self.add_event(f'{self.skill_id}.idle', handler,
+                               speak_errors=False)
+
+                return
 
     def _start_filewatcher(self):
         """
@@ -836,6 +959,10 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             # TODO support for multiple converse handlers (?)
             if hasattr(method, 'converse'):
                 self.converse = method
+
+            if hasattr(method, 'converse_intents'):
+                for intent_file in getattr(method, 'converse_intents'):
+                    self.register_converse_intent(intent_file, method)
 
     def _upload_settings(self):
         """
@@ -945,17 +1072,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         Register default messagebus event handlers
         """
-        # Only register stop if it's been implemented
-        if self.stop_is_implemented:
-            self.add_event('mycroft.stop', self.__handle_stop,
-                           speak_errors=False)
-        # TODO: deprectate 0.0.9
-        self.add_event("skill.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
+        self.add_event('mycroft.stop', self.__handle_stop, speak_errors=False)
+        self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
+        self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
+
         self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
-        # TODO: deprecate 0.0.9
-        self.add_event("skill.converse.request", self._handle_converse_request,
                        speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
                        speak_errors=False)
@@ -978,9 +1099,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.add_event('mycroft.skills.settings.changed',
                        self.handle_settings_change, speak_errors=False)
 
-        # TODO: deprecate 0.0.9
-        self.add_event("skill.converse.get_response", self.__handle_get_response, speak_errors=False)
-        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
+                       speak_errors=False)
 
     def _send_public_api(self, message: Message):
         """
@@ -1061,30 +1181,54 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         `active` status.
         @param message: `{self.skill_id}.converse.ping` Message
         """
-        if message.msg_type == "skill.converse.ping":
-            log_deprecation(
-                "Support for message type `skill.converse.ping` is deprecated, use `{skill_id}.converse.ping`", "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
-
         self.bus.emit(message.reply(
             "skill.converse.pong",
             data={"skill_id": self.skill_id,
                   "can_handle": self.converse_is_implemented},
             context={"skill_id": self.skill_id}))
 
+    def _conditional_activate(self, handler, *args, **kwargs):
+        """internal helper method, only calls self.activate()
+        if the handler returns True and does not call self.deactivate()"""
+        # if handler calls self.deactivate() we do
+        # NOT want to reactivate the skill
+        was_deactivated = False
+
+        def on_deac(message):
+            nonlocal was_deactivated
+            if message.data.get("skill_id") == self.skill_id:
+                was_deactivated = True
+
+        self.bus.on("intent.service.skills.deactivate", on_deac)
+        # call skill method
+        result = handler(*args, **kwargs)
+        # conditional activation
+        if not was_deactivated and result:
+            self.activate()  # renew activation
+        self.bus.remove("intent.service.skills.deactivate", on_deac)
+        return result
+
+    def _on_timeout(self):
+        """_handle_converse_request timed out and was forcefully killed by ovos-core"""
+        message = dig_for_message()
+        self.bus.emit(message.forward(
+            f"{self.skill_id}.converse.killed",
+            data={"error": "timed out"}))
+
+    @killable_event("ovos.skills.converse.force_timeout",
+                    callback=_on_timeout, check_skill_id=True)
     def _handle_converse_request(self, message: Message):
         """
         If this skill is requested and supports converse, handle the user input
         with `converse`.
         @param message: `{self.skill_id}.converse.request` Message
         """
-        if message.msg_type == "skill.converse.request":
-            log_deprecation(
-                "Support for message type `skill.converse.request` is deprecated, use `{skill_id}.converse.request`",
-                "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
+        # check if a conversational intent triggered
+        # these are skill specific intents that may trigger instead of converse
+        if self._handle_converse_intents(message):
+            self.bus.emit(message.reply('skill.converse.response',
+                                        {"skill_id": self.skill_id, "result": True}))
+            return
 
         try:
             # converse can have multiple signatures
@@ -1093,30 +1237,54 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                       "utterances": message.data['utterances'],
                       "lang": message.data['lang']}
             kwargs = {k: v for k, v in kwargs.items() if k in params}
-            result = self.converse(**kwargs)
+
+            # call skill converse method, conditionally activating the skill
+            result = self._conditional_activate(self.converse, **kwargs)
+
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
                                          "result": result}))
+        except (AbortQuestion, AbortEvent):
+            self.bus.emit(message.reply('skill.converse.response',
+                                        {"skill_id": self.skill_id,
+                                         "error": "killed",
+                                         "result": False}))
         except Exception as e:
             LOG.error(e)
             self.bus.emit(message.reply('skill.converse.response',
                                         {"skill_id": self.skill_id,
+                                         "error": repr(e),
                                          "result": False}))
 
-    def _handle_collect_resting(self, message: Optional[Message] = None):
+    def _handle_stop_ack(self, message: Message):
         """
-        Handler for collect resting screen messages.
+        Inform skills service if we want to handle stop. Individual skills
+        may override the property self.stop_is_implemented to enable or
+        disable stop support.
+        @param message: `{self.skill_id}.stop.ping` Message
+        """
+        self.bus.emit(message.reply(
+            "skill.stop.pong",
+            data={"skill_id": self.skill_id,
+                  "can_handle": self.stop_is_implemented},
+            context={"skill_id": self.skill_id}))
 
-        Sends info on how to trigger this skill's resting page.
-        """
-        self.log.info('Registering resting screen')
-        msg = message or Message("")
-        message = msg.reply(
-            'mycroft.mark2.register_idle',
-            data={'name': self.resting_name, 'id': self.skill_id},
-            context={"skill_id": self.skill_id}
-        )
-        self.bus.emit(message)
+    def stop_session(self, session: Session):
+        """skill devs can subclass this if their skill is Session aware
+        skill should stop any activity related to this session
+        this is called before self.stop , if it returns True  the global self.stop won't be called"""
+        return False
+
+    def _handle_session_stop(self, message: Message):
+        message.context['skill_id'] = self.skill_id
+        sess = SessionManager.get(message)
+        data = {"skill_id": self.skill_id, "result": False}
+        try:
+            data["result"] = self.stop_session(sess)
+        except Exception as e:
+            data["error"] = str(e)
+            self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
+        self.bus.emit(message.reply(f"{self.skill_id}.stop.response", data))
 
     def __handle_stop(self, message):
         """Handler for the "mycroft.stop" signal. Runs the user defined
@@ -1124,11 +1292,13 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         message.context['skill_id'] = self.skill_id
         self.bus.emit(message.forward(self.skill_id + ".stop"))
+        sess = SessionManager.get(message)
         try:
-            if self.stop():
+            stopped = self.stop_session(sess) or self.stop()
+            print(f"{self.skill_id} stopped: {stopped}")
+            if stopped:
                 self.bus.emit(message.reply("mycroft.stop.handled",
-                                            {"by": "skill:" + self.skill_id},
-                                            {"skill_id": self.skill_id}))
+                                            {"by": "skill:" + self.skill_id}))
         except Exception as e:
             self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
 
@@ -1185,8 +1355,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                            f'error: {e}')
 
         self.bus.emit(
-            Message('detach_skill', {'skill_id': f"{self.skill_id}:"},
-                    {"skill_id": self.skill_id}))
+            Message('detach_skill', {'skill_id': self.skill_id},
+                    {'skill_id': self.skill_id}))
 
     def detach(self):
         """
@@ -1271,7 +1441,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             filename = str(resource_file.file_path)
             self.intent_service.register_padatious_intent(name, filename, lang)
         if handler:
-            self.add_event(name, handler, 'mycroft.skill.handler')
+            self.add_event(name, handler, 'mycroft.skill.handler',
+                           activation=True, is_intent=True)
 
     def register_entity_file(self, entity_file: str):
         """
@@ -1367,9 +1538,13 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.remove_context(context)
 
     def _on_event_start(self, message: Message, handler_info: str,
-                        skill_data: dict):
+                        skill_data: dict, activation: Optional[bool] = None):
         """
         Indicate that the skill handler is starting.
+
+        activation  (bool, optional): activate skill if True,
+                                      deactivate if False,
+                                      do nothing if None
         """
         if handler_info:
             # Indicate that the skill handler is starting if requested
@@ -1377,8 +1552,22 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
 
+        # in latest versions of ovos-core the skill is
+        # activated by the intent service and this step is no longer needed
+        sess = SessionManager.get(message)
+        is_active = any([s[0] == self.skill_id
+                         for s in sess.active_skills])
+        if not is_active and activation is True:
+            self.activate()
+            sess.activate_skill(self.skill_id)
+            message.context["session"] = sess.serialize()
+        elif is_active and activation is False:
+            self.deactivate()
+            sess.deactivate_skill(self.skill_id)
+            message.context["session"] = sess.serialize()
+
     def _on_event_end(self, message: Message, handler_info: str,
-                      skill_data: dict):
+                      skill_data: dict, is_intent: bool = False):
         """
         Store settings (if changed) and indicate that the skill handler has
         completed.
@@ -1390,6 +1579,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             msg_type = handler_info + '.complete'
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
+        if is_intent:
+            self.bus.emit(message.forward("ovos.utterance.handled", skill_data))
 
     def _on_event_error(self, error: str, message: Message, handler_info: str,
                         skill_data: dict, speak_errors: bool):
@@ -1444,7 +1635,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.intent_service.register_adapt_intent(name, intent_parser)
         if handler:
             self.add_event(intent_parser.name, handler,
-                           'mycroft.skill.handler')
+                           'mycroft.skill.handler',
+                           activation=True, is_intent=True)
 
     # skill developer facing utils
     def speak(self, utterance: str, expect_response: bool = False,
@@ -1486,18 +1678,9 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         if wait:
             timeout = wait if isinstance(wait, int) else 15
-            sessid = SessionManager.get(m).session_id
-            event = Event()
-
-            def handle_output_end(msg):
-                sess = SessionManager.get(msg)
-                if sessid == sess.session_id:
-                    event.set()
-
-            self.bus.on("recognizer_loop:audio_output_end", handle_output_end)
-            event.wait(timeout=timeout)
-            self.bus.remove("recognizer_loop:audio_output_end",
-                            handle_output_end)
+            sess = SessionManager.get(m)
+            sess.is_speaking = True
+            SessionManager.wait_while_speaking(timeout, sess)
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
                      expect_response: bool = False, wait: Union[bool, int] = False):
@@ -1527,7 +1710,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             )
             self.speak(key, expect_response, wait, {})
 
-    def _play_audio_old(self, filename: str, instant: bool = False):
+    def _play_audio_old(self, filename: str, instant: bool = False,
+                        wait: Union[bool, int] = False):
         """ compat for ovos-core <= 0.0.7 """
         if instant:
             LOG.warning("self.play_audio instant flag requires ovos-core >= 0.0.8, "
@@ -1539,19 +1723,29 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                           {"filename": filename,  # TODO - deprecate filename in ovos-audio
                                            "uri": filename  # new namespace
                                            }))
+            if wait:
+                timeout = wait if isinstance(wait, int) else 30
+                sess = SessionManager.get(message)
+                sess.is_speaking = True
+                SessionManager.wait_while_speaking(timeout, sess)
 
-    def _play_audio_classic(self, filename: str, instant: bool = False):
+    def _play_audio_classic(self, filename: str, instant: bool = False,
+                            wait: Union[bool, int] = False):
         """ compat for classic mycroft-core """
         LOG.warning("self.play_audio requires ovos-core >= 0.0.4, "
                     "falling back to local skill playback")
         play_audio(filename).wait()
 
     @backwards_compat(pre_008=_play_audio_old, classic_core=_play_audio_classic)
-    def play_audio(self, filename: str, instant: bool = False):
+    def play_audio(self, filename: str, instant: bool = False,
+                   wait: Union[bool, int] = False):
         """
         Queue and audio file for playback
         @param filename: File to play
         @param instant: if True audio will be played instantly instead of queued with TTS
+        @param wait: set to True to block while the audio
+                                 is being played for 15 seconds. Alternatively, set
+                                 to an integer to specify a timeout in seconds.
         """
         message = dig_for_message() or Message("")
         # if running in docker we need to send binary data to the ovos-audio container
@@ -1565,7 +1759,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             mtype = "mycroft.audio.queue"
 
-        if not send_binary:
+        if not send_binary or not isfile(filename):
             data = {"uri": filename}
         else:
             with open(filename, "rb") as f:
@@ -1574,6 +1768,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                     "binary_data": bindata}
 
         self.bus.emit(message.forward(mtype, data))
+        if wait:
+            timeout = wait if isinstance(wait, int) else 30
+            sess = SessionManager.get(message)
+            sess.is_speaking = True
+            SessionManager.wait_while_speaking(timeout, sess)
 
     def __get_response_v1(self, session=None):
         """Helper to get a response from the user
@@ -1627,13 +1826,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Handle the response message to a previous get_response / speak call
         sent from the intent service
         """
-        if message.msg_type == "skill.converse.get_response":
-            log_deprecation(
-                "Support for message type `skill.converse.get_response` is deprecated, use `{skill_id}.converse.get_response`",
-                "0.0.9")
-            if message.data.get("skill_id") != self.skill_id:
-                return  # not for us!
-
         # validate session_id to ensure this isnt another
         # user querying the skill at same time
         sess2 = SessionManager.get(message)
@@ -1655,12 +1847,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Returns:
             str: user's response or None on a timeout
         """
-        # during alpha 0.0.8 this check is here to handle the edge case missed by the decorator
-        # TODO - remove before 0.0.8 stable
-        from ovos_core.version import OVOS_VERSION_ALPHA
-        if OVOS_VERSION_ALPHA < 40:  # introduced in 0.0.8a40
-            return self.__get_response_v1()
-
         srcm = dig_for_message() or Message("", context={"source": "skills",
                                                          "skill_id": self.skill_id})
         srcm.context["session"] = session.serialize()
@@ -1668,17 +1854,35 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         LOG.debug(f"get_response session: {session.session_id}")
         ans = []
 
-        # NOTE: a threading.Event is not used otherwise we can't raise the
-        # AbortEvent exception to kill the thread
-        # this is for compat with killable_intents decorators
         start = time.time()
-        while time.time() - start <= 15 and not ans:
+        timeout = self.config_core.get("skills", {}).get("get_response_timeout", 20)
+
+        def on_extension(msg):
+            nonlocal start
+            s = SessionManager.get(msg)
+            if s.session_id == session.session_id:
+                # this helps with slower voice satellites or in cases of very long responses
+                LOG.debug(f"Extending get_response wait time: {msg.msg_type}")
+                start = time.time()  # reset timer
+
+        # if we have indications listener is busy, we allow extra time
+        self.bus.on("recognizer_loop:record_begin", on_extension)
+        self.bus.on("recognizer_loop:record_end", on_extension)
+
+        while time.time() - start <= timeout and not ans:
             ans = self.__responses[session.session_id]
+            # NOTE: a threading.Event is not used otherwise we can't raise the
+            # AbortEvent exception to kill the thread
+            # this is for compat with killable_intents decorators
+            # a busy loop is needed to be able to raise an exception
             time.sleep(0.1)
             if ans is None:
                 # aborted externally (if None)
                 self.log.debug("get_response aborted")
                 break
+
+        self.bus.remove("recognizer_loop:record_begin", on_extension)
+        self.bus.remove("recognizer_loop:record_end", on_extension)
         return ans
 
     def get_response(self, dialog: str = '', data: Optional[dict] = None,
@@ -1833,9 +2037,12 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.__responses = {k: None for k in self.__responses}
         self.__validated_responses = {k: None for k in self.__validated_responses}
         self.converse = self._original_converse
+        message = dig_for_message()
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.killed"))
 
     @killable_event("mycroft.skills.abort_question", exc=AbortQuestion,
-                    callback=_handle_killed_wait_response, react_to_stop=True)
+                    callback=_handle_killed_wait_response, react_to_stop=True,
+                    check_skill_id=True)
     def _real_wait_response(self, is_cancel, validator, on_fail, num_retries,
                             message: Message):
         """
@@ -1847,10 +2054,11 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         Arguments:
             is_cancel (callable): function checking cancel criteria
-            validator (callbale): function checking for a valid response
+            validator (callable): function checking for a valid response
             on_fail (callable): function handling retries
 
         """
+        self.bus.emit(message.forward(f"{self.skill_id}.get_response.waiting"))
         sess = SessionManager.get(message)
 
         num_fails = 0
@@ -2064,15 +2272,18 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         """
         if utt:
             # Check for matches against complete words
-            for i in self.voc_list(voc_filename, lang):
+            voc_list = self.voc_list(voc_filename, lang)
+            # From longest to shortest to replace composite terms first
+            for i in sorted(voc_list, key=len, reverse=True):
                 # Substitute only whole words matching the token
-                utt = re.sub(r'\b' + i + r"\b", "", utt)
+                utt = re.sub(r'\b' + i + r'\b', '', utt)
         return utt
 
     # event related skill developer facing utils
     def add_event(self, name: str, handler: callable,
                   handler_info: Optional[str] = None, once: bool = False,
-                  speak_errors: bool = True):
+                  speak_errors: bool = True, activation: Optional[bool] = None,
+                  is_intent: bool = False):
         """
         Create event handler for executing intent or other event.
 
@@ -2086,22 +2297,26 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             speak_errors (bool, optional): Determines if an error dialog should be
                                            spoken to inform the user whenever
                                            an exception happens inside the handler
+            activation  (bool, optional): activate skill if True, deactivate if False, do nothing if None
         """
         skill_data = {'name': get_handler_name(handler)}
 
         def on_error(error, message):
             if isinstance(error, AbortEvent):
                 self.log.info("Skill execution aborted")
-                self._on_event_end(message, handler_info, skill_data)
+                self._on_event_end(message, handler_info, skill_data,
+                                   is_intent=is_intent)
                 return
             self._on_event_error(error, message, handler_info, skill_data,
                                  speak_errors)
 
         def on_start(message):
-            self._on_event_start(message, handler_info, skill_data)
+            self._on_event_start(message, handler_info,
+                                 skill_data, activation)
 
         def on_end(message):
-            self._on_event_end(message, handler_info, skill_data)
+            self._on_event_end(message, handler_info, skill_data,
+                               is_intent=is_intent)
 
         wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
                                  on_error)
@@ -2145,8 +2360,8 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         return self.event_scheduler.schedule_event(handler, when, data, name,
                                                    context=context)
 
-    def schedule_repeating_event(self, handler: callable,
-                                 when: Union[int, float, datetime.datetime],
+    def schedule_repeating_event(self, handler: Callable,
+                                 when: Optional[Union[int, float, datetime.datetime]],
                                  frequency: Union[int, float],
                                  data: Optional[dict] = None,
                                  name: Optional[str] = None,
@@ -2155,17 +2370,17 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         Schedule a repeating event.
 
         Args:
-            handler:                method to be called
-            when (datetime):        time (in system timezone) for first
-                                    calling the handler, or None to
-                                    initially trigger <frequency> seconds
-                                    from now
-            frequency (float/int):  time in seconds between calls
-            data (dict, optional):  data to send when the handler is called
-            name (str, optional):   reference name, must be unique
-            context (dict, optional): context (dict, optional): message
-                                      context to send when the handler
-                                      is called
+            handler (callable):         method to be called
+            when (datetime, optional):  time (in system timezone) for first
+                                        calling the handler, or None to
+                                        initially trigger <frequency> seconds
+                                        from now
+            frequency (float/int):      time in seconds between calls
+            data (dict, optional):      data to send when the handler is called
+            name (str, optional):       reference name, must be unique
+            context (dict, optional):   context (dict, optional): message
+                                        context to send when the handler
+                                        is called
         """
         message = dig_for_message()
         context = context or message.context if message else {}
@@ -2235,13 +2450,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                          data={"skill_id": self.skill_id,
                                "timeout": duration_minutes})
         self.bus.emit(m1)
-
-        # backwards compat with mycroft-core
-        # TODO - remove soon
-        m2 = msg.forward("active_skill_request",
-                         data={"skill_id": self.skill_id,
-                               "timeout": duration_minutes})
-        self.bus.emit(m2)
 
     def deactivate(self):
         """

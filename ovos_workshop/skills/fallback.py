@@ -15,14 +15,15 @@
 import operator
 from typing import Optional, List, Callable, Tuple
 
-from ovos_config import Configuration
-
 from ovos_bus_client import MessageBusClient
-from ovos_utils.log import LOG
+from ovos_bus_client.message import Message, dig_for_message
+from ovos_config import Configuration
 from ovos_utils.events import get_handler_name
-from ovos_bus_client.message import Message
+from ovos_utils.log import LOG
 from ovos_utils.metrics import Stopwatch
 from ovos_utils.skills import get_non_properties
+
+from ovos_workshop.decorators.killable import AbortEvent, killable_event
 from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.permissions import FallbackMode
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -62,13 +63,14 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
     A Fallback can either observe or consume an utterance. A consumed
     utterance will not be seen by any other Fallback handlers.
     """
+
     def __new__classic__(cls, *args, **kwargs):
         if cls is FallbackSkill:
             # direct instantiation of class, dynamic wizardry for unittests
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
         cls.__bases__ = (FallbackSkillV1, FallbackSkill, _MetaFB)
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     @backwards_compat(classic_core=__new__classic__,
                       pre_008=__new__classic__)
@@ -78,7 +80,7 @@ class FallbackSkill(_MetaFB, metaclass=_MutableFallback):
             # return V2 as expected, V1 will eventually be dropped
             return FallbackSkillV2(*args, **kwargs)
         cls.__bases__ = (FallbackSkillV2, FallbackSkill, _MetaFB)
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     @classmethod
     def make_intent_failure_handler(cls, bus: MessageBusClient):
@@ -355,6 +357,15 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                   "can_handle": self.can_answer(utts, lang)},
             context={"skill_id": self.skill_id}))
 
+    def _on_timeout(self):
+        """_handle_fallback_request timed out and was forcefully killed by ovos-core"""
+        message = dig_for_message()
+        self.bus.emit(message.forward(
+            f"ovos.skills.fallback.{self.skill_id}.killed",
+            data={"error": "timed out"}))
+
+    @killable_event("ovos.skills.fallback.force_timeout",
+                    callback=_on_timeout, check_skill_id=True)
     def _handle_fallback_request(self, message: Message):
         """
         Handle a fallback request, calling any registered handlers in priority
@@ -373,11 +384,14 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
                                  key=operator.itemgetter(0))
         for prio, handler in sorted_handlers:
             try:
-                if handler(message):
+                handler_name = get_handler_name(handler)
+                # call handler, conditionally activating the skill
+                status = self._conditional_activate(handler, message=message)
+                if status:
                     # indicate completion
-                    status = True
-                    handler_name = get_handler_name(handler)
                     break
+            except AbortEvent:
+                LOG.debug(f"fallback handler '{handler_name}' killed because it timed out!")
             except Exception:
                 LOG.exception('Exception in fallback.')
         else:
@@ -386,11 +400,12 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         self.bus.emit(message.forward(
             f"ovos.skills.fallback.{self.skill_id}.response",
             data={"result": status, "fallback_handler": handler_name}))
+        if status:
+            self.bus.emit(message.forward("ovos.utterance.handled",
+                                          {"handler": handler_name}))
 
     def _old_register_fallback(self, handler: callable, priority: int):
-        """
-        makes the skill active, done by core >= 0.0.8
-        """
+        """ core < 0.0.8 """
 
         LOG.info(f"registering fallback handler -> "
                  f"ovos.skills.fallback.{self.skill_id}")
@@ -416,7 +431,6 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         @param handler: Fallback handler
         @param priority: priority of the registered handler
         """
-
         LOG.info(f"registering fallback handler -> "
                  f"ovos.skills.fallback.{self.skill_id}")
         self._fallback_handlers.append((priority, handler))
@@ -425,7 +439,7 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
         self.bus.emit(Message("ovos.skills.fallback.register",
                               {"skill_id": self.skill_id,
                                "priority": self.priority}))
-    
+
     def remove_fallback(self, handler_to_del: Optional[callable] = None) -> bool:
         """
         Remove fallback registration / fallback handler.
@@ -443,7 +457,7 @@ class FallbackSkillV2(_MetaFB, metaclass=_MutableFallback):
             LOG.warning('No fallback matching {}'.format(handler_to_del))
         if len(self._fallback_handlers) == 0:
             self.bus.emit(Message("ovos.skills.fallback.deregister",
-                          {"skill_id": self.skill_id}))
+                                  {"skill_id": self.skill_id}))
         return found_handler
 
     def default_shutdown(self):

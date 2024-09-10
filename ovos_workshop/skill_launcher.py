@@ -389,6 +389,12 @@ class SkillLoader:
         except Exception as e:
             LOG.exception(f'Unhandled exception occurred while reloading '
                           f'{self.skill_directory}: {e}')
+            LOG.error("Unloading skill - this may produce errors")
+            # Call unload to allow the broken skill to at least try
+            # and shutdown cleanly. Eg any threads spawned in
+            # __init__() before whatever went wrong.
+            self._unload()
+            LOG.error("Unloaded skill as well as possible")
 
     def _prepare_for_load(self):
         """
@@ -433,23 +439,27 @@ class SkillLoader:
             (bool): True if skill was loaded successfully.
         """
         skill_module = skill_module or self.skill_module
+        skill_creator = None
+        if skill_module:
+            try:
+                # in skill classes __new__ should fully create the skill object
+                skill_class = get_skill_class(skill_module)
+                self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
+                return self.instance is not None
+            except Exception as e:
+                LOG.warning(f"Skill load raised exception: {e}")
 
-        try:
-            # in skill classes __new__ should fully create the skill object
-            skill_class = get_skill_class(skill_module)
-            self.instance = skill_class(bus=self.bus, skill_id=self.skill_id)
-            return self.instance is not None
-        except Exception as e:
-            LOG.warning(f"Skill load raised exception: {e}")
+            try:
+                # attempt to use old style create_skill function entrypoint
+                skill_creator = get_create_skill_function(skill_module) or \
+                    self.skill_class
+            except Exception as e:
+                LOG.exception(f"Failed to load skill creator: {e}")
+                self.instance = None
+                return False
 
-        try:
-            # attempt to use old style create_skill function entrypoint
-            skill_creator = get_create_skill_function(skill_module) or \
-                self.skill_class
-        except Exception as e:
-            LOG.exception(f"Failed to load skill creator: {e}")
-            self.instance = None
-            return False
+        if not skill_creator and self.skill_class:
+            skill_creator = self.skill_class
 
         # if the signature supports skill_id and bus pass them
         # to fully initialize the skill in 1 go
@@ -463,19 +473,19 @@ class SkillLoader:
             LOG.warning(f"Legacy skill: {e}")
             self.instance = skill_creator()
 
-        try:
-            # finish initialization of skill if we didn't manage to inject
-            # skill_id and bus kwargs.
-            # these skills only have skill_id and bus available in initialize,
-            # not in __init__
-            log_deprecation("This initialization is deprecated. Update skill to"
-                            "handle passed `skill_id` and `bus` kwargs",
-                            "0.1.0")
-            if not self.instance.is_fully_initialized:
+        if not self.instance.is_fully_initialized:
+            try:
+                # finish initialization of skill if we didn't manage to inject
+                # skill_id and bus kwargs.
+                # these skills only have skill_id and bus available in initialize,
+                # not in __init__
+                log_deprecation("This initialization is deprecated. Update skill to"
+                                "handle passed `skill_id` and `bus` kwargs",
+                                "0.1.0")
                 self.instance._startup(self.bus, self.skill_id)
-        except Exception as e:
-            LOG.exception(f'Skill __init__ failed with {e}')
-            self.instance = None
+            except Exception as e:
+                LOG.exception(f'Skill __init__ failed with {e}')
+                self.instance = None
 
         return self.instance is not None
 
@@ -515,7 +525,7 @@ class PluginSkillLoader(SkillLoader):
         LOG.info('ATTEMPTING TO LOAD PLUGIN SKILL: ' + self.skill_id)
         self._skill_class = skill_class or self._skill_class
         if not self._skill_class:
-            raise RuntimeError(f"_skill_class not defined for {self.skill_id}")
+            raise RuntimeError(f"skill_class not defined for {self.skill_id}")
         return self._load()
 
     def _load(self):
@@ -558,6 +568,25 @@ class SkillContainer:
         self.skill_directory = skill_directory
         self.skill_loader = None
 
+    def do_unload(self, message):
+        """compat with legacy api from skill manager in core"""
+        if message.msg_type == 'skillmanager.keep':
+            if message.data['skill'] == self.skill_id:
+                return
+        elif message.data['skill'] != self.skill_id:
+            return
+        if self.skill_loader:
+            LOG.info("unloading skill")
+            self.skill_loader._unload()
+
+    def do_load(self, message):
+        """compat with legacy api from skill manager in core"""
+        if message.data['skill'] != self.skill_id:
+            return
+        if self.skill_loader:
+            LOG.info("reloading skill")
+            self.skill_loader._load()
+
     def _connect_to_core(self):
         """
         Initialize messagebus connection and register event to load skill once
@@ -579,6 +608,9 @@ class SkillContainer:
             LOG.warning("Skills service not ready yet. Load on ready event.")
 
         self.bus.on("mycroft.ready", self.load_skill)
+        self.bus.on("skillmanager.activate", self.do_load)
+        self.bus.on("skillmanager.deactivate", self.do_unload)
+        self.bus.on("skillmanager.keep", self.do_unload)
 
     def load_skill(self, message: Optional[Message] = None):
         """

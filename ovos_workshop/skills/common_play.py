@@ -1,14 +1,20 @@
+import os
 from inspect import signature
 from threading import Event
-from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_bus_client import Message
+from typing import List
+
+from ovos_utils import camel_case_split
 from ovos_utils.log import LOG
 
+from ovos_bus_client import Message
+from ovos_config.locations import get_xdg_cache_save_path
+from ovos_workshop.skills.ovos import OVOSSkill
 
 # backwards compat imports, do not delete, skills import from here
 from ovos_workshop.decorators.ocp import ocp_play, ocp_next, ocp_pause, ocp_resume, ocp_search, \
-    ocp_previous, ocp_featured_media, MediaType, MediaState, MatchConfidence, \
-    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState
+    ocp_previous, ocp_featured_media
+from ovos_workshop.backwards_compat import MediaType, MediaState, MatchConfidence, \
+    PlaybackType, PlaybackMode, PlayerState, LoopState, TrackState, Playlist, PluginStream, MediaEntry
 
 
 def get_non_properties(obj):
@@ -50,10 +56,13 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, name=None, bus=None, **kwargs):
-        # NOTE: derived skills will likely want to override this list
-        self.supported_media = [MediaType.GENERIC,
-                                MediaType.AUDIO]
+    def __init__(self, supported_media: List[MediaType] = None,
+                 skill_icon: str = "",
+                 skill_voc_filename: str = "",
+                 *args, **kwargs):
+        self.supported_media = supported_media or [MediaType.GENERIC]
+        self.skill_aliases = []
+        self.skill_voc_filename = skill_voc_filename
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
         self._current_query = None
@@ -64,11 +73,33 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.__resume_handler = None
         self._stop_event = Event()
         self._playing = Event()
-        # TODO replace with new default
-        self.skill_icon = \
-            "https://github.com/OpenVoiceOS/ovos-ocp-audio-plugin/raw/master/" \
-            "ovos_plugin_common_play/ocp/res/ui/images/ocp.png"
-        OVOSSkill.__init__(self, name, bus, **kwargs)
+        # TODO new default icon
+        self.skill_icon = skill_icon or ""
+
+        self.ocp_matchers = {}
+        super().__init__(*args, **kwargs)
+
+    def _read_skill_name_voc(self):
+        """read voc file to allow requesting a skill by name"""
+        if self.skill_voc_filename:
+            for lang in self.native_langs:
+                self.skill_aliases += self.voc_list(self.skill_voc_filename, lang)
+        if not self.skill_aliases:
+            skill_name = camel_case_split(self.__class__.__name__)
+            alt = skill_name.replace(" skill", "").replace(" Skill", "")
+            self.skill_aliases = [skill_name, alt]
+        # deduplicate and sort by str len
+        self.skill_aliases = sorted(list(set(self.skill_aliases)), reverse=True)
+
+    @property
+    def ocp_cache_dir(self):
+        """path to cached .csv file with ocp entities data
+        this file needs to be available in ovos-core
+
+        NB: ovos-docker needs a shared volume
+        """
+        os.makedirs(f"{get_xdg_cache_save_path()}/OCP", exist_ok=True)
+        return f"{get_xdg_cache_save_path()}/OCP"
 
     def bind(self, bus):
         """Overrides the normal bind method.
@@ -82,6 +113,8 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         if bus:
             super().bind(bus)
             self.add_event('ovos.common_play.query',
+                           self.__handle_ocp_query)
+            self.add_event(f'ovos.common_play.query.{self.skill_id}',
                            self.__handle_ocp_query)
             self.add_event('ovos.common_play.featured_tracks.play',
                            self.__handle_ocp_featured)
@@ -104,14 +137,167 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.add_event("mycroft.stop",
                            self.__handle_stop_search)
 
-    def __handle_ocp_skills_get(self, message):
+    def register_media_type(self, media_type: MediaType):
+        """ helper instead of editing self.supported_media directly
+        will auto-sync changes via bus"""
+        if media_type not in self.supported_media:
+            self.supported_media.append(media_type)
+            LOG.info(f"{self.skill_id} registered type {media_type}")
+            self.__handle_ocp_skills_get()
+
+    def __handle_ocp_skills_get(self, message=None):
+        """ report skill OCP info
+
+        thumbnail and featured tracks inform the OCP homescreen
+
+        media_type and skill_name help the classifier disambiguate between media_types
+            eg, if OCP finds the name of a movie skill in user utterance
+                it will search netflix instead of spotify
+         """
+        message = message or Message("")
+        # TODO - aliases per lang
         self.bus.emit(
             message.reply('ovos.common_play.announce',
                           {"skill_id": self.skill_id,
-                           "skill_name": self.name,
+                           "skill_name": self.skill_aliases[0],
+                           "aliases": self.skill_aliases,
                            "thumbnail": self.skill_icon,
                            "media_type": self.supported_media,
                            "featured_tracks": len(self._featured_handlers) >= 1}))
+
+    def ocp_voc_match(self, utterance, lang=None):
+        """uses Aho–Corasick algorithm to match OCP keywords
+        this efficiently matches many keywords against an utterance
+
+        OCP keywords are registered via self.register_ocp_keyword
+
+        example usages
+            print(self.ocp_voc_match("play metallica"))
+            # {'album_name': 'Metallica', 'artist_name': 'Metallica'}
+
+            print(self.ocp_voc_match("play the beatles"))
+            # {'album_name': 'The Beatles', 'series_name': 'The Beatles',
+            # 'artist_name': 'The Beatles', 'movie_name': 'The Beatles'}
+
+            print(self.ocp_voc_match("play rob zombie"))
+            # {'artist_name': 'Rob Zombie', 'album_name': 'Zombie',
+            # 'book_name': 'Zombie', 'game_name': 'Zombie', 'movie_name': 'Zombie'}
+
+            print(self.ocp_voc_match("play horror movie"))
+            # {'film_genre': 'Horror', 'cartoon_genre': 'Horror', 'anime_genre': 'Horror',
+            # 'radio_drama_genre': 'horror', 'video_genre': 'horror',
+            # 'book_genre': 'Horror', 'movie_name': 'Horror Movie'}
+
+            print(self.ocp_voc_match("play science fiction"))
+            #  {'film_genre': 'Science Fiction', 'cartoon_genre': 'Science Fiction',
+            #  'podcast_genre': 'Fiction', 'anime_genre': 'Science Fiction',
+            #  'documentary_genre': 'Science', 'book_genre': 'Science Fiction',
+            #  'artist_name': 'Fiction', 'tv_channel': 'Science',
+            #  'album_name': 'Science Fiction', 'short_film_name': 'Science',
+            #  'book_name': 'Science Fiction', 'movie_name': 'Science Fiction'}
+        """
+        lang = lang or self.lang
+        if lang not in self.ocp_matchers:
+            return {}
+        matches = {}
+        for k, v in self.ocp_matchers[lang].match(utterance):
+            if k not in matches or len(v) > len(matches[k]):
+                matches[k] = v
+        return matches
+
+    def load_ocp_keyword_from_csv(self, csv_path: str, lang: str = None):
+        """ load entities from a .csv file for usage with self.ocp_voc_match
+        see the ocp_entities.csv datatsets for example files built from wikidata SPARQL queries
+
+        examples contents of csv file
+
+            label,entity
+            film_genre,swashbuckler film
+            film_genre,neo-noir
+            film_genre,actual play film
+            film_genre,alternate history film
+            film_genre,spy film
+            ...
+        """
+        from ovos_classifiers.skovos.features import KeywordFeatures
+        if lang is None:
+            for lang in self.native_langs:
+                if lang not in self.ocp_matchers:
+                    self.ocp_matchers[lang] = KeywordFeatures()
+                self.ocp_matchers[lang].load_entities(csv_path)
+        else:
+            if lang not in self.ocp_matchers:
+                self.ocp_matchers[lang] = KeywordFeatures()
+            self.ocp_matchers[lang].load_entities(csv_path)
+
+    def export_ocp_keywords_csv(self, csv_path: str = None, lang: str = None,
+                                label: str = None):
+        """ export entities to a .csv file """
+        lang = lang or self.lang
+        if lang not in self.ocp_matchers:
+            raise RuntimeError(f"no entities registered for lang: {lang}")
+
+        csv_path = csv_path or f"{self.ocp_cache_dir}/{self.skill_id}_{lang}.csv"
+        with open(csv_path, "w") as f:
+            f.write("label,sample")
+            for ent, samples in self.ocp_matchers[lang].entities.items():
+                if label is not None and label != ent:
+                    continue
+                for s in set(samples):
+                    f.write(f"\n{ent},{s}")
+        LOG.info(f"{self.skill_id} OCP {lang} entities exported to {csv_path}")
+        return csv_path
+
+    def register_ocp_keyword(self, media_type: MediaType, label: str,
+                             samples: List, langs: List[str] = None):
+        """ register strings as native OCP keywords (eg, movie_name, artist_name ...)
+
+        ocp keywords can be efficiently matched with self.ocp_match helper method
+        that uses Aho–Corasick algorithm
+        """
+        from ovos_classifiers.skovos.features import KeywordFeatures
+        samples = list(set(samples))
+        langs = langs or self.native_langs
+        for l in langs:
+            if l not in self.ocp_matchers:
+                self.ocp_matchers[l] = KeywordFeatures()
+            self.ocp_matchers[l].register_entity(label, samples)
+
+        #  if the label is a valid OCP entity known by the classifier it will help
+        #  the classifier disambiguate between media_types
+        #  eg, if OCP finds a movie name in user utterances it will
+        #      prefer to search netflix instead of spotify
+
+        # NB: we send a file path, bus messages with thousands of entities dont work well
+        if len(samples) >= 20:
+            csv = f"{self.ocp_cache_dir}/{self.skill_id}_{label}.csv"
+            self.export_ocp_keywords_csv(csv, label=label)
+            self.bus.emit(
+                Message('ovos.common_play.register_keyword',
+                        {"skill_id": self.skill_id,
+                         "label": label,  # if in OCP_ENTITIES it influences classifier
+                         "csv": csv,
+                         "media_type": media_type}))
+        else:
+            self.bus.emit(
+                Message('ovos.common_play.register_keyword',
+                        {"skill_id": self.skill_id,
+                         "label": label,  # if in OCP_ENTITIES it influences classifier
+                         "samples": samples,
+                         "media_type": media_type}))
+
+    def deregister_ocp_keyword(self, media_type: MediaType, label: str,
+                               langs: List[str] = None):
+        langs = langs or self.native_langs
+        for l in langs:
+            if l in self.ocp_matchers:
+                self.ocp_matchers[l].deregister_entity(label)
+
+        self.bus.emit(
+            Message('ovos.common_play.deregister_keyword',
+                    {"skill_id": self.skill_id,
+                     "label": label,
+                     "media_type": media_type}))
 
     def _register_decorated(self):
         # register search handlers
@@ -162,13 +348,17 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                         LOG.warning("multiple declarations of resume playback"
                                     "handler, replacing previous handler")
                     self.__resume_handler = method
+
         super()._register_decorated()
 
+        # needs to be after super() because it needs self.config_core
+        self._read_skill_name_voc()
         # volunteer info to OCP
         self.bus.emit(
             Message('ovos.common_play.announce',
                     {"skill_id": self.skill_id,
-                     "skill_name": self.name,
+                     "skill_name": self.skill_aliases[0],
+                     "aliases": self.skill_aliases,
                      "thumbnail": self.skill_icon,
                      "media_types": self.supported_media,
                      "featured_tracks": len(self._featured_handlers) >= 1}))
@@ -181,7 +371,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.bus.emit(Message("ovos.common_play.query.response",
                                   {"phrase": self._current_query,
                                    "skill_id": self.skill_id,
-                                   "skill_name": self.name,
+                                   "skill_name": self.skill_aliases[0],
                                    "thumbnail": self.skill_icon,
                                    "timeout": timeout,
                                    "searching": True}))
@@ -250,7 +440,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self._stop_event.set()
 
     # @killable_event("ovos.common_play.search.stop", react_to_stop=True)
-    def __handle_ocp_query(self, message):
+    def __handle_ocp_query(self, message: Message):
         """Query skill if it can start playback from given phrase."""
         self._stop_event.clear()
         search_phrase = message.data["phrase"]
@@ -258,60 +448,70 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         media_type = message.data.get("question_type",
                                       MediaType.GENERIC)
 
-        if media_type not in self.supported_media:
-            return
+        if message.msg_type == f'ovos.common_play.query.{self.skill_id}':
+            # make message.response work as usual
+            message.msg_type = f'ovos.common_play.query'
 
         self.bus.emit(message.reply("ovos.common_play.skill.search_start",
                                     {"skill_id": self.skill_id,
-                                     "skill_name": self.name,
+                                     "skill_name": self.skill_aliases[0],
                                      "thumbnail": self.skill_icon, }))
 
-        # invoke the media search handlesr to let the skill perform its search
         found = False
-        for handler in self._search_handlers:
-            if self._stop_event.is_set():
-                break
-            # @ocp_search
-            # def handle_search(...):
-            if len(signature(handler).parameters) == 1:
-                # no optional media_type argument
-                results = handler(search_phrase) or []
-            else:
-                results = handler(search_phrase, media_type) or []
+        # search this skill if MediaType is supported
+        if media_type in self.supported_media:
+            # invoke the media search handlers to let the skill perform its search
+            found = False
+            for handler in self._search_handlers:
+                if self._stop_event.is_set():
+                    break
+                # @ocp_search
+                # def handle_search(...):
+                if len(signature(handler).parameters) == 1:
+                    # no optional media_type argument
+                    results = handler(search_phrase) or []
+                else:
+                    results = handler(search_phrase, media_type) or []
 
-            # handler might return a generator or a list
-            if isinstance(results, list):
-                # inject skill id in individual results, will be needed later
-                # for proper playback handling
-                for idx, r in enumerate(results):
-                    results[idx]["skill_id"] = self.skill_id
-                self.bus.emit(message.response({"phrase": search_phrase,
-                                                "skill_id": self.skill_id,
-                                                "skill_name": self.name,
-                                                "thumbnail": self.skill_icon,
-                                                "results": results,
-                                                "searching": False}))
-                found = True
-            else:  # generator, keeps returning results
-                for r in results:
+                # handler might return a generator or a list
+                if isinstance(results, list):
                     # inject skill id in individual results, will be needed later
                     # for proper playback handling
-                    r["skill_id"] = self.skill_id
+                    for idx, r in enumerate(results):
+                        if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                            results[idx] = r.as_dict
+                        results[idx]["skill_id"] = self.skill_id
                     self.bus.emit(message.response({"phrase": search_phrase,
                                                     "skill_id": self.skill_id,
-                                                    "skill_name": self.name,
+                                                    "skill_name": self.skill_aliases[0],
                                                     "thumbnail": self.skill_icon,
-                                                    "results": [r],
+                                                    "results": results,
                                                     "searching": False}))
                     found = True
-                    if self._stop_event.is_set():
-                        break
+                else:  # generator, keeps returning results
+                    for r in results:
+                        if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                            r = r.as_dict
+                        # inject skill id in individual results, will be needed later
+                        # for proper playback handling
+                        r["skill_id"] = self.skill_id
+                        self.bus.emit(message.response({"phrase": search_phrase,
+                                                        "skill_id": self.skill_id,
+                                                        "skill_name": self.skill_aliases[0],
+                                                        "thumbnail": self.skill_icon,
+                                                        "results": [r],
+                                                        "searching": False}))
+                        found = True
+                        if self._stop_event.is_set():
+                            break
+        else:  # skip this skill, it doesn't handle this media type
+            LOG.debug(f"skipping {self.skill_id}, it does not support media type: {media_type}")
 
         if not found:
             # Signal we are done (can't handle it)
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
-                                            "skill_name": self.name,
+                                            "skill_name": self.skill_aliases[0],
                                             "thumbnail": self.skill_icon,
                                             "searching": False}))
         self.bus.emit(message.reply("ovos.common_play.skill.search_end",
@@ -334,10 +534,12 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         else:
             # inject skill id in individual results
             for idx, r in enumerate(results):
+                if isinstance(r, (MediaEntry, Playlist, PluginStream)):
+                    results[idx] = r.as_dict
                 results[idx]["skill_id"] = self.skill_id
             self.bus.emit(Message("ovos.common_play.skill.play",
                                   {"skill_id": self.skill_id,
-                                   "skill_name": self.name,
+                                   "skill_name": self.skill_aliases[0],
                                    "thumbnail": self.skill_icon,
                                    "playlist": results}))
 
