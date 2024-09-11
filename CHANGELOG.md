@@ -1,20 +1,12 @@
 # Changelog
 
-## [0.1.0a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.0a2) (2024-09-10)
+## [0.1.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.2a1) (2024-09-11)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.0a1...0.1.0a2)
-
-**Merged pull requests:**
-
-- chore:semver\_versioning [\#230](https://github.com/OpenVoiceOS/OVOS-workshop/pull/230) ([JarbasAl](https://github.com/JarbasAl))
-
-## [0.1.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.0a1) (2024-09-10)
-
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.0...0.1.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.1...0.1.2a1)
 
 **Merged pull requests:**
 
-- chore:semver\_automations [\#228](https://github.com/OpenVoiceOS/OVOS-workshop/pull/228) ([JarbasAl](https://github.com/JarbasAl))
+- fix:backend\_client\_version\_compat [\#232](https://github.com/OpenVoiceOS/OVOS-workshop/pull/232) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
