@@ -26,7 +26,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 class CQSMatchLevel(IntEnum):
     EXACT = 1  # Skill could find a specific answer for the question
     CATEGORY = 2  # Skill could find an answer from a category in the query
-    GENERAL = 3  # The query could be processed as a general quer
+    GENERAL = 3  # The query could be processed as a general query
 
 
 # Copy of CQSMatchLevel to use if the skill returns visual media
