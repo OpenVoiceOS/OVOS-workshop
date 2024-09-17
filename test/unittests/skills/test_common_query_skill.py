@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import Mock
 
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.skills.base import BaseSkill
@@ -36,8 +37,16 @@ class TestCommonQuerySkill(TestCase):
         pass
 
     def test_get_cq(self):
-        # TODO
-        pass
+        test_phrase = "test"
+        mock_return = Mock()
+        self.skill.CQS_match_query_phrase = Mock(return_value=mock_return)
+        result = self.skill._CommonQuerySkill__get_cq(test_phrase)
+        self.skill.CQS_match_query_phrase .assert_called_once_with(test_phrase)
+        self.assertEqual(result, mock_return)
+
+        self.skill.CQS_match_query_phrase.side_effect = Exception()
+        result = self.skill._CommonQuerySkill__get_cq(test_phrase)
+        self.assertIsNone(result)
 
     def test_remove_noise(self):
         noisy_match = "what is a computer"
