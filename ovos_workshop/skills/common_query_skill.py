@@ -150,7 +150,10 @@ class CommonQuerySkill(OVOSSkill):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else {}
-            confidence = self.__calc_confidence(match, search_phrase, level, answer)
+            confidence = self.calc_confidence(match, search_phrase, level, answer)
+            if confidence > 1.0:
+                LOG.warning(f"Calculated confidence {confidence} > 1.0")
+                confidence = 1.0
             callback["answer"] = answer  # ensure we get it back in CQS_action
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
@@ -195,10 +198,11 @@ class CommonQuerySkill(OVOSSkill):
         phrase = ' '.join(phrase.split())
         return phrase.strip()
 
-    def __calc_confidence(self, match: str, phrase: str, level: CQSMatchLevel,
-                          answer: str) -> float:
+    def calc_confidence(self, match: str, phrase: str, level: CQSMatchLevel,
+                        answer: str) -> float:
         """
-        Calculate a confidence level for the skill response.
+        Calculate a confidence level for the skill response. Skills may override
+        this method to implement custom confidence calculation
         @param match: Matched portion of the input phrase
         @param phrase: User input phrase that was evaluated
         @param level: Skill-determined match level of the answer
