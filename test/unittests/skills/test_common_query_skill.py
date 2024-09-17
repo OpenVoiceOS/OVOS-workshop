@@ -44,8 +44,15 @@ class TestCommonQuerySkill(TestCase):
         pass
 
     def test_calc_confidence(self):
-        # TODO
-        pass
+        generic_q = "what is coke"
+        specific_q = "how much caffeine is in coca cola"
+        specific_q_2 = "what is the stock price for coca cola"
+
+        conf = self.skill._CommonQuerySkill__calc_confidence("diet coke", "what is diet coke", CQSMatchLevel.GENERAL,
+                                            "The drink diet coke has 32 milligrams of caffeine in 250 milliliters.</speak> Provided by CaffeineWiz.")
+        self.assertLessEqual(conf, 1.0)
+        print(conf)
+
 
     def test_handle_query_action(self):
         # TODO
