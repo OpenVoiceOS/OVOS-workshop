@@ -40,8 +40,9 @@ class TestCommonQuerySkill(TestCase):
         pass
 
     def test_remove_noise(self):
-        # TODO
-        pass
+        noisy_match = "what is a computer"
+        normalized = "computer"
+        self.assertEqual(self.skill.remove_noise(noisy_match), normalized)
 
     def test_calc_confidence(self):
         generic_q = "what is coca cola"
