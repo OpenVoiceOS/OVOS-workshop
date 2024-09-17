@@ -41,7 +41,7 @@ class TestCommonQuerySkill(TestCase):
         mock_return = Mock()
         self.skill.CQS_match_query_phrase = Mock(return_value=mock_return)
         result = self.skill._CommonQuerySkill__get_cq(test_phrase)
-        self.skill.CQS_match_query_phrase .assert_called_once_with(test_phrase)
+        self.skill.CQS_match_query_phrase.assert_called_once_with(test_phrase)
         self.assertEqual(result, mock_return)
 
         self.skill.CQS_match_query_phrase.side_effect = Exception()
@@ -60,13 +60,12 @@ class TestCommonQuerySkill(TestCase):
         cw_answer = ("The drink diet coke has 32 milligrams of caffeine in "
                      "250 milliliters.</speak> Provided by CaffeineWiz.")
 
-        generic_conf = self.skill.calc_confidence("coca cola", generic_q,
-                                                  CQSMatchLevel.GENERAL,
-                                                  cw_answer)
-        exact_conf = self.skill.calc_confidence("coca cola", specific_q,
-                                                CQSMatchLevel.EXACT, cw_answer)
-        low_conf = self.skill.calc_confidence("coca cola", specific_q_2,
-                                              CQSMatchLevel.GENERAL, cw_answer)
+        generic_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", generic_q, CQSMatchLevel.GENERAL, cw_answer)
+        exact_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", specific_q, CQSMatchLevel.EXACT, cw_answer)
+        low_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", specific_q_2, CQSMatchLevel.GENERAL, cw_answer)
 
         self.assertEqual(exact_conf, 1.0)
         self.assertLess(generic_conf, exact_conf)

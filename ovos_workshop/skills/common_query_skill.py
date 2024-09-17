@@ -13,7 +13,7 @@
 from abc import abstractmethod
 from enum import IntEnum
 from os.path import dirname
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
@@ -150,7 +150,13 @@ class CommonQuerySkill(OVOSSkill):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else {}
-            confidence = self.calc_confidence(match, search_phrase, level, answer)
+            if isinstance(level, float):
+                LOG.debug(f"Confidence directly reported by skill")
+                confidence = level
+            else:
+                LOG.info(f"Calculating confidence for level {level}")
+                confidence = self.__calc_confidence(match, search_phrase, level,
+                                                    answer)
             if confidence > 1.0:
                 LOG.warning(f"Calculated confidence {confidence} > 1.0")
                 confidence = 1.0
@@ -167,8 +173,8 @@ class CommonQuerySkill(OVOSSkill):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __get_cq(self, search_phrase: str) -> (str, CQSMatchLevel, str,
-                                               Optional[dict]):
+    def __get_cq(self, search_phrase: str) -> (str, Union[CQSMatchLevel, float],
+                                               str, Optional[dict]):
         """
         Invoke the CQS handler to let the skill perform its search
         @param search_phrase: parsed question to get an answer for
@@ -198,11 +204,10 @@ class CommonQuerySkill(OVOSSkill):
         phrase = ' '.join(phrase.split())
         return phrase.strip()
 
-    def calc_confidence(self, match: str, phrase: str, level: CQSMatchLevel,
-                        answer: str) -> float:
+    def __calc_confidence(self, match: str, phrase: str, level: CQSMatchLevel,
+                          answer: str) -> float:
         """
-        Calculate a confidence level for the skill response. Skills may override
-        this method to implement custom confidence calculation
+        Calculate a confidence level for the skill response.
         @param match: Matched portion of the input phrase
         @param phrase: User input phrase that was evaluated
         @param level: Skill-determined match level of the answer
@@ -298,7 +303,7 @@ class CommonQuerySkill(OVOSSkill):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \
-            Optional[Tuple[str, CQSMatchLevel, Optional[dict]]]:
+            Optional[Tuple[str, Union[CQSMatchLevel, float], Optional[dict]]]:
         """
         Determine an answer to the input phrase and return match information, or
         `None` if no answer can be determined.
