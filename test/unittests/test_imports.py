@@ -7,6 +7,4 @@ class TestImports(unittest.TestCase):
     """
     def test_skills(self):
         import ovos_workshop.skills
-        self.assertIsNotNone(ovos_workshop.skills.MycroftSkill)
         self.assertIsNotNone(ovos_workshop.skills.OVOSSkill)
-        self.assertIsNotNone(ovos_workshop.skills.OVOSFallbackSkill)

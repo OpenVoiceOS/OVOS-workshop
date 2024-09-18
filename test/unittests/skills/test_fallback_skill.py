@@ -6,7 +6,6 @@ from threading import Event
 from ovos_utils.messagebus import FakeBus
 from ovos_bus_client.message import Message
 from ovos_workshop.decorators import fallback_handler
-from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.fallback import FallbackSkillV1, FallbackSkillV2, \
     FallbackSkill
 
@@ -39,11 +38,8 @@ class TestFallbackSkill(TestCase):
 
     def test_class_inheritance(self):
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         fallback = FallbackSkill("test")
-        self.assertIsInstance(fallback, BaseSkill)
         self.assertIsInstance(fallback, OVOSSkill)
-        self.assertIsInstance(fallback, MycroftSkill)
         self.assertIsInstance(fallback, FallbackSkillV1)
         self.assertIsInstance(fallback, FallbackSkillV2)
         self.assertIsInstance(fallback, FallbackSkill)
@@ -59,11 +55,8 @@ class TestFallbackSkillV1(TestCase):
 
     def test_inheritance(self):
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         fallback = FallbackSkillV1("test")
-        self.assertIsInstance(fallback, BaseSkill)
         self.assertIsInstance(fallback, OVOSSkill)
-        self.assertIsInstance(fallback, MycroftSkill)
         self.assertIsInstance(fallback, FallbackSkillV1)
         self.assertIsInstance(fallback, FallbackSkillV2)
         self.assertIsInstance(fallback, FallbackSkill)
@@ -175,18 +168,16 @@ class TestFallbackSkillV2(TestCase):
 
     def test_class_inheritance(self):
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
-        self.assertIsInstance(self.fallback_skill, BaseSkill)
         self.assertIsInstance(self.fallback_skill, OVOSSkill)
-        self.assertIsInstance(self.fallback_skill, MycroftSkill)
         self.assertIsInstance(self.fallback_skill, FallbackSkillV1)
         self.assertIsInstance(self.fallback_skill, FallbackSkillV2)
         self.assertIsInstance(self.fallback_skill, FallbackSkill)
 
     def test_00_init(self):
+        from ovos_workshop.skills.ovos import OVOSSkill
         self.assertIsInstance(self.fallback_skill, FallbackSkillV2)
         self.assertIsInstance(self.fallback_skill, FallbackSkill)
-        self.assertIsInstance(self.fallback_skill, BaseSkill)
+        self.assertIsInstance(self.fallback_skill, OVOSSkill)
 
     def test_priority(self):
         FallbackSkillV2.fallback_config = {}

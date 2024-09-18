@@ -60,7 +60,6 @@ setup(
     version=get_version(),
     packages=['ovos_workshop',
               'ovos_workshop.skills',
-              'ovos_workshop.skills.decorators',
               'ovos_workshop.decorators'],
     install_requires=required("requirements/requirements.txt"),
     extras_require={

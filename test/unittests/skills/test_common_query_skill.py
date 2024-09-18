@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from ovos_utils.messagebus import FakeBus
-from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 
 
@@ -18,10 +17,7 @@ class TestCommonQuerySkill(TestCase):
 
     def test_class_inheritance(self):
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
-        self.assertIsInstance(self.skill, BaseSkill)
         self.assertIsInstance(self.skill, OVOSSkill)
-        self.assertIsInstance(self.skill, MycroftSkill)
         self.assertIsInstance(self.skill, CommonQuerySkill)
 
     def test_00_skill_init(self):

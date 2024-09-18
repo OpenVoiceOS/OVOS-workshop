@@ -143,14 +143,10 @@ class TestOVOSSkill(unittest.TestCase):
                          RuntimeRequirements())
 
     def test_class_inheritance(self):
-        from ovos_workshop.skills.base import BaseSkill
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         from ovos_workshop.app import OVOSAbstractApplication
 
         skill = MockSkill()
-        self.assertIsInstance(skill, BaseSkill)
         self.assertIsInstance(skill, OVOSSkill)
-        self.assertIsInstance(skill, MycroftSkill)
         self.assertNotIsInstance(skill, OVOSAbstractApplication)
 

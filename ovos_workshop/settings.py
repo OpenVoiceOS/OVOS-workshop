@@ -6,6 +6,7 @@ from typing import Optional
 import yaml
 from json_database import JsonStorageXDG
 
+from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_backend_client.api import DeviceApi
 from ovos_backend_client.pairing import is_paired, requires_backend
 from ovos_backend_client.settings import RemoteSkillSettings, get_display_name
@@ -16,9 +17,8 @@ from ovos_utils.log import LOG
 
 class SkillSettingsManager:
     def __init__(self, skill):
-        from ovos_workshop.skills.base import BaseSkill
         self.download_timer: Optional[Timer] = None
-        self.skill: BaseSkill = skill
+        self.skill: OVOSSkill = skill
         self.api = DeviceApi()
         self.remote_settings = \
             RemoteSkillSettings(self.skill_id,

@@ -19,7 +19,6 @@ from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG, log_deprecation
 
-from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.skills.ovos import OVOSSkill
 
 
@@ -233,21 +232,6 @@ class CommonQuerySkill(OVOSSkill):
 
         return confidence
 
-    def __handle_query_classic(self, message):
-        """
-        does not perform self.speak, < 0.0.8 this is done by core itself
-        """
-        if message.data["skill_id"] != self.skill_id:
-            # Not for this skill!
-            return
-        self.activate()
-        phrase = message.data["phrase"]
-        data = message.data.get("callback_data") or {}
-        # Invoke derived class to provide playback data
-        self.CQS_action(phrase, data)
-
-    @backwards_compat(classic_core=__handle_query_classic,
-                      pre_008=__handle_query_classic)
     def __handle_query_action(self, message: Message):
         """
         If this skill's response was spoken to the user, this method is called.

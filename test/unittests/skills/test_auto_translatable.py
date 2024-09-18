@@ -2,7 +2,7 @@ import unittest
 
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill
 from ovos_workshop.skills.fallback import FallbackSkill
-from ovos_workshop.skills.base import BaseSkill
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 class TestUniversalSkill(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestUniversalSkill(unittest.TestCase):
 
     def test_00_init(self):
         self.assertIsInstance(self.test_skill, self.UniversalSkill)
-        self.assertIsInstance(self.test_skill, BaseSkill)
+        self.assertIsInstance(self.test_skill, OVOSSkill)
 
     # TODO: Test other class methods
 
@@ -22,7 +22,7 @@ class TestUniversalFallbackSkill(unittest.TestCase):
 
     def test_00_init(self):
         self.assertIsInstance(self.test_skill, self.UniversalFallback)
-        self.assertIsInstance(self.test_skill, BaseSkill)
+        self.assertIsInstance(self.test_skill, OVOSSkill)
         self.assertIsInstance(self.test_skill, FallbackSkill)
 
     # TODO: Test other class methods
@@ -39,7 +39,7 @@ class TestUniversalCommonQuerySkill(unittest.TestCase):
 
     def test_00_init(self):
         self.assertIsInstance(self.test_skill, self.UniversalCommonQuerySkill)
-        self.assertIsInstance(self.test_skill, BaseSkill)
+        self.assertIsInstance(self.test_skill, OVOSSkill)
         self.assertIsInstance(self.test_skill, CommonQuerySkill)
 
     # TODO: Test other class methods

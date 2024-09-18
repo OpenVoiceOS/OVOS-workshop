@@ -23,13 +23,13 @@ class TestBase(unittest.TestCase):
         self.assertEqual(simple_trace(trace), "Traceback:\nline_1\n  line_2 \n")
 
 
-class TestBaseSkill(unittest.TestCase):
+class TestOVOSSkill(unittest.TestCase):
     test_config_path = join(dirname(__file__), "temp_config")
     os.environ["XDG_CONFIG_HOME"] = test_config_path
-    from ovos_workshop.skills.base import BaseSkill
+    from ovos_workshop.skills.ovos import OVOSSkill
     bus = FakeBus()
     skill_id = "test_base_skill"
-    skill = BaseSkill(bus=bus, skill_id=skill_id)
+    skill = OVOSSkill(bus=bus, skill_id=skill_id)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -161,7 +161,7 @@ class TestBaseSkill(unittest.TestCase):
 
     def test_start_filewatcher(self):
         test_skill_id = "test_settingschanged.skill"
-        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        test_skill = self.OVOSSkill(bus=self.bus, skill_id=test_skill_id)
         settings_changed = Event()
         on_file_change = Mock(side_effect=lambda x: settings_changed.set())
         test_skill._handle_settings_file_change = on_file_change
@@ -335,8 +335,8 @@ class TestBaseSkill(unittest.TestCase):
         pass
 
     def test_register_intent_file(self):
-        from ovos_workshop.skills.base import BaseSkill
-        skill = BaseSkill(bus=self.bus, skill_id=self.skill_id)
+        from ovos_workshop.skills.ovos import OVOSSkill
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
@@ -362,8 +362,8 @@ class TestBaseSkill(unittest.TestCase):
             f"{skill.skill_id}:time.intent", uk_intent_file, "uk-ua")
 
     def test_register_entity_file(self):
-        from ovos_workshop.skills.base import BaseSkill
-        skill = BaseSkill(bus=self.bus, skill_id=self.skill_id)
+        from ovos_workshop.skills.ovos import OVOSSkill
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
@@ -479,7 +479,7 @@ class TestBaseSkill(unittest.TestCase):
 
     def test_default_shutdown(self):
         test_skill_id = "test_shutdown.skill"
-        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        test_skill = self.OVOSSkill(bus=self.bus, skill_id=test_skill_id)
         test_skill.settings["changed"] = True
         test_skill.stop = Mock()
         test_skill.shutdown = Mock()
