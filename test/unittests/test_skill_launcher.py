@@ -38,14 +38,12 @@ class TestSkillLauncherFunctions(unittest.TestCase):
     def test_get_skill_class(self):
         from ovos_workshop.skill_launcher import get_skill_class, \
             load_skill_module
-        from ovos_workshop.skills.ovos import _OVOSSkillMetaclass
         test_path = join(dirname(__file__), "ovos_tskill_abort",
                          "__init__.py")
         skill_id = "test_skill.test"
         module = load_skill_module(test_path, skill_id)
         skill = get_skill_class(module)
         self.assertIsNotNone(skill)
-        self.assertEqual(skill.__class__, _OVOSSkillMetaclass, skill.__class__)
 
         # Test invalid request
         with self.assertRaises(ValueError):

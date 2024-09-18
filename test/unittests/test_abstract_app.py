@@ -1,13 +1,14 @@
 import unittest
-
-from os.path import join, dirname
 from os import remove
+from os.path import join, dirname
 from unittest.mock import Mock, patch
 
+from json_database import JsonStorage
 from ovos_bus_client.apis.gui import GUIInterface
 from ovos_utils.messagebus import FakeBus
+
 from ovos_workshop.app import OVOSAbstractApplication
-from json_database import JsonStorage
+from ovos_workshop.skills.ovos import OVOSSkill
 
 
 class Application(OVOSAbstractApplication):
@@ -54,19 +55,11 @@ class TestApp(unittest.TestCase):
 
         # Test settings path conflicts
         test_app = OVOSAbstractApplication(skill_id="test", bus=self.bus)
-        from ovos_workshop.skills import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         test_skill = OVOSSkill(skill_id="test", bus=self.bus)
-        mycroft_skill = MycroftSkill(skill_id="test", bus=self.bus)
 
         # Test app vs skill base directories
         self.assertIn("/apps/", test_app.settings_path)
         self.assertIn("/skills/", test_skill.settings_path)
-        self.assertEqual(test_skill.settings_path,
-                         mycroft_skill.settings_path)
-        self.assertEqual(test_skill.settings.path,
-                         mycroft_skill.settings.path)
-        self.assertEqual(test_skill.settings, mycroft_skill.settings)
 
         # Test settings changes
         test_skill.settings['is_skill'] = True
@@ -101,12 +94,8 @@ class TestApp(unittest.TestCase):
         pass
 
     def test_class_inheritance(self):
-        from ovos_workshop.skills.base import BaseSkill
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         from ovos_workshop.app import OVOSAbstractApplication
 
-        self.assertIsInstance(self.app, BaseSkill)
         self.assertIsInstance(self.app, OVOSSkill)
-        self.assertNotIsInstance(self.app, MycroftSkill)
         self.assertIsInstance(self.app, OVOSAbstractApplication)

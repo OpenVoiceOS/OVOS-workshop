@@ -16,9 +16,8 @@ from ovos_utils.log import LOG
 
 class SkillSettingsManager:
     def __init__(self, skill):
-        from ovos_workshop.skills.base import BaseSkill
         self.download_timer: Optional[Timer] = None
-        self.skill: BaseSkill = skill
+        self.skill = skill
         self.api = DeviceApi()
         self.remote_settings = \
             RemoteSkillSettings(self.skill_id,

@@ -8,28 +8,17 @@ from threading import Event, Thread
 from time import time
 from unittest.mock import Mock, patch
 from os.path import join, dirname, isdir
+from ovos_workshop.skills.ovos import OVOSSkill
 
 from ovos_utils.messagebus import FakeBus
 
 
-class TestBase(unittest.TestCase):
-    def test_is_classic_core(self):
-        from ovos_workshop.skills.base import is_classic_core
-        self.assertIsInstance(is_classic_core(), bool)
-
-    def test_simple_trace(self):
-        from ovos_workshop.skills.base import simple_trace
-        trace = ["line_1\n", "  line_2 \n", "   \n", "line_3  \n"]
-        self.assertEqual(simple_trace(trace), "Traceback:\nline_1\n  line_2 \n")
-
-
-class TestBaseSkill(unittest.TestCase):
+class TestOVOSSkill(unittest.TestCase):
     test_config_path = join(dirname(__file__), "temp_config")
     os.environ["XDG_CONFIG_HOME"] = test_config_path
-    from ovos_workshop.skills.base import BaseSkill
     bus = FakeBus()
     skill_id = "test_base_skill"
-    skill = BaseSkill(bus=bus, skill_id=skill_id)
+    skill = OVOSSkill(bus=bus, skill_id=skill_id)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -161,7 +150,7 @@ class TestBaseSkill(unittest.TestCase):
 
     def test_start_filewatcher(self):
         test_skill_id = "test_settingschanged.skill"
-        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        test_skill = OVOSSkill(bus=self.bus, skill_id=test_skill_id)
         settings_changed = Event()
         on_file_change = Mock(side_effect=lambda x: settings_changed.set())
         test_skill._handle_settings_file_change = on_file_change
@@ -335,8 +324,8 @@ class TestBaseSkill(unittest.TestCase):
         pass
 
     def test_register_intent_file(self):
-        from ovos_workshop.skills.base import BaseSkill
-        skill = BaseSkill(bus=self.bus, skill_id=self.skill_id)
+        from ovos_workshop.skills.ovos import OVOSSkill
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
@@ -362,8 +351,8 @@ class TestBaseSkill(unittest.TestCase):
             f"{skill.skill_id}:time.intent", uk_intent_file, "uk-ua")
 
     def test_register_entity_file(self):
-        from ovos_workshop.skills.base import BaseSkill
-        skill = BaseSkill(bus=self.bus, skill_id=self.skill_id)
+        from ovos_workshop.skills.ovos import OVOSSkill
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
@@ -479,7 +468,7 @@ class TestBaseSkill(unittest.TestCase):
 
     def test_default_shutdown(self):
         test_skill_id = "test_shutdown.skill"
-        test_skill = self.BaseSkill(bus=self.bus, skill_id=test_skill_id)
+        test_skill = OVOSSkill(bus=self.bus, skill_id=test_skill_id)
         test_skill.settings["changed"] = True
         test_skill.stop = Mock()
         test_skill.shutdown = Mock()
@@ -557,19 +546,4 @@ class TestSkillGui(unittest.TestCase):
         config_core = {"gui": {"test": True,
                                "legacy": False}}
         root_dir = join(dirname(__file__), "test_gui")
-
-    @patch("ovos_workshop.skills.ovos.GUIInterface.__init__")
-    def test_skill_gui(self, interface_init):
-        from ovos_bus_client.apis.gui import GUIInterface
-        from ovos_workshop.skills.base import SkillGUI
-
-        # Old skill with `ui` directory in root
-        old_skill = self.LegacySkill()
-        old_gui = SkillGUI(old_skill)
-        self.assertEqual(old_gui.skill, old_skill)
-        self.assertIsInstance(old_gui, GUIInterface)
-        interface_init.assert_called_once_with(
-            old_gui, skill_id=old_skill.skill_id, bus=old_skill.bus,
-            config=old_skill.config_core['gui'],
-            ui_directories={"qt5": join(old_skill.root_dir, "ui")})
 
