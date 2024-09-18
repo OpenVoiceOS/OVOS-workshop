@@ -2,6 +2,7 @@ import binascii
 import datetime
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -26,6 +27,7 @@ from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
 from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_cache_save_path
 from ovos_config.locations import get_xdg_config_save_path
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
@@ -33,7 +35,6 @@ from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.events import get_handler_name, create_wrapper
 from ovos_utils.file_utils import FileWatcher, resolve_resource_file
-from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG, log_deprecation, deprecated
 from ovos_utils.parse import match_one
@@ -460,7 +461,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}." 
+                             f"to skill class {self.__class__.__name__}."
                              "You can only use self.enclosure after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed OVOSSkill.enclosure in __init__')
@@ -477,7 +478,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         else:
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs __init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__} " 
+                             f"to skill class {self.__class__.__name__} "
                              "You can only use self.file_system after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed OVOSSkill.file_system in __init__')
@@ -2724,14 +2725,41 @@ class SkillGUI(GUIInterface):
         skill_id = skill.skill_id
         bus = skill.bus
         config = skill.config_core.get('gui')
-        ui_directories = get_ui_directories(skill.root_dir)
-        GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
-                              ui_directories=ui_directories)
+        try:
+            # TODO - remove this compat kludge eventually,
+            #  just here to allow updating workshop without bus client signature breaking change
+            from ovos_utils.gui import get_ui_directories
+            ui_directories = get_ui_directories(skill.root_dir)
+            GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
+                                  ui_directories=ui_directories)
+        except:  # latest bus client
+            GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config)
+        self._cache_gui_files()
 
-    @property
-    @deprecated("`skill` should not be referenced directly", "0.1.0")
-    def skill(self):
-        return self._skill
+    def _cache_gui_files(self):
+        base = f"{self._skill.root_dir}/ui"
+        if not os.path.isdir(base):
+            LOG.debug(f"{self.skill_id} has no GUI resources: {base}")
+            return
+
+        # this path is hardcoded in ovos_gui.constants and follows XDG spec
+        GUI_CACHE_PATH = get_xdg_cache_save_path('ovos_gui')
+
+        output_path = f"{GUI_CACHE_PATH}/{self.skill_id}"
+        if os.path.exists(output_path):
+            LOG.info(f"Removing existing {self.skill_id} cached GUI resources before updating")
+            shutil.rmtree(output_path)
+
+        # backwards compat - TODO update once we support more than QT5
+        if os.path.isdir(f"{base}/qt5"):
+            # new style, multi GUI frameworks supported
+            shutil.copytree(base, output_path)
+        else:
+            # old style, QT5 only
+            LOG.warning(f"GUI resources moved to platform specific subfolder, "
+                        f"please move contents from {base} to 'qt5' subfolder")
+            shutil.copytree(base, f"{output_path}/qt5")
+        LOG.debug(f"Copied {self.skill_id} resources from {base} to {output_path}")
 
 
 # backwards compat alias, no functional difference
