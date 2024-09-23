@@ -1,12 +1,12 @@
 # Changelog
 
-## [0.1.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.2a1) (2024-09-11)
+## [0.1.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.3a1) (2024-09-23)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.1...0.1.2a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.2...0.1.3a1)
 
 **Merged pull requests:**
 
-- fix:backend\_client\_version\_compat [\#232](https://github.com/OpenVoiceOS/OVOS-workshop/pull/232) ([JarbasAl](https://github.com/JarbasAl))
+- fix:wait while speaking [\#238](https://github.com/OpenVoiceOS/OVOS-workshop/pull/238) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
