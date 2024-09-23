@@ -1677,7 +1677,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         self.bus.emit(m)
 
         if wait:
-            timeout = wait if isinstance(wait, int) else 15
+            timeout = 15 if isinstance(wait, bool) else wait
             sess = SessionManager.get(m)
             sess.is_speaking = True
             SessionManager.wait_while_speaking(timeout, sess)
