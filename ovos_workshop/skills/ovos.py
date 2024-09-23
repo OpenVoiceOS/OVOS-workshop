@@ -1724,7 +1724,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                            "uri": filename  # new namespace
                                            }))
             if wait:
-                timeout = wait if isinstance(wait, int) else 30
+                timeout = 30 if isinstance(wait, bool) else wait
                 sess = SessionManager.get(message)
                 sess.is_speaking = True
                 SessionManager.wait_while_speaking(timeout, sess)
@@ -1769,7 +1769,7 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
 
         self.bus.emit(message.forward(mtype, data))
         if wait:
-            timeout = wait if isinstance(wait, int) else 30
+            timeout = 30 if isinstance(wait, bool) else wait
             sess = SessionManager.get(message)
             sess.is_speaking = True
             SessionManager.wait_while_speaking(timeout, sess)
