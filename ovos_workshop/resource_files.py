@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 """Handling of skill data such as intents and regular expressions."""
-import os
 import re
 from collections import namedtuple
 from os import walk
@@ -21,12 +20,11 @@ from os.path import dirname
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from langcodes import tag_distance
 from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_data_dirs, \
-    get_xdg_data_save_path
-from ovos_config.meta import get_xdg_base
-from ovos_utils.bracket_expansion import expand_options
+from ovos_config.locations import get_xdg_data_save_path
 from ovos_utils import flatten_list
+from ovos_utils.bracket_expansion import expand_options
 from ovos_utils.dialog import MustacheDialogRenderer, load_dialogs
 from ovos_utils.log import LOG, log_deprecation
 
@@ -78,7 +76,6 @@ def locate_lang_directories(lang: str, skill_directory: str,
     @param resource_subdirectory: optional extra resource directory to prepend
     @return: list of existing skill resource directories for the given lang
     """
-    base_lang = lang.split("-")[0]
     base_dirs = [Path(skill_directory, "locale"),
                  Path(skill_directory, "text")]
     if resource_subdirectory:
@@ -87,9 +84,16 @@ def locate_lang_directories(lang: str, skill_directory: str,
     for directory in base_dirs:
         if directory.exists():
             for folder in directory.iterdir():
-                if folder.name.startswith(base_lang):
-                    candidates.append(folder)
-    return candidates
+                score = tag_distance(lang, folder.name)
+                # https://langcodes-hickford.readthedocs.io/en/sphinx/index.html#distance-values
+                # 0 -> These codes represent the same language, possibly after filling in values and normalizing.
+                # 1- 3 -> These codes indicate a minor regional difference.
+                # 4 - 10 -> These codes indicate a significant but unproblematic regional difference.
+                if score < 10:
+                    candidates.append((folder, score))
+    # sort by distance to target lang code
+    candidates = sorted(candidates, key=lambda k: k[1])
+    return [c[0] for c in candidates]
 
 
 def resolve_resource_file(res_name: str) -> Optional[str]:

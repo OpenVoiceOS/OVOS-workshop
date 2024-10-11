@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill, is_classic_core
+from ovos_workshop.skills.mycroft_skill import MycroftSkill
 from ovos_workshop.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
@@ -95,16 +95,15 @@ class TestSkill(unittest.TestCase):
 
         self.assertEqual(self.skill.skill_id, "abort.test")
 
-        if not is_classic_core():
-            # the metaclass ensures this returns True under ovos-core
-            # but we have no control over mycroft-core so can not patch isinstance checks there
-            self.assertTrue(isinstance(self.skill.instance, CoreSkill))
+        # the metaclass ensures this returns True under ovos-core
+        # but we have no control over mycroft-core so can not patch isinstance checks there
+        self.assertTrue(isinstance(self.skill.instance, CoreSkill))
 
-            # if running in ovos-core every message will have the skill_id in context
-            for msg in self.bus.emitted_msgs:
-                if msg["type"] == 'mycroft.skills.loaded': # emitted by SkillLoader, not by skill
-                    continue
-                self.assertEqual(msg["context"]["skill_id"], "abort.test")
+        # if running in ovos-core every message will have the skill_id in context
+        for msg in self.bus.emitted_msgs:
+            if msg["type"] == 'mycroft.skills.loaded': # emitted by SkillLoader, not by skill
+                continue
+            self.assertEqual(msg["context"]["skill_id"], "abort.test")
 
     def test_intent_register(self):
         padatious_intents = ["abort.test:test.intent",
@@ -135,15 +134,14 @@ class TestSkill(unittest.TestCase):
             self.assertTrue(event in registered_events)
 
         # base skill class events exclusive to ovos-core
-        if not is_classic_core():
-            default_ovos = [f"{self.skill.skill_id}.converse.ping",
-                            f"{self.skill.skill_id}.converse.request",
-                            "intent.service.skills.activated",
-                            "intent.service.skills.deactivated",
-                            f"{self.skill.skill_id}.activate",
-                            f"{self.skill.skill_id}.deactivate"]
-            for event in default_ovos:
-                self.assertTrue(event in registered_events)
+        default_ovos = [f"{self.skill.skill_id}.converse.ping",
+                        f"{self.skill.skill_id}.converse.request",
+                        "intent.service.skills.activated",
+                        "intent.service.skills.deactivated",
+                        f"{self.skill.skill_id}.activate",
+                        f"{self.skill.skill_id}.deactivate"]
+        for event in default_ovos:
+            self.assertTrue(event in registered_events)
 
     def test_stop(self):
         skill = self.skill.instance
