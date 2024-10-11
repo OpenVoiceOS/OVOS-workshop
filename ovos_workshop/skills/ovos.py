@@ -55,16 +55,9 @@ from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
 
 
+@deprecated("OVOS no longer supports running under classic mycroft-core! this function always returns False", "1.0.0")
 def is_classic_core():
-    try:
-        from mycroft.version import OVOS_VERSION_STR
-        return False
-    except:
-        try:
-            import mycroft
-            return True
-        except:
-            return False
+    return False
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -851,8 +844,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
     @property
     def _monitor_own_settings(self):
         # account for isolated setups where skills might not share a filesystem with core
-        if is_classic_core():
-            return True
         return self.settings.get("monitor_own_settings", False)
 
     def _handle_settings_changed(self, message):
