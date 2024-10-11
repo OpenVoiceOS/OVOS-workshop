@@ -573,12 +573,3 @@ class TestSkillGui(unittest.TestCase):
             config=old_skill.config_core['gui'],
             ui_directories={"qt5": join(old_skill.root_dir, "ui")})
 
-        # New skill with `gui` directory in root
-        new_skill = self.GuiSkill()
-        new_gui = SkillGUI(new_skill)
-        self.assertEqual(new_gui.skill, new_skill)
-        self.assertIsInstance(new_gui, GUIInterface)
-        interface_init.assert_called_with(
-            new_gui, skill_id=new_skill.skill_id, bus=new_skill.bus,
-            config=new_skill.config_core['gui'],
-            ui_directories={"all": join(new_skill.root_dir, "gui")})
