@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.4a2) (2024-10-11)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.4a1...0.1.4a2)
+
+**Merged pull requests:**
+
+- deprecate:is\_classic\_core [\#242](https://github.com/OpenVoiceOS/OVOS-workshop/pull/242) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.1.4a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.4a1) (2024-10-11)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.3...0.1.4a1)
