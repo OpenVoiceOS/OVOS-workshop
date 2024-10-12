@@ -84,13 +84,17 @@ def locate_lang_directories(lang: str, skill_directory: str,
     for directory in base_dirs:
         if directory.exists():
             for folder in directory.iterdir():
-                score = tag_distance(lang, folder.name)
-                # https://langcodes-hickford.readthedocs.io/en/sphinx/index.html#distance-values
-                # 0 -> These codes represent the same language, possibly after filling in values and normalizing.
-                # 1- 3 -> These codes indicate a minor regional difference.
-                # 4 - 10 -> These codes indicate a significant but unproblematic regional difference.
-                if score < 10:
-                    candidates.append((folder, score))
+                if folder.is_dir():
+                    try:
+                        score = tag_distance(lang, folder.name)
+                    except:  # not a valid language code
+                        continue
+                    # https://langcodes-hickford.readthedocs.io/en/sphinx/index.html#distance-values
+                    # 0 -> These codes represent the same language, possibly after filling in values and normalizing.
+                    # 1- 3 -> These codes indicate a minor regional difference.
+                    # 4 - 10 -> These codes indicate a significant but unproblematic regional difference.
+                    if score < 10:
+                        candidates.append((folder, score))
     # sort by distance to target lang code
     candidates = sorted(candidates, key=lambda k: k[1])
     return [c[0] for c in candidates]
