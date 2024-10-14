@@ -1,29 +1,31 @@
+import abc
+import itertools
 from os.path import exists
 from threading import RLock
 from typing import List, Tuple, Optional
-import abc
+
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.util import get_mycroft_bus
 from ovos_utils.log import LOG, log_deprecation
 
-try:
-    # backwards compat isinstancechecks
-    from adapt.intent import IntentBuilder as _IB, Intent as _I
-except ImportError:
-    # adapt is optional
-    _I = object
-    _IB = object
-
 
 class _IntentMeta(abc.ABCMeta):
     def __instancecheck__(self, instance):
-        return isinstance(instance, _I) or \
-            super().__instancecheck__(instance)
+        check = super().__instancecheck__(instance)
+        if not check:
+            try:
+                # backwards compat isinstancechecks
+                from adapt.intent import Intent as _I
+                check = isinstance(instance, _I)
+            except ImportError:
+                pass
+        return check
 
 
-class Intent(_I, metaclass=_IntentMeta):
-    def __init__(self, name="", requires=None, at_least_one=None, optional=None):
+class Intent(metaclass=_IntentMeta):
+    def __init__(self, name="", requires=None, at_least_one=None, optional=None, excludes=None):
         """Create Intent object
+
         Args:
             name(str): Name for Intent
             requires(list): Entities that are required
@@ -34,52 +36,187 @@ class Intent(_I, metaclass=_IntentMeta):
         self.requires = requires or []
         self.at_least_one = at_least_one or []
         self.optional = optional or []
+        self.excludes = excludes or []
 
     def validate(self, tags, confidence):
         """Using this method removes tags from the result of validate_with_tags
+
         Returns:
             intent(intent): Results from validate_with_tags
         """
-        if _I is not object:
-            return super().validate(tags, confidence)
-        raise NotImplementedError("please install adapt-parser")
+        intent, tags = self.validate_with_tags(tags, confidence)
+        return intent
 
     def validate_with_tags(self, tags, confidence):
         """Validate whether tags has required entites for this intent to fire
+
         Args:
             tags(list): Tags and Entities used for validation
             confidence(float): The weight associate to the parse result,
                 as indicated by the parser. This is influenced by a parser
                 that uses edit distance or context.
+
         Returns:
             intent, tags: Returns intent and tags used by the intent on
                 failure to meat required entities then returns intent with
                 confidence
                 of 0.0 and an empty list for tags.
         """
-        if _I is not object:
-            return super().validate_with_tags(tags, confidence)
-        raise NotImplementedError("please install adapt-parser")
+        result = {'intent_type': self.name}
+        intent_confidence = 0.0
+        local_tags = tags[:]
+        used_tags = []
+
+        # Check excludes first
+        for exclude_type in self.excludes:
+            exclude_tag, _canonical_form, _tag_confidence = \
+                self._find_first_tag(local_tags, exclude_type)
+            if exclude_tag:
+                result['confidence'] = 0.0
+                return result, []
+
+        for require_type, attribute_name in self.requires:
+            required_tag, canonical_form, tag_confidence = \
+                self._find_first_tag(local_tags, require_type)
+            if not required_tag:
+                result['confidence'] = 0.0
+                return result, []
+
+            result[attribute_name] = canonical_form
+            if required_tag in local_tags:
+                local_tags.remove(required_tag)
+            used_tags.append(required_tag)
+            intent_confidence += tag_confidence
+
+        if len(self.at_least_one) > 0:
+            best_resolution = self._resolve_one_of(local_tags, self.at_least_one)
+            if not best_resolution:
+                result['confidence'] = 0.0
+                return result, []
+            else:
+                for key in best_resolution:
+                    # TODO: at least one should support aliases
+                    result[key] = best_resolution[key][0].get('key')
+                    intent_confidence += 1.0 * best_resolution[key][0]['entities'][0].get('confidence', 1.0)
+                used_tags.append(best_resolution[key][0])
+                if best_resolution in local_tags:
+                    local_tags.remove(best_resolution[key][0])
+
+        for optional_type, attribute_name in self.optional:
+            optional_tag, canonical_form, tag_confidence = \
+                self._find_first_tag(local_tags, optional_type)
+            if not optional_tag or attribute_name in result:
+                continue
+            result[attribute_name] = canonical_form
+            if optional_tag in local_tags:
+                local_tags.remove(optional_tag)
+            used_tags.append(optional_tag)
+            intent_confidence += tag_confidence
+
+        total_confidence = (intent_confidence / len(tags) * confidence) \
+            if tags else 0.0
+
+        CLIENT_ENTITY_NAME = 'Client'  # TODO - ??? what is this magic string
+
+        target_client, canonical_form, confidence = \
+            self._find_first_tag(local_tags, CLIENT_ENTITY_NAME)
+
+        result['target'] = target_client.get('key') if target_client else None
+        result['confidence'] = total_confidence
+
+        return result, used_tags
+
+    @classmethod
+    def _resolve_one_of(cls, tags, at_least_one):
+        """Search through all combinations of at_least_one rules to find a
+        combination that is covered by tags
+
+        Args:
+            tags(list): List of tags with Entities to search for Entities
+            at_least_one(list): List of Entities to find in tags
+
+        Returns:
+            object:
+            returns None if no match is found but returns any match as an object
+        """
+        for possible_resolution in itertools.product(*at_least_one):
+            resolution = {}
+            pr = possible_resolution[:]
+            for entity_type in pr:
+                last_end_index = -1
+                if entity_type in resolution:
+                    last_end_index = resolution[entity_type][-1].get('end_token')
+                tag, value, c = cls._find_first_tag(tags, entity_type,
+                                                    after_index=last_end_index)
+                if not tag:
+                    break
+                else:
+                    if entity_type not in resolution:
+                        resolution[entity_type] = []
+                    resolution[entity_type].append(tag)
+            # Check if this is a valid resolution (all one_of rules matched)
+            if len(resolution) == len(possible_resolution):
+                return resolution
+
+        return None
+
+    @staticmethod
+    def _find_first_tag(tags, entity_type, after_index=-1):
+        """Searches tags for entity type after given index
+
+        Args:
+            tags(list): a list of tags with entity types to be compared to
+             entity_type
+            entity_type(str): This is he entity type to be looking for in tags
+            after_index(int): the start token must be greater than this.
+
+        Returns:
+            ( tag, v, confidence ):
+                tag(str): is the tag that matched
+                v(str): ? the word that matched?
+                confidence(float): is a measure of accuracy.  1 is full confidence
+                    and 0 is none.
+        """
+        for tag in tags:
+            for entity in tag.get('entities'):
+                for v, t in entity.get('data'):
+                    if t.lower() == entity_type.lower() and \
+                            (tag.get('start_token', 0) > after_index or \
+                             tag.get('from_context', False)):
+                        return tag, v, entity.get('confidence')
+
+        return None, None, None
 
 
 class _IntentBuilderMeta(abc.ABCMeta):
     def __instancecheck__(self, instance):
-        return isinstance(instance, _IB) or \
-            super().__instancecheck__(instance)
+        check = super().__instancecheck__(instance)
+        if not check:
+            try:
+                # backwards compat isinstancechecks
+                from adapt.intent import IntentBuilder as _IB
+                check = isinstance(instance, _IB)
+            except ImportError:
+                pass
+        return check
 
 
-class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
+class IntentBuilder(metaclass=_IntentBuilderMeta):
     """
     IntentBuilder, used to construct intent parsers.
+
     Attributes:
         at_least_one(list): A list of Entities where one is required.
             These are separated into lists so you can have one of (A or B) and
             then require one of (D or F).
         requires(list): A list of Required Entities
         optional(list): A list of optional Entities
+        excludes(list): A list of forbidden Entities
         name(str): Name of intent
+
     Notes:
         This is designed to allow construction of intents in one line.
+
     Example:
         IntentBuilder("Intent")\
             .requires("A")\
@@ -90,12 +227,14 @@ class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
     def __init__(self, intent_name):
         """
         Constructor
+
         Args:
             intent_name(str): the name of the intents that this parser
             parses/validates
         """
         self.at_least_one = []
         self.requires = []
+        self.excludes = []
         self.optional = []
         self.name = intent_name
 
@@ -103,8 +242,10 @@ class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
         """
         The intent parser should require one of the provided entity types to
         validate this clause.
+
         Args:
             args(args): *args notation list of entity names
+
         Returns:
             self: to continue modifications.
         """
@@ -114,10 +255,12 @@ class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
     def require(self, entity_type, attribute_name=None):
         """
         The intent parser should require an entity of the provided type.
+
         Args:
             entity_type(str): an entity type
             attribute_name(str): the name of the attribute on the parsed intent.
             Defaults to match entity_type.
+
         Returns:
             self: to continue modifications.
         """
@@ -126,14 +269,29 @@ class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
         self.requires += [(entity_type, attribute_name)]
         return self
 
+    def exclude(self, entity_type):
+        """
+        The intent parser must not contain an entity of the provided type.
+
+        Args:
+            entity_type(str): an entity type
+
+        Returns:
+            self: to continue modifications.
+        """
+        self.excludes.append(entity_type)
+        return self
+
     def optionally(self, entity_type, attribute_name=None):
         """
         Parsed intents from this parser can optionally include an entity of the
          provided type.
+
         Args:
             entity_type(str): an entity type
             attribute_name(str): the name of the attribute on the parsed intent.
             Defaults to match entity_type.
+
         Returns:
             self: to continue modifications.
         """
@@ -145,10 +303,12 @@ class IntentBuilder(_IB, metaclass=_IntentBuilderMeta):
     def build(self):
         """
         Constructs an intent from the builder's specifications.
+
         :return: an Intent instance.
         """
         return Intent(self.name, self.requires,
-                      self.at_least_one, self.optional)
+                      self.at_least_one, self.optional,
+                      self.excludes)
 
 
 def to_alnum(skill_id: str) -> str:
@@ -512,10 +672,5 @@ def open_intent_envelope(message):
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
-                  intent_dict.get('optional'))
-
-
-if __name__ == "__main__":
-    i1 = _I("a", [], [], [])  # skills using adapt directly
-    assert isinstance(i1, Intent)  # backwards compat via metaclass
-
+                  intent_dict.get('optional'),
+                  intent_dict.get('excludes'))
