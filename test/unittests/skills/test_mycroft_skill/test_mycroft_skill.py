@@ -109,6 +109,7 @@ class TestMycroftSkill(unittest.TestCase):
         s._startup(self.emitter, "A")
         expected = [{'at_least_one': [],
                      'name': 'A:a',
+                     'excludes': [],
                      'optional': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
         msg_data = self.emitter.get_results()
@@ -121,6 +122,7 @@ class TestMycroftSkill(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': 'A:a',
                      'optional': [],
+                     'excludes': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
 
         msg_data = self.emitter.get_results()
@@ -142,6 +144,7 @@ class TestMycroftSkill(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': 'A:a',
                      'optional': [],
+                     'excludes': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
         msg_data = self.emitter.get_results()
         self.assertTrue(expected[0] in msg_data)
@@ -161,6 +164,7 @@ class TestMycroftSkill(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': 'A:a',
                      'optional': [],
+                     'excludes': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
         msg_data = self.emitter.get_results()
         self.assertTrue(expected[0] in msg_data)
@@ -259,6 +263,7 @@ class TestMycroftSkill(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': 'A:a',
                      'optional': [],
+                     'excludes': [],
                      'requires': [('AKeyword', 'AKeyword')]},
                     {
                         'file_name': join(dirname(__file__), 'intent_file',
