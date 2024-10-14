@@ -1,12 +1,12 @@
 # Changelog
 
-## [0.1.6a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.6a1) (2024-10-14)
+## [0.1.7a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.7a1) (2024-10-14)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.5...0.1.6a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.6...0.1.7a1)
 
 **Merged pull requests:**
 
-- fix:finish extracting intent classes from adapt package [\#248](https://github.com/OpenVoiceOS/OVOS-workshop/pull/248) ([JarbasAl](https://github.com/JarbasAl))
+- fix:add\_missing\_Requirement [\#251](https://github.com/OpenVoiceOS/OVOS-workshop/pull/251) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

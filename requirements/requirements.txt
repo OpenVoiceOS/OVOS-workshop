@@ -5,3 +5,4 @@ ovos-backend-client>=0.1.0,<2.0.0
 ovos-lingua-franca>=0.4.6,<1.0.0
 rapidfuzz
 langcodes
+padacioso
