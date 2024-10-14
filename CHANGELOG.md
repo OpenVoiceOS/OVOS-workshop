@@ -1,16 +1,12 @@
 # Changelog
 
-## [0.1.5a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.5a1) (2024-10-12)
+## [0.1.6a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/0.1.6a1) (2024-10-14)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.4...0.1.5a1)
-
-**Implemented enhancements:**
-
-- Issue with language configuration selection in autoconfigure [\#243](https://github.com/OpenVoiceOS/OVOS-workshop/issues/243)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.5...0.1.6a1)
 
 **Merged pull requests:**
 
-- fix:handle misc files and folder names mixed with lang folder [\#246](https://github.com/OpenVoiceOS/OVOS-workshop/pull/246) ([JarbasAl](https://github.com/JarbasAl))
+- fix:finish extracting intent classes from adapt package [\#248](https://github.com/OpenVoiceOS/OVOS-workshop/pull/248) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
