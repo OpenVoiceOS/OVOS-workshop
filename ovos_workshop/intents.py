@@ -139,8 +139,7 @@ class Intent(metaclass=_IntentMeta):
             object:
             returns None if no match is found but returns any match as an object
         """
-
-        for possible_resolution in cls._choose_1_from_each(at_least_one):
+        for possible_resolution in itertools.product(*at_least_one):
             resolution = {}
             pr = possible_resolution[:]
             for entity_type in pr:
@@ -160,25 +159,6 @@ class Intent(metaclass=_IntentMeta):
                 return resolution
 
         return None
-
-    @staticmethod
-    def _choose_1_from_each(lists):
-        """
-        The original implementation here was functionally equivalent to
-        :func:`~itertools.product`, except that the former returns a generator
-        of lists, and itertools returns a generator of tuples. This is going to do
-        a light transform for now, until callers can be verified to work with
-        tuples.
-
-        Args:
-            A list of lists or tuples, expected as input to
-            :func:`~itertools.product`
-
-        Returns:
-            a generator of lists, see docs on :func:`~itertools.product`
-        """
-        for result in itertools.product(*lists):
-            yield list(result)
 
     @staticmethod
     def _find_first_tag(tags, entity_type, after_index=-1):
@@ -694,8 +674,3 @@ def open_intent_envelope(message):
                   intent_dict.get('at_least_one'),
                   intent_dict.get('optional'),
                   intent_dict.get('excludes'))
-
-
-if __name__ == "__main__":
-    i1 = _I("a", [], [], [])  # skills using adapt directly
-    assert isinstance(i1, Intent)  # backwards compat via metaclass
