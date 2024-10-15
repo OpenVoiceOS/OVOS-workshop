@@ -5,7 +5,6 @@ import re
 import sys
 import time
 import traceback
-from abc import ABCMeta
 from copy import copy
 from hashlib import md5
 from inspect import signature
@@ -17,7 +16,6 @@ from typing import Dict, Callable, List, Optional, Union
 from json_database import JsonStorage
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
-from ovos_backend_client.api import EmailApi, MetricsApi
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
@@ -32,17 +30,15 @@ from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.events import get_handler_name, create_wrapper
-from ovos_utils.file_utils import FileWatcher, resolve_resource_file
+from ovos_utils.file_utils import FileWatcher
 from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
-from ovos_utils.log import LOG, log_deprecation, deprecated
+from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_utils.sound import play_audio
 from padacioso import IntentContainer
 
-from ovos_workshop.decorators.compat import backwards_compat
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
@@ -53,11 +49,6 @@ from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
-
-
-@deprecated("OVOS no longer supports running under classic mycroft-core! this function always returns False", "1.0.0")
-def is_classic_core():
-    return False
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -74,24 +65,7 @@ def simple_trace(stack_trace: List[str]) -> str:
     return tb
 
 
-class _OVOSSkillMetaclass(ABCMeta):
-    """
-    To override isinstance checks
-    """
-
-    def __instancecheck_classic__(self, instance):
-        # instance imported from vanilla mycroft
-        from mycroft.skills import MycroftSkill as _CoreSkill
-        if issubclass(instance.__class__, _CoreSkill):
-            return True
-        return issubclass(instance.__class__, OVOSSkill)
-
-    @backwards_compat(classic_core=__instancecheck_classic__)
-    def __instancecheck__(self, instance):
-        return super().__instancecheck__(instance)
-
-
-class OVOSSkill(metaclass=_OVOSSkillMetaclass):
+class OVOSSkill:
     """
     Base class for OpenVoiceOS skills providing common behaviour and parameters
     to all Skill implementations.
@@ -970,32 +944,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                 # update settingsmeta file on disk
                 self.settings_manager.save_meta()
 
-    def __bind_classic(self, bus):
-        self._bus = bus
-        self.events.set_bus(bus)
-        self.intent_service.set_bus(bus)
-        self.event_scheduler.set_bus(bus)
-        self._enclosure.set_bus(bus)
-        self._register_system_event_handlers()
-        self._register_public_api()
-        self.intent_layers.bind(self)
-        self.audio_service = OCPInterface(self.bus)
-        self.private_settings = PrivateSettings(self.skill_id)
-
-        log_deprecation("Support for mycroft-core is deprecated", "0.1.0")
-        # inject ovos exclusive features in vanilla mycroft-core
-        # if possible
-        # limited support for missing skill deactivated event
-        try:
-            from ovos_utils.intents.converse import ConverseTracker
-            ConverseTracker.connect_bus(self.bus)  # pull/1468
-        except ImportError:
-            pass  # deprecated in utils 0.1.0
-        self.add_event("converse.skill.deactivated",
-                       self._handle_skill_deactivated,
-                       speak_errors=False)
-
-    @backwards_compat(classic_core=__bind_classic)
     def bind(self, bus: MessageBusClient):
         """
         Register MessageBusClient with skill.
@@ -1701,33 +1649,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             )
             self.speak(key, expect_response, wait, {})
 
-    def _play_audio_old(self, filename: str, instant: bool = False,
-                        wait: Union[bool, int] = False):
-        """ compat for ovos-core <= 0.0.7 """
-        if instant:
-            LOG.warning("self.play_audio instant flag requires ovos-core >= 0.0.8, "
-                        "falling back to local skill playback")
-            play_audio(filename).wait()
-        else:
-            message = dig_for_message() or Message("")
-            self.bus.emit(message.forward("mycroft.audio.queue",
-                                          {"filename": filename,  # TODO - deprecate filename in ovos-audio
-                                           "uri": filename  # new namespace
-                                           }))
-            if wait:
-                timeout = 30 if isinstance(wait, bool) else wait
-                sess = SessionManager.get(message)
-                sess.is_speaking = True
-                SessionManager.wait_while_speaking(timeout, sess)
-
-    def _play_audio_classic(self, filename: str, instant: bool = False,
-                            wait: Union[bool, int] = False):
-        """ compat for classic mycroft-core """
-        LOG.warning("self.play_audio requires ovos-core >= 0.0.4, "
-                    "falling back to local skill playback")
-        play_audio(filename).wait()
-
-    @backwards_compat(pre_008=_play_audio_old, classic_core=_play_audio_classic)
     def play_audio(self, filename: str, instant: bool = False,
                    wait: Union[bool, int] = False):
         """
@@ -1765,53 +1686,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             sess.is_speaking = True
             SessionManager.wait_while_speaking(timeout, sess)
 
-    def __get_response_v1(self, session=None):
-        """Helper to get a response from the user
-
-        NOTE:  There is a race condition here.  There is a small amount of
-        time between the end of the device speaking and the converse method
-        being overridden in this method.  If an utterance is injected during
-        this time, the wrong converse method is executed.  The condition is
-        hidden during normal use due to the amount of time it takes a user
-        to speak a response. The condition is revealed when an automated
-        process injects an utterance quicker than this method can flip the
-        converse methods.
-
-        Returns:
-            str: user's response or None on a timeout
-        """
-        session = session or SessionManager.get()
-
-        def converse(utterances, lang=None):
-            self.__responses[session.session_id] = utterances
-            converse.response = utterances[0] if utterances else None
-            converse.finished = True
-            return True
-
-        # install a temporary conversation handler
-        self.activate()
-        converse.finished = False
-        converse.response = None
-        self.converse = converse
-
-        # 10 for listener, 5 for SST, then timeout
-        ans = []
-        # NOTE: a threading.Event is not used otherwise we can't raise the
-        # AbortEvent exception to kill the thread
-        # this is for compat with killable_intents decorators
-        start = time.time()
-        while time.time() - start <= 15 and not ans:
-            ans = self.__responses[session.session_id]
-            time.sleep(0.1)
-            if ans is None:
-                # aborted externally (if None)
-                self.log.debug("get_response aborted")
-                converse.finished = True
-                break
-
-        self.converse = self._original_converse
-        return ans
-
     def __handle_get_response(self, message):
         """
         Handle the response message to a previous get_response / speak call
@@ -1828,7 +1702,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # received get_response
         self.__responses[sess2.session_id] = utterances
 
-    @backwards_compat(classic_core=__get_response_v1, pre_008=__get_response_v1)
     def __get_response(self, session: Session):
         """Helper to get a response from the user
 
@@ -2089,21 +1962,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
             else:
                 self.bus.emit(message.reply('mycroft.mic.listen'))
 
-    def __acknowledge_classic(self):
-        """
-        Acknowledge a successful request.
-
-        This method plays a sound to acknowledge a request that does not
-        require a verbal response. This is intended to provide simple feedback
-        to the user that their request was handled successfully.
-        """
-        audio_file = self.config_core.get('sounds', {}).get('acknowledge',
-                                                            'snd/acknowledge.mp3')
-        audio_file = resolve_resource_file(audio_file)
-        if audio_file:
-            return play_audio(audio_file)
-
-    @backwards_compat(classic_core=__acknowledge_classic)
     def acknowledge(self):
         """
         Acknowledge a successful request.
@@ -2554,34 +2412,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
                                   {'context': context}))
 
     # killable_events support
-    def __send_stop_signal_classic(self, stop_event: Optional[str] = None):
-        """
-        Notify services to stop current execution
-        @param stop_event: optional `stop` event name to forward
-        """
-        waiter = Event()
-        msg = dig_for_message() or Message("mycroft.stop")
-        # stop event execution
-        if stop_event:
-            self.bus.emit(msg.forward(stop_event))
-
-        # stop TTS
-        self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
-
-        # Tell ovos-core to stop recording (not in mycroft-core)
-        self.bus.emit(msg.forward('recognizer_loop:record_stop'))
-
-        # NOTE: mycroft does not have an event to stop recording
-        # this attempts to force a stop by sending silence to end STT step
-        self.bus.emit(Message('mycroft.mic.mute'))
-        waiter.wait(1.5)  # the silence from muting should make STT stop recording
-        self.bus.emit(Message('mycroft.mic.unmute'))
-
-        # TODO: register TTS events to track state instead of guessing
-        waiter.wait(0.5)  # if TTS had not yet started
-        self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
-
-    @backwards_compat(classic_core=__send_stop_signal_classic)
     def send_stop_signal(self, stop_event: Optional[str] = None):
         """
         Notify services to stop current execution
@@ -2602,34 +2432,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         # TODO: register TTS events to track state instead of guessing
         waiter.wait(0.5)  # if TTS had not yet started
         self.bus.emit(msg.forward("mycroft.audio.speech.stop"))
-
-    # below deprecated and marked for removal
-    @deprecated("use MetricsApi().report_metric", "0.1.0")
-    def report_metric(self, name: str, data: dict):
-        """
-        Report a skill metric to the Mycroft servers.
-
-        Args:
-            name (str): Name of metric. Must use only letters and hyphens
-            data (dict): JSON dictionary to report. Must be valid JSON
-        """
-        try:
-            if Configuration().get('opt_in', False):
-                MetricsApi().report_metric(name, data)
-        except Exception as e:
-            self.log.error(f'Metric couldn\'t be uploaded, due to a network error ({e})')
-
-    @deprecated("use EmailApi().send_email", "0.1.0")
-    def send_email(self, title: str, body: str):
-        """
-        Send an email to the registered user's email.
-
-        Args:
-            title (str): Title of email
-            body  (str): HTML body of email. This supports
-                         simple HTML like bold and italics
-        """
-        EmailApi().send_email(title, body, self.skill_id)
 
     @classproperty
     def network_requirements(self) -> RuntimeRequirements:
@@ -2652,59 +2454,6 @@ class OVOSSkill(metaclass=_OVOSSkillMetaclass):
         if isinstance(val, dict):
             self._voc_cache = val
 
-    # below only for api compat with MycroftSkill class
-    @deprecated("Use `self.resources.render_dialog`", "0.1.0")
-    def translate(self, text: str, data: Optional[dict] = None):
-        """
-        Deprecated method for translating a dialog file.
-        use self.resources.render_dialog(text, data) instead
-        """
-        return self.resources.render_dialog(text, data)
-
-    @deprecated("Use `self.resources.load_named_value_file`", "0.1.0")
-    def translate_namedvalues(self, name: str, delim: str = ','):
-        """
-        Deprecated method for translating a name/value file.
-        use self.resources.load_named_value_filetext, data) instead
-        """
-        return self.resources.load_named_value_file(name, delim)
-
-    @deprecated("Use `self.resources.load_list_file`", "0.1.0")
-    def translate_list(self, list_name: str, data: Optional[dict] = None):
-        """
-        Deprecated method for translating a list.
-        use self.resources.load_list_file(text, data) instead
-        """
-        return self.resources.load_list_file(list_name, data)
-
-    @deprecated("Use `self.resources.load_template_file`", "0.1.0")
-    def translate_template(self, template_name: str,
-                           data: Optional[dict] = None):
-        """
-        Deprecated method for translating a template file
-        use self.resources.template_file(text, data) instead
-        """
-        return self.resources.load_template_file(template_name, data)
-
-    @deprecated("Use `self.resources.load_dialog_files`", "0.1.0")
-    def init_dialog(self, root_directory: Optional[str] = None):
-        """
-        DEPRECATED: use load_dialog_files instead
-        """
-        self.load_dialog_files(root_directory)
-
-    @deprecated("Use `activate`", "0.1.0")
-    def make_active(self):
-        """
-        Bump skill to active_skill list in intent_service.
-
-        This enables converse method to be called even without skill being
-        used in last 5 minutes.
-
-        deprecated: use self.activate() instead
-        """
-        self.activate()
-
 
 class SkillGUI(GUIInterface):
     def __init__(self, skill: OVOSSkill):
@@ -2719,17 +2468,3 @@ class SkillGUI(GUIInterface):
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
 
-    @property
-    @deprecated("`skill` should not be referenced directly", "0.1.0")
-    def skill(self):
-        return self._skill
-
-
-# backwards compat alias, no functional difference
-class OVOSFallbackSkill(OVOSSkill):
-    def __new__(cls, *args, **kwargs):
-        log_deprecation("Implement "
-                        "`ovos_workshop.skills.fallback.FallbackSkill`",
-                        "0.1.0")
-        from ovos_workshop.skills.fallback import FallbackSkill
-        return FallbackSkill(*args, **kwargs)

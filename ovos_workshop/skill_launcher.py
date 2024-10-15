@@ -18,21 +18,17 @@ from ovos_utils.process_utils import RuntimeRequirements
 
 from ovos_workshop.skills.active import ActiveSkill
 from ovos_workshop.skills.auto_translatable import UniversalSkill, UniversalFallback
-from ovos_workshop.skills.base import BaseSkill
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill
 from ovos_workshop.skills.fallback import FallbackSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
-from ovos_workshop.skills.ovos import OVOSSkill, OVOSFallbackSkill
+from ovos_workshop.skills.ovos import OVOSSkill
 
 SKILL_BASE_CLASSES = [
-    BaseSkill, MycroftSkill, OVOSSkill, OVOSFallbackSkill,
-    OVOSCommonPlaybackSkill, OVOSFallbackSkill, CommonQuerySkill, ActiveSkill,
+    OVOSSkill, OVOSCommonPlaybackSkill, CommonQuerySkill, ActiveSkill,
     FallbackSkill, UniversalSkill, UniversalFallback
 ]
 
 SKILL_MAIN_MODULE = '__init__.py'
-
 
 
 def remove_submodule_refs(module_name: str):
@@ -85,13 +81,13 @@ def load_skill_module(path: str, skill_id: str) -> ModuleType:
 
 def get_skill_class(skill_module: ModuleType) -> Optional[callable]:
     """
-    Find MycroftSkill based class in skill module.
+    Find OVOSSkill based class in skill module.
 
     Arguments:
         skill_module (module): module to search for Skill class
 
     Returns:
-        (MycroftSkill): Found subclass of MycroftSkill or None.
+        (OVOSSkill): Found subclass of OVOSSkill or None.
     """
     if not skill_module:
         raise ValueError("Expected module and got None")
@@ -156,7 +152,7 @@ class SkillLoader:
         self._loaded = None
         self.load_attempted = False
         self.last_loaded = 0
-        self.instance: Optional[BaseSkill] = None
+        self.instance: Optional[OVOSSkill] = None
         self.active = True
         self._watchdog = None
         self.config = Configuration()

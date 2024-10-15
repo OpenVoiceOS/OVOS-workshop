@@ -7,7 +7,7 @@ from ovos_utils.events import get_handler_name
 from ovos_utils.log import LOG
 from ovos_workshop.resource_files import SkillResources
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill
-from ovos_workshop.skills.fallback import FallbackSkillV2
+from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_workshop.skills.ovos import OVOSSkill
 
 
@@ -311,7 +311,7 @@ class UniversalSkill(OVOSSkill):
         super()._handle_converse_request(message)
 
 
-class UniversalFallback(UniversalSkill, FallbackSkillV2):
+class UniversalFallback(UniversalSkill, FallbackSkill):
     """
     Fallback Skill that auto translates input/output from any language.
 
@@ -373,7 +373,7 @@ class UniversalFallback(UniversalSkill, FallbackSkillV2):
         - `create_universal_fallback_handler` method for creating universal fallback handlers.
         """
         handler = self.create_universal_fallback_handler(handler)
-        FallbackSkillV2.register_fallback(self, handler, priority)
+        FallbackSkill.register_fallback(self, handler, priority)
 
 
 class UniversalCommonQuerySkill(UniversalSkill, CommonQuerySkill, ABC):

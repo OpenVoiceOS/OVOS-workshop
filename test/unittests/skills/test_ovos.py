@@ -3,7 +3,7 @@ import unittest
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.messagebus import FakeBus
 from ovos_utils import classproperty
-from ovos_workshop import IntentLayers
+from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 
 from ovos_workshop.settings import SkillSettingsManager
@@ -143,14 +143,10 @@ class TestOVOSSkill(unittest.TestCase):
                          RuntimeRequirements())
 
     def test_class_inheritance(self):
-        from ovos_workshop.skills.base import BaseSkill
         from ovos_workshop.skills.ovos import OVOSSkill
-        from ovos_workshop.skills.mycroft_skill import MycroftSkill
         from ovos_workshop.app import OVOSAbstractApplication
 
         skill = MockSkill()
-        self.assertIsInstance(skill, BaseSkill)
         self.assertIsInstance(skill, OVOSSkill)
-        self.assertIsInstance(skill, MycroftSkill)
         self.assertNotIsInstance(skill, OVOSAbstractApplication)
 
