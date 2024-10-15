@@ -5,40 +5,9 @@ from unittest.mock import Mock
 from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_workshop.skills.mycroft_skill import MycroftSkill
-from ovos_workshop.skills import MycroftSkill as CoreSkill
 from ovos_utils.messagebus import FakeBus
 from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
-
-
-class LegacySkill(CoreSkill):
-    def __init__(self, skill_name="LegacySkill", bus=None, **kwargs):
-        self.inited = True
-        self.initialized = False
-        self.startup_called = False
-        super().__init__(skill_name, bus, **kwargs)
-        # __new__ calls `_startup` so this should be defined in __init__
-        assert self.skill_id is not None
-
-    def initialize(self):
-        self.initialized = True
-
-    def _startup(self, bus, skill_id=""):
-        self.startup_called = True
-        self.initialize()
-
-
-class BadLegacySkill(LegacySkill):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        print(self.bus)  # not set, exception in property
-
-
-class GoodLegacySkill(CoreSkill):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        print(self.bus)  # maybe not set, exception in property
 
 
 class SpecificArgsSkill(OVOSSkill):
@@ -91,13 +60,8 @@ class TestSkill(unittest.TestCase):
 
     def test_skill_id(self):
         self.assertTrue(isinstance(self.skill.instance, OVOSSkill))
-        self.assertTrue(isinstance(self.skill.instance, MycroftSkill))
 
         self.assertEqual(self.skill.skill_id, "abort.test")
-
-        # the metaclass ensures this returns True under ovos-core
-        # but we have no control over mycroft-core so can not patch isinstance checks there
-        self.assertTrue(isinstance(self.skill.instance, CoreSkill))
 
         # if running in ovos-core every message will have the skill_id in context
         for msg in self.bus.emitted_msgs:
@@ -133,7 +97,6 @@ class TestSkill(unittest.TestCase):
         for event in default_skill:
             self.assertTrue(event in registered_events)
 
-        # base skill class events exclusive to ovos-core
         default_ovos = [f"{self.skill.skill_id}.converse.ping",
                         f"{self.skill.skill_id}.converse.request",
                         "intent.service.skills.activated",
@@ -162,31 +125,6 @@ class TestSkill(unittest.TestCase):
 
 
 class TestSkillNew(unittest.TestCase):
-    def test_legacy(self):
-        bus = FakeBus()
-
-        # a legacy skill accepts wrong args, but accepts kwargs
-        legacy = LegacySkill("LegacyName", bus, skill_id="legacy.mycroft")
-        self.assertTrue(legacy.inited)
-        self.assertTrue(legacy.initialized)
-        self.assertTrue(legacy.startup_called)
-        self.assertIsNotNone(legacy.skill_id)
-        self.assertEqual(legacy.bus, bus)
-
-        # a legacy skill not accepting args at all
-        with self.assertRaises(Exception) as ctxt:
-            BadLegacySkill()  # accesses self.bus in __init__
-        self.assertTrue("Accessed OVOSSkill.bus in __init__" in str(ctxt.exception))
-
-        legacynoargs = LegacySkill()  # no exception this time because bus is not used in init
-        self.assertTrue(legacynoargs.inited)
-        self.assertFalse(legacynoargs.initialized)
-        self.assertFalse(legacynoargs.startup_called)
-
-        # a legacy skill fully inited at once
-        legacy = GoodLegacySkill(skill_id="legacy.mycroft", bus=bus)  # accesses self.bus in __init__
-        self.assertEqual(legacy.skill_id, "legacy.mycroft")
-        self.assertEqual(legacy.bus, bus)
 
     def test_load(self):
         bus = FakeBus()

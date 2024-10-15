@@ -1,4 +1,4 @@
-from ovos_workshop.backwards_compat import MediaType, PlayerState, MediaState, MatchConfidence, \
+from ovos_utils.ocp import MediaType, PlayerState, MediaState, MatchConfidence, \
         PlaybackType, PlaybackMode, LoopState, TrackState
 
 

@@ -6,12 +6,12 @@ class ActiveSkill(OVOSSkill):
         super(ActiveSkill, self).bind(bus)
         if bus:
             """ insert skill in active skill list on load """
-            self.make_active()
+            self.activate()
 
     def handle_skill_deactivated(self, message=None):
         """
         skill is always in active skill list, ie, converse is always called
         """
-        self.make_active()
+        self.activate()
 
 
