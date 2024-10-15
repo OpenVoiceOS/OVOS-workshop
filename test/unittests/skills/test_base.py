@@ -6,7 +6,7 @@ import unittest
 from logging import Logger
 from threading import Event, Thread
 from time import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from os.path import join, dirname, isdir
 from ovos_workshop.skills.ovos import OVOSSkill
 
@@ -324,7 +324,6 @@ class TestOVOSSkill(unittest.TestCase):
         pass
 
     def test_register_intent_file(self):
-        from ovos_workshop.skills.ovos import OVOSSkill
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
@@ -351,7 +350,6 @@ class TestOVOSSkill(unittest.TestCase):
             f"{skill.skill_id}:time.intent", uk_intent_file, "uk-ua")
 
     def test_register_entity_file(self):
-        from ovos_workshop.skills.ovos import OVOSSkill
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
         skill._lang_resources = dict()
         skill.intent_service = Mock()
