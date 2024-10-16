@@ -1248,7 +1248,7 @@ class OVOSSkill:
         sess = SessionManager.get(message)
         try:
             stopped = self.stop_session(sess) or self.stop()
-            print(f"{self.skill_id} stopped: {stopped}")
+            LOG.debug(f"{self.skill_id} stopped: {stopped}")
             if stopped:
                 self.bus.emit(message.reply("mycroft.stop.handled",
                                             {"by": "skill:" + self.skill_id}))
@@ -2479,7 +2479,6 @@ class SkillGUI(GUIInterface):
         bus = skill.bus
         config = skill.config_core.get('gui')
         ui_directories = get_ui_directories(skill.root_dir)
-        print(666, ui_directories)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
 
