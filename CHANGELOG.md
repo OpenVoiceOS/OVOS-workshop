@@ -1,12 +1,12 @@
 # Changelog
 
-## [1.0.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/1.0.0a1) (2024-10-15)
+## [1.0.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/1.0.1a1) (2024-10-16)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/0.1.7...1.0.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/1.0.0...1.0.1a1)
 
-**Breaking changes:**
+**Merged pull requests:**
 
-- refactor!:drop mycroft [\#235](https://github.com/OpenVoiceOS/OVOS-workshop/pull/235) ([JarbasAl](https://github.com/JarbasAl))
+- fix:standardize lang code [\#254](https://github.com/OpenVoiceOS/OVOS-workshop/pull/254) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
