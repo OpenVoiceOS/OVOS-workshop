@@ -59,7 +59,7 @@ class TestFallbackSkillV2(TestCase):
         FallbackSkill.fallback_config = {}
 
     def test_can_answer(self):
-        self.assertFalse(self.fallback_skill.can_answer([""], "en-us"))
+        self.assertFalse(self.fallback_skill.can_answer([""], "en-US"))
         # TODO
 
     def test_register_system_event_handlers(self):

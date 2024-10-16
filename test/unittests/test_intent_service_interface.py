@@ -82,8 +82,8 @@ class KeywordRegistrationTest(unittest.TestCase):
 
     def test_register_regex(self):
         intent_service = IntentServiceInterface(self.emitter)
-        intent_service.register_adapt_regex('.*', lang="en-us")
-        self.check_emitter([{'regex': '.*', 'lang': 'en-us'}])
+        intent_service.register_adapt_regex('.*', lang="en-US")
+        self.check_emitter([{'regex': '.*', 'lang': 'en-US'}])
 
 
 class KeywordIntentRegistrationTest(unittest.TestCase):

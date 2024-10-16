@@ -332,22 +332,22 @@ class TestOVOSSkill(unittest.TestCase):
         uk_intent_file = join(skill.res_dir, "locale", "uk-ua", "time.intent")
 
         # No secondary languages
-        skill.config_core["lang"] = "en-us"
+        skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
         skill.register_intent_file("time.intent", Mock(__name__="test"))
         skill.intent_service.register_padatious_intent.assert_called_once_with(
-            f"{skill.skill_id}:time.intent", en_intent_file, "en-us")
+            f"{skill.skill_id}:time.intent", en_intent_file, "en-US")
 
         # With secondary language
         skill.intent_service.register_padatious_intent.reset_mock()
-        skill.config_core["secondary_langs"] = ["en-us", "uk-ua"]
+        skill.config_core["secondary_langs"] = ["en-US", "uk-UA"]
         skill.register_intent_file("time.intent", Mock(__name__="test"))
         self.assertEqual(
             skill.intent_service.register_padatious_intent.call_count, 2)
         skill.intent_service.register_padatious_intent.assert_any_call(
-            f"{skill.skill_id}:time.intent", en_intent_file, "en-us")
+            f"{skill.skill_id}:time.intent", en_intent_file, "en-US")
         skill.intent_service.register_padatious_intent.assert_any_call(
-            f"{skill.skill_id}:time.intent", uk_intent_file, "uk-ua")
+            f"{skill.skill_id}:time.intent", uk_intent_file, "uk-UA")
 
     def test_register_entity_file(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
@@ -358,25 +358,25 @@ class TestOVOSSkill(unittest.TestCase):
         uk_file = join(skill.res_dir, "locale", "uk-ua", "dow.entity")
 
         # No secondary languages
-        skill.config_core["lang"] = "en-us"
+        skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
         skill.register_entity_file("dow")
         skill.intent_service.register_padatious_entity.assert_called_once_with(
             f"{skill.skill_id}:dow_d446b2a6e46e7d94cdf7787e21050ff9",
-            en_file, "en-us")
+            en_file, "en-US")
 
         # With secondary language
         skill.intent_service.register_padatious_entity.reset_mock()
-        skill.config_core["secondary_langs"] = ["en-us", "uk-ua"]
+        skill.config_core["secondary_langs"] = ["en-US", "uk-ua"]
         skill.register_entity_file("dow")
         self.assertEqual(
             skill.intent_service.register_padatious_entity.call_count, 2)
         skill.intent_service.register_padatious_entity.assert_any_call(
             f"{skill.skill_id}:dow_d446b2a6e46e7d94cdf7787e21050ff9",
-            en_file, "en-us")
+            en_file, "en-US")
         skill.intent_service.register_padatious_entity.assert_any_call(
             f"{skill.skill_id}:dow_d446b2a6e46e7d94cdf7787e21050ff9",
-            uk_file, "uk-ua")
+            uk_file, "uk-UA")
 
     def test_handle_enable_intent(self):
         # TODO
