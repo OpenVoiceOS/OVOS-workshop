@@ -13,7 +13,7 @@
 from abc import abstractmethod
 from enum import IntEnum
 from os.path import dirname
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
@@ -25,7 +25,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 class CQSMatchLevel(IntEnum):
     EXACT = 1  # Skill could find a specific answer for the question
     CATEGORY = 2  # Skill could find an answer from a category in the query
-    GENERAL = 3  # The query could be processed as a general quer
+    GENERAL = 3  # The query could be processed as a general query
 
 
 # Copy of CQSMatchLevel to use if the skill returns visual media
@@ -33,6 +33,8 @@ CQSVisualMatchLevel = IntEnum('CQSVisualMatchLevel',
                               [e.name for e in CQSMatchLevel])
 
 """these are for the confidence calculation"""
+# TODO: TOPIC_MATCH_RELEVANCE and RELEVANCE_MULTIPLIER stack on the same count of
+#   "relevant" words. This adds too much artificial confidence (>100%)
 # how much each topic word is worth
 # when found in the answer
 TOPIC_MATCH_RELEVANCE = 5
@@ -59,12 +61,18 @@ class CommonQuerySkill(OVOSSkill):
     """
 
     def __init__(self, *args, **kwargs):
-        # these should probably be configurable
+        # Confidence calculation numbers may be configured per-skill
         self.level_confidence = {
             CQSMatchLevel.EXACT: 0.9,
             CQSMatchLevel.CATEGORY: 0.6,
             CQSMatchLevel.GENERAL: 0.5
         }
+        self.relevance_multiplier = TOPIC_MATCH_RELEVANCE * RELEVANCE_MULTIPLIER
+        self.input_consumed_multiplier = 0.1
+        # TODO: The below defaults of 0.1 add ~25% for a 2-sentence response which is too much
+        self.response_sentences_multiplier = 0.1
+        self.response_words_multiplier = 1 / WORD_COUNT_DIVISOR
+
         super().__init__(*args, **kwargs)
 
         noise_words_filepath = f"text/{self.lang}/noise_words.list"
@@ -141,7 +149,16 @@ class CommonQuerySkill(OVOSSkill):
             level = result[1]
             answer = result[2]
             callback = result[3] if len(result) > 3 else {}
-            confidence = self.__calc_confidence(match, search_phrase, level, answer)
+            if isinstance(level, float):
+                LOG.debug(f"Confidence directly reported by skill")
+                confidence = level
+            else:
+                LOG.info(f"Calculating confidence for level {level}")
+                confidence = self.__calc_confidence(match, search_phrase, level,
+                                                    answer)
+            if confidence > 1.0:
+                LOG.warning(f"Calculated confidence {confidence} > 1.0")
+                confidence = 1.0
             callback["answer"] = answer  # ensure we get it back in CQS_action
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
@@ -155,8 +172,8 @@ class CommonQuerySkill(OVOSSkill):
                                             "skill_id": self.skill_id,
                                             "searching": False}))
 
-    def __get_cq(self, search_phrase: str) -> (str, CQSMatchLevel, str,
-                                               Optional[dict]):
+    def __get_cq(self, search_phrase: str) -> (str, Union[CQSMatchLevel, float],
+                                               str, Optional[dict]):
         """
         Invoke the CQS handler to let the skill perform its search
         @param search_phrase: parsed question to get an answer for
@@ -200,36 +217,52 @@ class CommonQuerySkill(OVOSSkill):
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
             consumed_pct = 1.0
-        consumed_pct /= 10
 
-        # bonus for more sentences
-        num_sentences = float(float(len(answer.split("."))) / float(10))
+        # Approximate the number of sentences in the answer. A trailing `.` will
+        # split, so reduce length by 1. If no `.` is present, ensure we count
+        # any response as at least 1 sentence
+        num_sentences = min(len(answer.split(".")) - 1, 1)
 
-        # extract topic
+        # Remove articles and question words to approximate the meaningful part
+        # of what the skill extracted from the user input
         topic = self.remove_noise(match)
 
-        # calculate relevance
+        # Determine how many relevant words from the input are present in the
+        # answer
+        # TODO: Strip SSML from the answer here
         answer = answer.lower()
         matches = 0
         for word in topic.split(' '):
             if answer.find(word) > -1:
-                matches += TOPIC_MATCH_RELEVANCE
-
+                matches += 1
+        LOG.debug(f"Answer matched {matches} words")
         answer_size = len(answer.split(" "))
-        answer_size = min(MAX_ANSWER_LEN_FOR_CONFIDENCE, answer_size)
 
+        # Calculate relevance as the percentage of relevant input words divided
+        # by the length of the response. This means that an answer that only
+        # contains the input will have a relevance value of 1
         relevance = 0.0
         if answer_size > 0:
             relevance = float(float(matches) / float(answer_size))
 
-        relevance = relevance * RELEVANCE_MULTIPLIER
+        # extra credit for more words up to a point. By default, 50 words is
+        # considered optimal
+        answer_size = min(MAX_ANSWER_LEN_FOR_CONFIDENCE, answer_size)
 
-        # extra credit for more words up to a point
-        wc_mod = float(float(answer_size) / float(WORD_COUNT_DIVISOR)) * 2
+        # Calculate bonuses based on calculated values and configured weights
+        consumed_pct_bonus = consumed_pct * self.input_consumed_multiplier
+        num_sentences_bonus = num_sentences * self.response_sentences_multiplier
+        relevance_bonus = relevance * self.relevance_multiplier
+        word_count_bonus = answer_size * self.response_words_multiplier
 
+        LOG.debug(f"consumed_pct_bonus={consumed_pct_bonus}|num_sentence_bonus="
+                  f"{num_sentences_bonus}|relevance_bonus={relevance_bonus}|"
+                  f"word_count_bonus={word_count_bonus}")
         confidence = self.level_confidence[level] + \
-                     consumed_pct + num_sentences + relevance + wc_mod
-
+                     consumed_pct_bonus + num_sentences_bonus + relevance_bonus + word_count_bonus
+        if confidence > 1:
+            LOG.warning(f"Calculated confidence > 1.0: {confidence}")
+            return 1.0
         return confidence
 
     def __handle_query_action(self, message: Message):
@@ -254,7 +287,7 @@ class CommonQuerySkill(OVOSSkill):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \
-            Optional[Tuple[str, CQSMatchLevel, Optional[dict]]]:
+            Optional[Tuple[str, Union[CQSMatchLevel, float], Optional[dict]]]:
         """
         Determine an answer to the input phrase and return match information, or
         `None` if no answer can be determined.

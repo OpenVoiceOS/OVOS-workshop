@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import Mock
 
 from ovos_utils.messagebus import FakeBus
 from ovos_workshop.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
@@ -32,16 +33,39 @@ class TestCommonQuerySkill(TestCase):
         pass
 
     def test_get_cq(self):
-        # TODO
-        pass
+        test_phrase = "test"
+        mock_return = Mock()
+        self.skill.CQS_match_query_phrase = Mock(return_value=mock_return)
+        result = self.skill._CommonQuerySkill__get_cq(test_phrase)
+        self.skill.CQS_match_query_phrase.assert_called_once_with(test_phrase)
+        self.assertEqual(result, mock_return)
+
+        self.skill.CQS_match_query_phrase.side_effect = Exception()
+        result = self.skill._CommonQuerySkill__get_cq(test_phrase)
+        self.assertIsNone(result)
 
     def test_remove_noise(self):
-        # TODO
-        pass
+        noisy_match = "what is a computer"
+        normalized = "computer"
+        self.assertEqual(self.skill.remove_noise(noisy_match), normalized)
 
     def test_calc_confidence(self):
-        # TODO
-        pass
+        generic_q = "what is coca cola"
+        specific_q = "how much caffeine is in coca cola"
+        specific_q_2 = "what is the stock price for coca cola"
+        cw_answer = ("The drink diet coke has 32 milligrams of caffeine in "
+                     "250 milliliters.</speak> Provided by CaffeineWiz.")
+
+        generic_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", generic_q, CQSMatchLevel.GENERAL, cw_answer)
+        exact_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", specific_q, CQSMatchLevel.EXACT, cw_answer)
+        low_conf = self.skill._CommonQuerySkill__calc_confidence(
+            "coca cola", specific_q_2, CQSMatchLevel.GENERAL, cw_answer)
+
+        self.assertEqual(exact_conf, 1.0)
+        self.assertLess(generic_conf, exact_conf)
+        self.assertLess(low_conf, generic_conf)
 
     def test_handle_query_action(self):
         # TODO
