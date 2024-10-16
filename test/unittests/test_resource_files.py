@@ -24,12 +24,12 @@ class TestResourceFiles(unittest.TestCase):
         test_dir = join(dirname(__file__), "test_res")
 
         # Test valid nested request
-        valid_dialog = find_resource("test.dialog", test_dir, "dialog", "en-us")
+        valid_dialog = find_resource("test.dialog", test_dir, "dialog", "en-US")
         self.assertEqual(valid_dialog, Path(test_dir, "en-us", "dialog",
                                             "test.dialog"))
 
         # Test valid top-level lang resource
-        valid_vocab = find_resource("test.voc", test_dir, "vocab", "en-us")
+        valid_vocab = find_resource("test.voc", test_dir, "vocab", "en-US")
         self.assertEqual(valid_vocab, Path(test_dir, "en-us", "test.voc"))
 
         # Test lang-agnostic resource
@@ -181,9 +181,9 @@ class TestCoreResources(unittest.TestCase):
 
     def test_core_resources(self):
         from ovos_workshop.resource_files import CoreResources, SkillResources
-        core_res = CoreResources("en-us")
+        core_res = CoreResources("en-US")
         self.assertIsInstance(core_res, SkillResources)
-        self.assertEqual(core_res.language, "en-us")
+        self.assertEqual(core_res.language, "en-US")
         self.assertTrue(isdir(core_res.skill_directory))
 
 
@@ -202,9 +202,9 @@ class TestUserResources(unittest.TestCase):
 
     def test_user_resources(self):
         from ovos_workshop.resource_files import UserResources, SkillResources
-        user_res = UserResources("en-us", "test.skill")
+        user_res = UserResources("en-US", "test.skill")
         self.assertIsInstance(user_res, SkillResources)
-        self.assertEqual(user_res.language, "en-us")
+        self.assertEqual(user_res.language, "en-US")
         self.assertEqual(user_res.skill_directory,
                          join(self.test_data_path, "mycroft", "resources",
                               "test.skill"))

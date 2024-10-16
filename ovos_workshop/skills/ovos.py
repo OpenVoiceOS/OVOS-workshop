@@ -14,6 +14,7 @@ from threading import Event, RLock
 from typing import Dict, Callable, List, Optional, Union
 
 from json_database import JsonStorage
+from langcodes import closest_match
 from lingua_franca.format import pronounce_number, join_list
 from lingua_franca.parse import yes_or_no, extract_number
 from ovos_bus_client import MessageBusClient
@@ -33,12 +34,11 @@ from ovos_utils.events import get_handler_name, create_wrapper
 from ovos_utils.file_utils import FileWatcher
 from ovos_utils.gui import get_ui_directories
 from ovos_utils.json_helper import merge_dict
+from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from padacioso import IntentContainer
-
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
@@ -49,6 +49,7 @@ from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
+from padacioso import IntentContainer
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -225,13 +226,26 @@ class OVOSSkill:
 
         self.add_event(name, handler, 'mycroft.skill.handler')
 
+    def _get_closest_lang(self, lang: str) -> Optional[str]:
+        if self.converse_matchers:
+            lang = standardize_lang_tag(lang)
+            closest, score = closest_match(lang, list(self.converse_matchers.keys()))
+            # https://langcodes-hickford.readthedocs.io/en/sphinx/index.html#distance-values
+            # 0 -> These codes represent the same language, possibly after filling in values and normalizing.
+            # 1- 3 -> These codes indicate a minor regional difference.
+            # 4 - 10 -> These codes indicate a significant but unproblematic regional difference.
+            if score < 10:
+                return closest
+        return None
+
     def _handle_converse_intents(self, message):
         """ called before converse method
         this gives active skills a chance to parse their own intents and
         consume the utterance, see conversational_intent decorator for usage
         """
-        if self.lang not in self.converse_matchers:
-            return False
+        lang = self._get_closest_lang(self.lang)
+        if lang is None:  # no intents registered for this lang
+            return None
 
         best_score = 0
         response = None
@@ -569,14 +583,14 @@ class OVOSSkill:
         message = dig_for_message()
         if message:
             lang = get_message_lang(message)
-        return lang.lower()
+        return standardize_lang_tag(lang)
 
     @property
     def core_lang(self) -> str:
         """
         Get the configured default language as a BCP-47 language code.
         """
-        return self.config_core.get("lang", "en-us").lower()
+        return standardize_lang_tag(self.config_core.get("lang", "en-US"))
 
     @property
     def secondary_langs(self) -> List[str]:
@@ -586,7 +600,7 @@ class OVOSSkill:
         to `core_lang`. A skill may override this method to specify which
         languages intents are registered in.
         """
-        return [lang.lower() for lang in self.config_core.get('secondary_langs', [])
+        return [standardize_lang_tag(lang) for lang in self.config_core.get('secondary_langs', [])
                 if lang != self.core_lang]
 
     @property
@@ -596,8 +610,8 @@ class OVOSSkill:
         and explicitly supported). This is equivalent to normalized
         secondary_langs + core_lang.
         """
-        valid = set([lang.lower() for lang in self.secondary_langs if '-' in
-                     lang and lang != self.core_lang] + [self.core_lang])
+        valid = set([standardize_lang_tag(lang) for lang in self.secondary_langs
+                     if lang != self.core_lang] + [self.core_lang])
         return list(valid)
 
     @property
@@ -618,7 +632,7 @@ class OVOSSkill:
         @param lang: language to get resources for (default self.lang)
         @return: SkillResources object
         """
-        lang = lang or self.lang
+        lang = standardize_lang_tag(lang or self.lang)
         root_directory = root_directory or self.res_dir
         if lang not in self._lang_resources:
             self._lang_resources[lang] = SkillResources(root_directory, lang,
@@ -706,7 +720,7 @@ class OVOSSkill:
         Returns:
             string: The full path to the resource file or None if not found
         """
-        lang = lang or self.lang
+        lang = standardize_lang_tag(lang or self.lang)
         x = find_resource(res_name, self.res_dir, res_dirname, lang)
         if x:
             return str(x)
@@ -1174,7 +1188,7 @@ class OVOSSkill:
             params = signature(self.converse).parameters
             kwargs = {"message": message,
                       "utterances": message.data['utterances'],
-                      "lang": message.data['lang']}
+                      "lang": standardize_lang_tag(message.data['lang'])}
             kwargs = {k: v for k, v in kwargs.items() if k in params}
 
             # call skill converse method, conditionally activating the skill
@@ -1234,7 +1248,7 @@ class OVOSSkill:
         sess = SessionManager.get(message)
         try:
             stopped = self.stop_session(sess) or self.stop()
-            print(f"{self.skill_id} stopped: {stopped}")
+            LOG.debug(f"{self.skill_id} stopped: {stopped}")
             if stopped:
                 self.bus.emit(message.reply("mycroft.stop.handled",
                                             {"by": "skill:" + self.skill_id}))
@@ -1421,7 +1435,7 @@ class OVOSSkill:
         @param lang: language of `entity` (default self.lang)
         """
         keyword_type = self.alphanumeric_skill_id + entity_type
-        lang = lang or self.lang
+        lang = standardize_lang_tag(lang or self.lang)
         self.intent_service.register_adapt_keyword(keyword_type, entity,
                                                    lang=lang)
 
@@ -1434,7 +1448,7 @@ class OVOSSkill:
         self.log.debug('registering regex string: ' + regex_str)
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
-        self.intent_service.register_adapt_regex(regex, lang=lang or self.lang)
+        self.intent_service.register_adapt_regex(regex, lang=standardize_lang_tag(lang or self.lang))
 
     # event/intent registering internal handlers
     def handle_enable_intent(self, message: Message):
@@ -2057,7 +2071,7 @@ class OVOSSkill:
         @param lang: language to get vocab for (default self.lang)
         @return: list of string vocab options
         """
-        lang = lang or self.lang
+        lang = standardize_lang_tag(lang or self.lang)
         cache_key = lang + voc_filename
 
         if cache_key not in self._voc_cache:
