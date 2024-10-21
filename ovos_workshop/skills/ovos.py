@@ -1237,6 +1237,12 @@ class OVOSSkill:
         except Exception as e:
             data["error"] = str(e)
             self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
+        if data["result"] and sess.session_id == "default":
+            # TODO - track if speech is coming from this skill!
+            # this is not currently tracked
+            self.bus.emit(message.reply("mycroft.audio.speech.stop",
+                                        {"skill_id": self.skill_id}))
+
         self.bus.emit(message.reply(f"{self.skill_id}.stop.response", data))
 
     def __handle_stop(self, message):
@@ -1247,7 +1253,7 @@ class OVOSSkill:
         self.bus.emit(message.forward(self.skill_id + ".stop"))
         sess = SessionManager.get(message)
         try:
-            stopped = self.stop_session(sess) or self.stop()
+            stopped = self.stop_session(sess) or self.stop() or False
             LOG.debug(f"{self.skill_id} stopped: {stopped}")
             if stopped:
                 self.bus.emit(message.reply("mycroft.stop.handled",
