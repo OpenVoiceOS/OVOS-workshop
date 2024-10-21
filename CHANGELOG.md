@@ -1,16 +1,12 @@
 # Changelog
 
-## [1.0.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/1.0.2a1) (2024-10-18)
+## [1.0.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/1.0.3a1) (2024-10-21)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/1.0.1...1.0.2a1)
-
-**Fixed bugs:**
-
-- lingua franca does not support standardized lang codes, it needs lower case [\#256](https://github.com/OpenVoiceOS/OVOS-workshop/issues/256)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/1.0.2...1.0.3a1)
 
 **Merged pull requests:**
 
-- fix:lingua\_franca [\#257](https://github.com/OpenVoiceOS/OVOS-workshop/pull/257) ([JarbasAl](https://github.com/JarbasAl))
+- fix:improve stop [\#260](https://github.com/OpenVoiceOS/OVOS-workshop/pull/260) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
