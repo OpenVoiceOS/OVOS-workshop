@@ -346,10 +346,7 @@ class UniversalFallback(UniversalSkill, FallbackSkill):
             # auto_Translate input
             message = self.translate_message(message)
             LOG.info(get_handler_name(handler))
-            success = handler(self, message)
-            if success:
-                self.activate()
-            return success
+            return handler(self, message)
 
         return universal_fallback_handler
 
