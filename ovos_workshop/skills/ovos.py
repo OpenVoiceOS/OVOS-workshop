@@ -1593,7 +1593,7 @@ class OVOSSkill:
         # registers the skill as being active
         meta = meta or {}
         meta['skill'] = self.skill_id
-        self.enclosure.register(self.skill_id)
+
         data = {'utterance': utterance,
                 'expect_response': expect_response,
                 'meta': meta,
