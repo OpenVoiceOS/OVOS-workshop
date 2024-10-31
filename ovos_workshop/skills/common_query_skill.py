@@ -108,6 +108,8 @@ class CommonQuerySkill(OVOSSkill):
             self.add_event('question:query', self.__handle_question_query,
                            speak_errors=False)
             self.add_event('question:action', self.__handle_query_action,
+                           handler_info='mycroft.skill.handler',
+                           activation=True, is_intent=True,
                            speak_errors=False)
             self.add_event("ovos.common_query.ping", self.__handle_common_query_ping,
                            speak_errors=False)
@@ -242,15 +244,12 @@ class CommonQuerySkill(OVOSSkill):
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
-        self.activate()
         phrase = message.data["phrase"]
         data = message.data.get("callback_data") or {}
         if data.get("answer"):
             self.speak(data["answer"])
         # Invoke derived class to provide playback data
         self.CQS_action(phrase, data)
-        self.bus.emit(message.forward("mycroft.skill.handler.complete",
-                                      {"handler": "common_query"}))
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase: str) -> \

@@ -1,12 +1,12 @@
 # Changelog
 
-## [1.0.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/1.0.3a1) (2024-10-21)
+## [2.0.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.0.0a1) (2024-10-31)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/1.0.2...1.0.3a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/1.0.3...2.0.0a1)
 
-**Merged pull requests:**
+**Breaking changes:**
 
-- fix:improve stop [\#260](https://github.com/OpenVoiceOS/OVOS-workshop/pull/260) ([JarbasAl](https://github.com/JarbasAl))
+- fix:duplicate\_handled\_message [\#262](https://github.com/OpenVoiceOS/OVOS-workshop/pull/262) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
