@@ -185,7 +185,7 @@ class FallbackSkill(OVOSSkill):
             try:
                 handler_name = get_handler_name(handler)
                 # call handler, conditionally activating the skill
-                status = self._conditional_activate(handler, message=message)
+                status = handler(message)
                 if status:
                     # indicate completion
                     break
