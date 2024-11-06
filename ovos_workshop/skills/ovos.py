@@ -792,8 +792,6 @@ class OVOSSkill:
             # set the skill_id
             self.skill_id = skill_id or basename(self.root_dir)
 
-            self.status = ProcessStatus(self.skill_id, self.bus, callback_map=callbacks)
-            self.status.set_alive()
             self.intent_service.set_id(self.skill_id)
             self.event_scheduler.set_id(self.skill_id)
             self.enclosure.set_id(self.skill_id)
@@ -804,6 +802,8 @@ class OVOSSkill:
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
+            self.status = ProcessStatus(self.skill_id, self.bus, callback_map=callbacks)
+            self.status.set_alive()
             if not self.gui:
                 self._init_skill_gui()
             if self._enable_settings_manager:
