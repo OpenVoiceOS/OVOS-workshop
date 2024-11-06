@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.0.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.0.1a1) (2024-11-05)
+## [2.1.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.1.0a1) (2024-11-06)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.0.0...2.0.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.0.1...2.1.0a1)
 
 **Merged pull requests:**
 
-- fix: allow latest bus client version [\#264](https://github.com/OpenVoiceOS/OVOS-workshop/pull/264) ([JarbasAl](https://github.com/JarbasAl))
+- feat: status [\#266](https://github.com/OpenVoiceOS/OVOS-workshop/pull/266) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
