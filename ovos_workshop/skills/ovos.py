@@ -1,4 +1,3 @@
-import binascii
 import datetime
 import os
 import re
@@ -13,6 +12,7 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event, RLock
 from typing import Dict, Callable, List, Optional, Union
 
+import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
 from lingua_franca.format import pronounce_number, join_list
@@ -37,6 +37,7 @@ from ovos_utils.json_helper import merge_dict
 from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
+from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap, ProcessState
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
@@ -441,7 +442,7 @@ class OVOSSkill:
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs "
                              f"__init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__}." 
+                             f"to skill class {self.__class__.__name__}."
                              "You can only use self.enclosure after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed OVOSSkill.enclosure in __init__')
@@ -458,7 +459,7 @@ class OVOSSkill:
         else:
             self.log.warning('Skill not fully initialized.'
                              f"to correct this add kwargs __init__(bus=None, skill_id='') "
-                             f"to skill class {self.__class__.__name__} " 
+                             f"to skill class {self.__class__.__name__} "
                              "You can only use self.file_system after the call to 'super()'")
             self.log.error(simple_trace(traceback.format_stack()))
             raise Exception('Accessed OVOSSkill.file_system in __init__')
@@ -751,6 +752,21 @@ class OVOSSkill:
             self.settings["__mycroft_skill_firstrun"] = False
             self.settings.store()
 
+    def on_ready_status(self):
+        LOG.info(f'{self.skill_id} is ready.')
+
+    def on_error_status(self, e='Unknown'):
+        LOG.exception(f'{self.skill_id} initialization failed')
+
+    def on_stopping_status(self):
+        LOG.info(f'{self.skill_id} is shutting down...')
+
+    def on_alive_status(self):
+        LOG.debug(f'{self.skill_id} is alive.')
+
+    def on_started_status(self):
+        LOG.debug(f'{self.skill_id} started.')
+
     def _startup(self, bus: MessageBusClient, skill_id: str = ""):
         """
         Startup the skill. Connects the skill to the messagebus, loads resources
@@ -764,11 +780,18 @@ class OVOSSkill:
                              f"times, ignoring")
             return
 
+        callbacks = StatusCallbackMap(on_ready=self.on_ready_status,
+                                      on_error=self.on_error_status,
+                                      on_stopping=self.on_stopping_status,
+                                      on_alive=self.on_alive_status,
+                                      on_started=self.on_started_status)
+
         # NOTE: this method is called by SkillLoader
         # it is private to make it clear to skill devs they should not touch it
         try:
             # set the skill_id
             self.skill_id = skill_id or basename(self.root_dir)
+
             self.intent_service.set_id(self.skill_id)
             self.event_scheduler.set_id(self.skill_id)
             self.enclosure.set_id(self.skill_id)
@@ -779,6 +802,8 @@ class OVOSSkill:
 
             # initialize anything that depends on the messagebus
             self.bind(bus)
+            self.status = ProcessStatus(self.skill_id, self.bus, callback_map=callbacks)
+            self.status.set_alive()
             if not self.gui:
                 self._init_skill_gui()
             if self._enable_settings_manager:
@@ -787,12 +812,14 @@ class OVOSSkill:
             self._register_decorated()
             self.register_resting_screen()
 
+            self.status.set_started()
             # run skill developer initialization code
             self.initialize()
             self._check_for_first_run()
             self._init_event.set()
+            self.status.set_ready()
         except Exception as e:
-            self.log.exception('Skill initialization failed')
+            self.status.set_error(str(e))
             # If an exception occurs, attempt to clean up the skill
             try:
                 self.default_shutdown()
@@ -1249,7 +1276,7 @@ class OVOSSkill:
         5) Call skill.shutdown() to allow skill to do any other shutdown tasks
         6) Emit `detach_skill` Message to notify skill is shut down
         """
-
+        self.status.set_stopping()
         try:
             # Allow skill to handle `stop` actions before shutting things down
             self.stop()
@@ -2475,4 +2502,3 @@ class SkillGUI(GUIInterface):
         ui_directories = get_ui_directories(skill.root_dir)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
-
