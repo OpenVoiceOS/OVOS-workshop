@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.2.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.2.0a1) (2024-11-07)
+## [2.2.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.2.1a1) (2024-11-07)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.1.0...2.2.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.2.0...2.2.1a1)
 
 **Merged pull requests:**
 
-- feat: list join util [\#269](https://github.com/OpenVoiceOS/OVOS-workshop/pull/269) ([JarbasAl](https://github.com/JarbasAl))
+- pt-pt/translate [\#271](https://github.com/OpenVoiceOS/OVOS-workshop/pull/271) ([gitlocalize-app[bot]](https://github.com/apps/gitlocalize-app))
 
 
 
