@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import re
 import sys
@@ -420,7 +421,8 @@ class OVOSSkill:
         """
         Update settings specific to this skill
         """
-        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
+        LOG.warning(
+            "Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
         assert isinstance(val, dict)
         # init method
         if self._settings is None:
@@ -2504,7 +2506,7 @@ class SkillGUI(GUIInterface):
                               ui_directories=ui_directories)
 
 
-def _get_and_word(lang):
+def _get_word(lang, connector):
     """ Helper to get word translations
 
     Args:
@@ -2520,30 +2522,11 @@ def _get_and_word(lang):
         LOG.warning(f"untranslated file: {res_file}")
         return ", "
     with open(res_file) as f:
-        w = json.load(f)["and"]
-    return w
-
-def _get_or_word(lang):
-    """ Helper to get word translations
-
-    Args:
-        lang (str, optional): an optional BCP-47 language code, if omitted
-                              the default language will be used.
-
-    Returns:
-        str: translated version of resource name
-    """
-    res_file = f"{dirname(dirname(__file__))}/res/text/{lang}" \
-                  f"/word_connectors.json"
-    if not os.path.isfile(res_file):
-        LOG.warning(f"untranslated file: {res_file}")
-        return ", "
-    with open(res_file) as f:
-        w = json.load(f)["or"]
+        w = json.load(f)[connector]
     return w
 
 
-def join_word_list(items: List[str], connector: str, sep: str, lang:str) -> str:
+def join_word_list(items: List[str], connector: str, sep: str, lang: str) -> str:
     """ Join a list into a phrase using the given connector word
 
     Examples:
@@ -2561,8 +2544,8 @@ def join_word_list(items: List[str], connector: str, sep: str, lang:str) -> str:
         str: the connected list phrase
     """
     cons = {
-        "and": _get_and_word,
-        "or": _get_or_word
+        "and": _get_word(lang, "and"),
+        "or": _get_word(lang, "or")
     }
     if not items:
         return ""
@@ -2574,5 +2557,5 @@ def join_word_list(items: List[str], connector: str, sep: str, lang:str) -> str:
     else:
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
-            " " + cons[connector](lang) +
+            " " + cons[connector] +
             " " + items[-1])
