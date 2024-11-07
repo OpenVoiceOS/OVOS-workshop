@@ -2011,9 +2011,8 @@ class OVOSSkill:
         @return: 'yes', 'no' or the user response if not matched to 'yes' or
             'no', including a response of None.
         """
-        s = YesNoSolver()
         resp = self.get_response(dialog=prompt, data=data)
-        answer = s.match_yes_or_no(resp, lang=self.lang) if resp else resp
+        answer = YesNoSolver().match_yes_or_no(resp, lang=self.lang) if resp else resp
         if answer is True:
             return "yes"
         elif answer is False:
