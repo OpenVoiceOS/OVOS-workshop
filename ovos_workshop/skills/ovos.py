@@ -16,8 +16,10 @@ from typing import Dict, Callable, List, Optional, Union
 import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
-from lingua_franca.format import pronounce_number, join_list
-from lingua_franca.parse import yes_or_no, extract_number
+from ovos_number_parser import pronounce_number, extract_number
+# TODO - drop lingua-franca
+from lingua_franca.format import join_list
+from lingua_franca.parse import yes_or_no
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
