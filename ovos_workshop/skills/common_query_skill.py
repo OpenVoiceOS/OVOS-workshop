@@ -67,8 +67,9 @@ class CommonQuerySkill(OVOSSkill):
         }
         super().__init__(*args, **kwargs)
 
-        noise_words_filepath = f"text/{self.lang}/noise_words.list"
-        default_res = f"{dirname(dirname(__file__))}/res/text/{self.lang}" \
+        lang = self.lang.split("-")[0]
+        noise_words_filepath = f"text/{lang}/noise_words.list"
+        default_res = f"{dirname(dirname(__file__))}/res/text/{lang}" \
                       f"/noise_words.list"
         noise_words_filename = \
             resolve_resource_file(noise_words_filepath,
@@ -79,7 +80,7 @@ class CommonQuerySkill(OVOSSkill):
         if noise_words_filename:
             with open(noise_words_filename) as f:
                 translated_noise_words = f.read().strip()
-            self._translated_noise_words[self.lang] = \
+            self._translated_noise_words[lang] = \
                 translated_noise_words.split()
 
     @property
@@ -89,13 +90,13 @@ class CommonQuerySkill(OVOSSkill):
         """
         log_deprecation("self.translated_noise_words will become a "
                         "private variable", "0.1.0")
-        return self._translated_noise_words.get(self.lang, [])
+        return self._translated_noise_words.get(self.lang.split("-")[0], [])
 
     @translated_noise_words.setter
     def translated_noise_words(self, val: List[str]):
         log_deprecation("self.translated_noise_words will become a "
                         "private variable", "0.1.0")
-        self._translated_noise_words[self.lang] = val
+        self._translated_noise_words[self.lang.split("-")[0]] = val
 
     def bind(self, bus):
         """Overrides the default bind method of MycroftSkill.
@@ -179,7 +180,7 @@ class CommonQuerySkill(OVOSSkill):
         @param lang: language of `phrase`, else defaults to `self.lang`
         @return: cleaned `phrase` with extra words removed
         """
-        lang = lang or self.lang
+        lang = (lang or self.lang).split("-")[0]
         phrase = ' ' + phrase + ' '
         for word in self._translated_noise_words.get(lang, []):
             mtch = ' ' + word + ' '
