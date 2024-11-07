@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import re
 import sys
@@ -420,7 +421,8 @@ class OVOSSkill:
         """
         Update settings specific to this skill
         """
-        LOG.warning("Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
+        LOG.warning(
+            "Skills are not supposed to override self.settings, expect breakage! Set individual dict keys instead")
         assert isinstance(val, dict)
         # init method
         if self._settings is None:
@@ -2064,7 +2066,7 @@ class OVOSSkill:
                 number = pronounce_number(idx + 1, self.lang)
                 self.speak(f"{number}, {opt}", wait=True)
         else:
-            opt_str = join_list(options, "or", lang=self.lang) + "?"
+            opt_str = join_word_list(options, "or", sep=",", lang=self.lang) + "?"
             self.speak(opt_str, wait=True)
 
         resp = self.get_response(dialog=dialog, data=data)
@@ -2502,3 +2504,58 @@ class SkillGUI(GUIInterface):
         ui_directories = get_ui_directories(skill.root_dir)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
+
+
+def _get_word(lang, connector):
+    """ Helper to get word translations
+
+    Args:
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+
+    Returns:
+        str: translated version of resource name
+    """
+    res_file = f"{dirname(dirname(__file__))}/res/text/{lang}" \
+               f"/word_connectors.json"
+    if not os.path.isfile(res_file):
+        LOG.warning(f"untranslated file: {res_file}")
+        return ", "
+    with open(res_file) as f:
+        w = json.load(f)[connector]
+    return w
+
+
+def join_word_list(items: List[str], connector: str, sep: str, lang: str) -> str:
+    """ Join a list into a phrase using the given connector word
+
+    Examples:
+        join_word_list([1,2,3], "or") ->  "1, 2 or 3"
+        join_word_list([1,2,3], "and") ->  "1, 2 and 3"
+        join_word_list([1,2,3], "and", ";") ->  "1; 2 and 3"
+
+    Args:
+        items (array): items to be joined
+        connector (str): connecting word (resource name), like "and" or "or"
+        sep (str, optional): separator character, default = ","
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+    Returns:
+        str: the connected list phrase
+    """
+    cons = {
+        "and": _get_word(lang, "and"),
+        "or": _get_word(lang, "or")
+    }
+    if not items:
+        return ""
+    if len(items) == 1:
+        return str(items[0])
+
+    if not sep:
+        sep = ", "
+    else:
+        sep += " "
+    return (sep.join(str(item) for item in items[:-1]) +
+            " " + cons[connector] +
+            " " + items[-1])
