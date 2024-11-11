@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.2.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.2.1a1) (2024-11-07)
+## [2.2.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.2.2a1) (2024-11-11)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.2.0...2.2.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.2.1...2.2.2a1)
 
 **Merged pull requests:**
 
-- pt-pt/translate [\#271](https://github.com/OpenVoiceOS/OVOS-workshop/pull/271) ([gitlocalize-app[bot]](https://github.com/apps/gitlocalize-app))
+- fix: drop lingua\_franca [\#268](https://github.com/OpenVoiceOS/OVOS-workshop/pull/268) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
