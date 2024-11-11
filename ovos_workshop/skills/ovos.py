@@ -16,8 +16,8 @@ from typing import Dict, Callable, List, Optional, Union
 import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
-from lingua_franca.format import pronounce_number, join_list
-from lingua_franca.parse import yes_or_no, extract_number
+from ovos_number_parser import pronounce_number, extract_number
+from ovos_yes_no_solver import YesNoSolver
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
@@ -2012,17 +2012,7 @@ class OVOSSkill:
             'no', including a response of None.
         """
         resp = self.get_response(dialog=prompt, data=data)
-        # TODO - lingua_franca does not support standardized lang tags
-        #  deprecate it, use a plugin here https://github.com/TigreGotico/ovos-solver-YesNo-plugin
-        lf_langs = ("az-az", "ca-es", "cs-cz", "da-dk", "de-de",
-                    "en-us", "es-es", "fr-fr",
-                    "hu-hu", "it-it", "nl-nl", "pl-pl",
-                    "fa-ir", "pt-pt", "ru-ru", "sl-si",
-                    "sv-se", "tr-tr", "eu-eu", "uk-ua")
-        lang, score = closest_match(self.lang, lf_langs)
-        if score > 10:
-            lang = self.lang  # let it raise a value Error in next line
-        answer = yes_or_no(resp, lang=lang) if resp else resp
+        answer = YesNoSolver().match_yes_or_no(resp, lang=self.lang) if resp else resp
         if answer is True:
             return "yes"
         elif answer is False:
