@@ -63,6 +63,23 @@ class TestJoinWordListEs(unittest.TestCase):
         self.assertEqual(result, "vaqueros e indios")
         result = _join_word_list_es(["Manuel", "Hilario"], "and")
         self.assertEqual(result, "Manuel e Hilario")
+        result = _join_word_list_es(["mujer", "hijos"], "and")
+        self.assertEqual(result, "mujer e hijos")
+        result = _join_word_list_es(["mató", "hirió"], "and")
+        self.assertEqual(result, "mató e hirió")
+        result = _join_word_list_es(["geografía", "historia"], "and")
+        self.assertEqual(result, "geografía e historia")
+
+    def test_euphonic_conjunction_exceptionsa_and(self):
+        # When following word starts by (H)IA, (H)IE or (H)IO, then usual Y preposition is used
+        result = _join_word_list_es(["frio", "hielo"], "and")
+        self.assertEqual(result, "frio y hielo")
+        result = _join_word_list_es(["cloro", "iodo"], "and")
+        self.assertEqual(result, "cloro y iodo")
+        result = _join_word_list_es(["Eta", "Iota"], "and")
+        self.assertEqual(result, "Eta y Iota")
+        result = _join_word_list_es(["paz", "hiógrafo"], "and")
+        self.assertEqual(result, "paz y hiógrafo")
 
     def test_euphonic_conjunction_or(self):
         # Test euphonic transformation from "o" to "u"
@@ -70,6 +87,7 @@ class TestJoinWordListEs(unittest.TestCase):
         self.assertEqual(result, "Manuel u Óscar")
         result = _join_word_list_es(["unos", "otros"], "or")
         self.assertEqual(result, "unos u otros")
+
 
 
 if __name__ == "__main__":
