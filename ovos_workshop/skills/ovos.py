@@ -2533,6 +2533,8 @@ def join_word_list(items: List[str], connector: str, sep: str, lang: str) -> str
     Returns:
         str: the connected list phrase
     """
+    if lang.startswith("it"):
+        return _join_word_list_it(items, connector, sep)
     cons = {
         "and": _get_word(lang, "and"),
         "or": _get_word(lang, "or")
@@ -2549,3 +2551,33 @@ def join_word_list(items: List[str], connector: str, sep: str, lang: str) -> str
     return (sep.join(str(item) for item in items[:-1]) +
             " " + cons[connector] +
             " " + items[-1])
+
+
+def _join_word_list_it(items: List[str], connector: str, sep: str = ",") -> str:
+    cons = {
+        "and": _get_word("it", "and"),
+        "or": _get_word("it", "or")
+    }
+    if not items:
+        return ""
+    if len(items) == 1:
+        return str(items[0])
+
+    if not sep:
+        sep = ", "
+    else:
+        sep += " "
+
+    # Join the list with Italian euphonic rules applied to the last connector
+    joined_string = sep.join(str(item) for item in items[:-1])
+
+    # Check for euphonic transformation cases for "e" and "o"
+    if cons[connector] == "e" and items[-1][0].lower() == "e":
+        final_connector = "ed"
+    elif cons[connector] == "o" and items[-1][0].lower() == "o":
+        final_connector = "od"
+    else:
+        final_connector = cons[connector]
+
+    return f"{joined_string} {final_connector} {items[-1]}"
+
