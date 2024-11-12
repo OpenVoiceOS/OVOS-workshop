@@ -42,6 +42,16 @@ class TestJoinWordListIt(unittest.TestCase):
         result = _join_word_list_it(["mare"], "and")
         self.assertEqual(result, "mare")
 
+    def test_multiple_euphonic_transformations(self):
+        # Test multiple 'ed' transformations in the same list
+        result = _join_word_list_it(["casa", "estate", "inverno", "autunno"], "and")
+        self.assertEqual(result, "casa, estate, inverno e autunno")
+
+    def test_mixed_conjunctions(self):
+        # Test combining 'and' and 'or' conjunctions
+        result = _join_word_list_it(["mare", "oceano", "isola"], "or")
+        self.assertEqual(result, "mare, oceano o isola")
+
 
 class TestJoinWordListEs(unittest.TestCase):
 
@@ -49,6 +59,17 @@ class TestJoinWordListEs(unittest.TestCase):
         # Test euphonic transformation from "y" to "e"
         result = _join_word_list_es(["Juan", "Irene"], "and")
         self.assertEqual(result, "Juan e Irene")
+        result = _join_word_list_es(["vaqueros", "indios"], "and")
+        self.assertEqual(result, "vaqueros e indios")
+        result = _join_word_list_es(["Manuel", "Hilario"], "and")
+        self.assertEqual(result, "Manuel e Hilario")
+
+    def test_euphonic_conjunction_or(self):
+        # Test euphonic transformation from "o" to "u"
+        result = _join_word_list_es(["Manuel", "Óscar"], "or")
+        self.assertEqual(result, "Manuel u Óscar")
+        result = _join_word_list_es(["unos", "otros"], "or")
+        self.assertEqual(result, "unos u otros")
 
 
 if __name__ == "__main__":
