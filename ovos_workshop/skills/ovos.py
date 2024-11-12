@@ -2569,7 +2569,7 @@ def _join_word_list_it(items: List[str], connector: str, sep: str = ",") -> str:
         sep += " "
 
     # Join the list with Italian euphonic rules applied to the last connector
-    joined_string = sep.join(str(item) for item in items[:-1])
+    joined_string = sep.join(item for item in items[:-1])
 
     # Check for euphonic transformation cases for "e" and "o"
     if cons[connector] == "e" and items[-1][0].lower() == "e":
@@ -2578,6 +2578,5 @@ def _join_word_list_it(items: List[str], connector: str, sep: str = ",") -> str:
         final_connector = "od"
     else:
         final_connector = cons[connector]
-
     return f"{joined_string} {final_connector} {items[-1]}"
 

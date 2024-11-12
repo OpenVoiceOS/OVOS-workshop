@@ -30,6 +30,18 @@ class TestJoinWordListIt(unittest.TestCase):
         result = _join_word_list_it(["libro", "orologio"], "or")
         self.assertEqual(result, "libro od orologio")
 
+    def test_join_three_words(self):
+        result = _join_word_list_it(["mare", "estate", "inverno"], "and")
+        self.assertEqual(result, "mare, estate e inverno")
+
+    def test_empty_list(self):
+        result = _join_word_list_it([], "and")
+        self.assertEqual(result, "")
+
+    def test_single_word(self):
+        result = _join_word_list_it(["mare"], "and")
+        self.assertEqual(result, "mare")
+
 
 if __name__ == "__main__":
     unittest.main()
