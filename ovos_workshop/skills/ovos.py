@@ -2607,11 +2607,13 @@ def _join_word_list_es(items: List[str], connector: str, sep: str = ",") -> str:
         joined_string = items[0]
 
     # Check for euphonic transformation cases for "y"
-    w = items[-1].lower().lstrip("h")[0]
-    if cons[connector] == "y" and w in ["i", "í"]:
-        final_connector = "e"
-    # Check for euphonic transformation cases for "o"
-    if cons[connector] == "o" and w in ["o", "ó"]:
-        final_connector = "u"
+    w = items[-1].lower().lstrip("h").replace("ó", "o").replace("í", "i").replace("á", "a")
+    if not any([w.startswith("io"), w.startswith("ia"), w.startswith("ie")]):
+        # When following word starts by (H)IA, (H)IE or (H)IO, then usual Y preposition is used
+        if cons[connector] == "y" and w[0] == "i":
+            final_connector = "e"
+        # Check for euphonic transformation cases for "o"
+        if cons[connector] == "o" and w[0] == "o":
+            final_connector = "u"
 
     return f"{joined_string} {final_connector} {items[-1]}"
