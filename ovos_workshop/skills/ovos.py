@@ -2535,6 +2535,9 @@ def join_word_list(items: List[str], connector: str, sep: str, lang: str) -> str
     """
     if lang.startswith("it"):
         return _join_word_list_it(items, connector, sep)
+    elif lang.startswith("es"):
+        return _join_word_list_es(items, connector, sep)
+
     cons = {
         "and": _get_word(lang, "and"),
         "or": _get_word(lang, "or")
@@ -2568,15 +2571,43 @@ def _join_word_list_it(items: List[str], connector: str, sep: str = ",") -> str:
     else:
         sep += " "
 
-    # Join the list with Italian euphonic rules applied to the last connector
-    joined_string = sep.join(item for item in items[:-1])
+    final_connector = cons[connector]
+    if len(items) > 2:
+        joined_string = sep.join(item for item in items[:-1])
+    else:
+        joined_string = items[0]
 
     # Check for euphonic transformation cases for "e" and "o"
     if cons[connector] == "e" and items[-1][0].lower() == "e":
         final_connector = "ed"
     elif cons[connector] == "o" and items[-1][0].lower() == "o":
         final_connector = "od"
-    else:
-        final_connector = cons[connector]
     return f"{joined_string} {final_connector} {items[-1]}"
 
+
+def _join_word_list_es(items: List[str], connector: str, sep: str = ",") -> str:
+    cons = {
+        "and": _get_word("es", "and"),
+        "or": _get_word("es", "or")
+    }
+    if not items:
+        return ""
+    if len(items) == 1:
+        return str(items[0])
+
+    if not sep:
+        sep = ", "
+    else:
+        sep += " "
+
+    final_connector = cons[connector]
+    if len(items) > 2:
+        joined_string = sep.join(item for item in items[:-1])
+    else:
+        joined_string = items[0]
+
+    # Check for euphonic transformation cases for "y"
+    if cons[connector] == "y" and items[-1][0].lower() == "i":
+        final_connector = "e"
+
+    return f"{joined_string} {final_connector} {items[-1]}"

@@ -1,6 +1,6 @@
 import unittest
 
-from ovos_workshop.skills.ovos import _join_word_list_it
+from ovos_workshop.skills.ovos import _join_word_list_it, _join_word_list_es
 
 
 class TestJoinWordListIt(unittest.TestCase):
@@ -41,6 +41,14 @@ class TestJoinWordListIt(unittest.TestCase):
     def test_single_word(self):
         result = _join_word_list_it(["mare"], "and")
         self.assertEqual(result, "mare")
+
+
+class TestJoinWordListEs(unittest.TestCase):
+
+    def test_euphonic_conjunction_and(self):
+        # Test euphonic transformation from "y" to "e"
+        result = _join_word_list_es(["Juan", "Irene"], "and")
+        self.assertEqual(result, "Juan e Irene")
 
 
 if __name__ == "__main__":
