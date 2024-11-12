@@ -65,6 +65,10 @@ class TestJoinWordListEs(unittest.TestCase):
         self.assertEqual(result, "Manuel e Hilario")
         result = _join_word_list_es(["mujer", "hijos"], "and")
         self.assertEqual(result, "mujer e hijos")
+        result = _join_word_list_es(["mató", "hirió"], "and")
+        self.assertEqual(result, "mató e hirió")
+        result = _join_word_list_es(["geografía", "historia"], "and")
+        self.assertEqual(result, "geografía e historia")
 
     def test_euphonic_conjunction_exceptionsa_and(self):
         # When following word starts by (H)IA, (H)IE or (H)IO, then usual Y preposition is used
