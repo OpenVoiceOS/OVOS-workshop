@@ -74,6 +74,8 @@ class TestJoinWordListEs(unittest.TestCase):
         self.assertEqual(result, "cloro y iodo")
         result = _join_word_list_es(["Eta", "Iota"], "and")
         self.assertEqual(result, "Eta y Iota")
+        result = _join_word_list_es(["paz", "hiógrafo"], "and")
+        self.assertEqual(result, "paz y hiógrafo")
 
     def test_euphonic_conjunction_or(self):
         # Test euphonic transformation from "o" to "u"
@@ -81,6 +83,7 @@ class TestJoinWordListEs(unittest.TestCase):
         self.assertEqual(result, "Manuel u Óscar")
         result = _join_word_list_es(["unos", "otros"], "or")
         self.assertEqual(result, "unos u otros")
+
 
 
 if __name__ == "__main__":
