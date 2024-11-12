@@ -1,16 +1,12 @@
 # Changelog
 
-## [2.3.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.3.0a1) (2024-11-12)
+## [2.3.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.3.1a1) (2024-11-12)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.2.3...2.3.0a1)
-
-**Implemented enhancements:**
-
-- feat:  euphony [\#273](https://github.com/OpenVoiceOS/OVOS-workshop/issues/273)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.3.0...2.3.1a1)
 
 **Merged pull requests:**
 
-- feat:euphony [\#277](https://github.com/OpenVoiceOS/OVOS-workshop/pull/277) ([JarbasAl](https://github.com/JarbasAl))
+- gl/translate [\#279](https://github.com/OpenVoiceOS/OVOS-workshop/pull/279) ([gitlocalize-app[bot]](https://github.com/apps/gitlocalize-app))
 
 
 
