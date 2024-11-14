@@ -853,12 +853,21 @@ class OVOSSkill:
         # register app launcher if registered via decorator
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
-            if hasattr(method, 'homescreen_icon'):
-                event = f"{self.skill_id}.{method.__name__}.homescreen.app"
-                icon = getattr(method, 'homescreen_icon')
-                LOG.debug(f"homescreen app registered: {event}")
-                self.register_homescreen_app(icon=icon, event=event)
+            if hasattr(method, 'homescreen_app_icon'):
+                name = getattr(method, 'homescreen_app_name')
+                event = f"{self.skill_id}.{name or method.__name__}.homescreen.app"
+                icon = getattr(method, 'homescreen_app_icon')
+                name = name or self.__skill_id2name
+                LOG.debug(f"homescreen app registered: {name} - '{event}'")
+                self.register_homescreen_app(icon=icon,
+                                             name=name or self.skill_id,
+                                             event=event)
                 self.add_event(event, method, speak_errors=False)
+
+    def __skill_id2name(self) -> str:
+        """helper to make a nice string out of a skill_id"""
+        return (self.skill_id.split(".")[0].replace("_", " ").
+                replace("-", " ").replace("skill", "").title().strip())
 
     def _init_settings(self):
         """
@@ -913,7 +922,7 @@ class OVOSSkill:
         """
         self.settings_manager = SkillSettingsManager(self)
 
-    def register_homescreen_app(self, icon: str, event: str):
+    def register_homescreen_app(self, icon: str, name: str, event: str):
         """the icon file MUST be located under 'gui' subfolder"""
         # this path is hardcoded in ovos_gui.constants and follows XDG spec
         # we use it to ensure resource availability between containers
@@ -927,6 +936,7 @@ class OVOSSkill:
         self.bus.emit(Message("homescreen.register.app",
                               {"skill_id": self.skill_id,
                                "icon": shared_path,
+                               "name": name,
                                "event": event}))
 
     def register_resting_screen(self):

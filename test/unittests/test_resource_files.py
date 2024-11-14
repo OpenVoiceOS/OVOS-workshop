@@ -15,10 +15,6 @@ class TestResourceFiles(unittest.TestCase):
         from ovos_workshop.resource_files import locate_lang_directories
         # TODO
 
-    def test_resolve_resource_file(self):
-        from ovos_workshop.resource_files import resolve_resource_file
-        # TODO
-
     def test_find_resource(self):
         from ovos_workshop.resource_files import find_resource
         test_dir = join(dirname(__file__), "test_res")

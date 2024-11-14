@@ -1,5 +1,5 @@
 from functools import wraps
-
+from typing import Optional
 from ovos_utils.log import log_deprecation
 
 from ovos_workshop.decorators.killable import killable_intent, killable_event
@@ -159,19 +159,21 @@ def fallback_handler(priority: int = 50):
     return real_decorator
 
 
-def homescreen_app(icon: str):
+def homescreen_app(icon: str, name: Optional[str] = None):
     """
     Decorator for adding a method as a homescreen app
 
     the icon file MUST be located under 'gui' subfolder
 
     @param icon: icon file to use in app drawer (relative to "gui" folder)
+    @param name: short name to show under the icon in app drawer
     """
 
     def real_decorator(func):
         # Store the icon inside the function
         # This will be used later to call register_homescreen_app
-        func.homescreen_icon = icon
+        func.homescreen_app_icon = icon
+        func.homescreen_app_name = name
         return func
 
     return real_decorator
