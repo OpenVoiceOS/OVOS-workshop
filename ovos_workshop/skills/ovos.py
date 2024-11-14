@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -16,8 +17,6 @@ from typing import Dict, Callable, List, Optional, Union
 import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
-from ovos_number_parser import pronounce_number, extract_number
-from ovos_yes_no_solver import YesNoSolver
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
@@ -26,7 +25,9 @@ from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
 from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_cache_save_path
 from ovos_config.locations import get_xdg_config_save_path
+from ovos_number_parser import pronounce_number, extract_number
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
@@ -38,9 +39,12 @@ from ovos_utils.json_helper import merge_dict
 from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
-from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap, ProcessState
+from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
+from ovos_yes_no_solver import YesNoSolver
+from padacioso import IntentContainer
+
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
@@ -51,7 +55,6 @@ from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
-from padacioso import IntentContainer
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -811,7 +814,9 @@ class OVOSSkill:
             if self._enable_settings_manager:
                 self._init_settings_manager()
             self.load_data_files()
+            self._register_skill_json()
             self._register_decorated()
+            self._register_app_launcher()
             self.register_resting_screen()
 
             self.status.set_started()
@@ -828,6 +833,34 @@ class OVOSSkill:
             except Exception as e2:
                 LOG.debug(e2)
             raise e
+
+    def _register_skill_json(self, root_directory: Optional[str] = None):
+        """Load skill.json metadata found under locale folder and register with homescreen"""
+        root_directory = root_directory or self.res_dir
+        for lang in self.native_langs:
+            resources = self.load_lang(root_directory, lang)
+            if resources.types.json.base_directory is None:
+                self.log.debug(f'No skill.json loaded for {lang}')
+            else:
+                skill_meta = resources.load_json_file("skill.json")
+                utts = skill_meta.get("examples", [])
+                if utts:
+                    self.log.info(f"Registering example utterances with homescreen for lang: {lang} - {utts}")
+                    self.bus.emit(Message("homescreen.register.examples",
+                                          {"skill_id": self.skill_id, "utterances": utts}))
+
+    def _register_app_launcher(self):
+        # homescreen might load after this skill and miss the original events
+        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded)
+
+        # register app launcher if registered via decorator
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'homescreen_icon'):
+                event = f"{self.skill_id}.{method.__name__}.homescreen.app"
+                icon = getattr(method, 'homescreen_icon')
+                self.register_homescreen_app(icon=icon, event=event)
+                self.add_event(event, method)
 
     def _init_settings(self):
         """
@@ -882,6 +915,22 @@ class OVOSSkill:
         """
         self.settings_manager = SkillSettingsManager(self)
 
+    def register_homescreen_app(self, icon: str, event: str):
+        """the icon file MUST be located under 'gui' subfolder"""
+        # this path is hardcoded in ovos_gui.constants and follows XDG spec
+        # we use it to ensure resource availability between containers
+        # it is the only path assured to be accessible both by skills and GUI
+        GUI_CACHE_PATH = get_xdg_cache_save_path('ovos_gui')
+
+        full_icon_path = f"{self.root_dir}/gui/{icon}"
+        shared_path = f"{GUI_CACHE_PATH}/{self.skill_id}/{icon}"
+        shutil.copy(full_icon_path, shared_path)
+
+        self.bus.emit(Message("homescreen.register.app",
+                              {"skill_id": self.skill_id,
+                               "icon": shared_path,
+                               "event": event}))
+
     def register_resting_screen(self):
         """
         Registers resting screen from the resting_screen_handler decorator.
@@ -926,8 +975,6 @@ class OVOSSkill:
                 # backwards compat listener
                 self.add_event(f'{self.skill_id}.idle', handler,
                                speak_errors=False)
-
-                return
 
     def _start_filewatcher(self):
         """
@@ -1464,6 +1511,11 @@ class OVOSSkill:
         self.intent_service.register_adapt_regex(regex, lang=standardize_lang_tag(lang or self.lang))
 
     # event/intent registering internal handlers
+    def handle_homescreen_loaded(self, message: Message):
+        """homescreen loaded, we should re-register any metadata we want to provide"""
+        self._register_skill_json()
+        self._register_app_launcher()
+
     def handle_enable_intent(self, message: Message):
         """
         Listener to enable a registered intent if it belongs to this skill.

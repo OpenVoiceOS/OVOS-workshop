@@ -157,3 +157,21 @@ def fallback_handler(priority: int = 50):
         return func
 
     return real_decorator
+
+
+def homescreen_app(icon: str):
+    """
+    Decorator for adding a method as a homescreen app
+
+    the icon file MUST be located under 'gui' subfolder
+
+    @param icon: icon file to use in app drawer (relative to "gui" folder)
+    """
+
+    def real_decorator(func):
+        # Store the icon inside the function
+        # This will be used later to call register_homescreen_app
+        func.homescreen_icon = icon
+        return func
+
+    return real_decorator

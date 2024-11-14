@@ -13,12 +13,13 @@
 # limitations under the License.
 #
 """Handling of skill data such as intents and regular expressions."""
+import json
 import re
 from collections import namedtuple
 from os import walk
 from os.path import dirname
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 from langcodes import tag_distance
 from ovos_config.config import Configuration
@@ -40,7 +41,8 @@ SkillResourceTypes = namedtuple(
         "template",
         "vocabulary",
         "word",
-        "qml"
+        "qml",
+        "json"
     ]
 )
 
@@ -414,6 +416,14 @@ class QmlFile(ResourceFile):
         return str(self.file_path)
 
 
+class JsonFile(ResourceFile):
+    def load(self) -> Dict[str, str]:
+        if self.file_path is not None:
+            with open(self.file_path) as f:
+                return json.load(f)
+        return {}
+
+
 class DialogFile(ResourceFile):
     """Defines a dialog file, which is used instruct TTS what to speak."""
 
@@ -646,13 +656,18 @@ class SkillResources:
             template=ResourceType("template", ".template", self.language),
             vocabulary=ResourceType("vocab", ".voc", self.language),
             word=ResourceType("word", ".word", self.language),
-            qml=ResourceType("qml", ".qml")
+            qml=ResourceType("qml", ".qml"),
+            json=ResourceType("json", ".json")
         )
         for resource_type in resource_types.values():
             if self.skill_id:
                 resource_type.locate_user_directory(self.skill_id)
             resource_type.locate_base_directory(self.skill_directory)
         return SkillResourceTypes(**resource_types)
+
+    def load_json_file(self, name: str = "skill.json") -> Dict[str, str]:
+        jsonf = JsonFile(self.types.json, name)
+        return jsonf.load()
 
     def load_dialog_file(self, name: str,
                          data: Optional[dict] = None) -> List[str]:
