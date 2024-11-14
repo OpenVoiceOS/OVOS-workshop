@@ -30,7 +30,7 @@ from ovos_config.locations import get_xdg_config_save_path
 from ovos_number_parser import pronounce_number, extract_number
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
-from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
+from ovos_utils.dialog import MustacheDialogRenderer
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.events import get_handler_name, create_wrapper
 from ovos_utils.file_utils import FileWatcher
@@ -1014,11 +1014,9 @@ class OVOSSkill:
         """
         Upload settings to a remote backend if configured.
         """
-        if self.settings_manager and self.config_core.get("skills",
-                                                          {}).get("sync2way"):
+        if self.settings_manager and self.config_core.get("skills", {}).get("sync2way"):
             # upload new settings to backend
-            generate = self.config_core.get("skills", {}).get("autogen_meta",
-                                                              True)
+            generate = self.config_core.get("skills", {}).get("autogen_meta", True)
             # this will check global sync flag
             self.settings_manager.upload(generate)
             if generate:
@@ -1588,7 +1586,7 @@ class OVOSSkill:
         # Convert "MyFancySkill" to "My Fancy Skill" for speaking
         handler_name = camel_case_split(self.name)
         msg_data = {'skill': handler_name}
-        speech = get_dialog('skill.error', self.lang, msg_data)
+        speech = _get_dialog('skill.error', self.lang, msg_data)
         if speak_errors:
             self.speak(speech)
         self.log.exception(error)
@@ -2530,6 +2528,33 @@ class SkillGUI(GUIInterface):
         ui_directories = get_ui_directories(skill.root_dir)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
+
+
+def _get_dialog(phrase: str, lang: str, context: Optional[dict] = None) -> str:
+    """
+    Looks up a resource file for the given phrase in the specified language.
+
+    Meant only for resources bundled with ovos-workshop and shared across skills
+
+    Args:
+        phrase (str): resource phrase to retrieve/translate
+        lang (str): the language to use
+        context (dict): values to be inserted into the string
+
+    Returns:
+        str: a randomized and/or translated version of the phrase
+    """
+    filename = f"{dirname(dirname(__file__))}/res/text/{lang.split('-')[0]}/{phrase}.dialog"
+
+    if not isfile(filename):
+        LOG.debug('Resource file not found: {}'.format(filename))
+        return phrase
+
+    stache = MustacheDialogRenderer()
+    stache.load_template_file('template', filename)
+    if not context:
+        context = {}
+    return stache.render('template', context)
 
 
 def _get_word(lang, connector):
