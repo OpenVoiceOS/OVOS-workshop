@@ -816,7 +816,7 @@ class OVOSSkill:
             self.load_data_files()
             self._register_skill_json()
             self._register_decorated()
-            self._register_app_launcher()
+            #self._register_app_launcher()
             self.register_resting_screen()
 
             self.status.set_started()
@@ -847,12 +847,9 @@ class OVOSSkill:
                 if utts:
                     self.log.info(f"Registering example utterances with homescreen for lang: {lang} - {utts}")
                     self.bus.emit(Message("homescreen.register.examples",
-                                          {"skill_id": self.skill_id, "utterances": utts}))
+                                          {"skill_id": self.skill_id, "utterances": utts, "lang": lang}))
 
     def _register_app_launcher(self):
-        # homescreen might load after this skill and miss the original events
-        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded)
-
         # register app launcher if registered via decorator
         for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
@@ -1130,6 +1127,9 @@ class OVOSSkill:
 
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
                        speak_errors=False)
+
+        # homescreen might load after this skill and miss the original events
+        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded)
 
     def _send_public_api(self, message: Message):
         """
@@ -1514,7 +1514,7 @@ class OVOSSkill:
     def handle_homescreen_loaded(self, message: Message):
         """homescreen loaded, we should re-register any metadata we want to provide"""
         self._register_skill_json()
-        self._register_app_launcher()
+        #self._register_app_launcher()
 
     def handle_enable_intent(self, message: Message):
         """
@@ -1723,7 +1723,7 @@ class OVOSSkill:
                 expect_response, wait, meta={'dialog': key, 'data': data}
             )
         else:
-            self.log.warning(
+            self.log.error(
                 'dialog_render is None, does the locale/dialog folder exist?'
             )
             self.speak(key, expect_response, wait, {})
@@ -2096,7 +2096,8 @@ class OVOSSkill:
         Returns:
               string: list element selected by user, or None
         """
-        assert isinstance(options, list)
+        if not isinstance(options, list):
+            raise ValueError("invalid value for 'options', must be a list of strings")
 
         if not len(options):
             return None

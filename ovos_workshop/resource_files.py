@@ -13,13 +13,14 @@
 # limitations under the License.
 #
 """Handling of skill data such as intents and regular expressions."""
+import abc
 import json
 import re
 from collections import namedtuple
 from os import walk
 from os.path import dirname
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Any
 
 from langcodes import tag_distance
 from ovos_config.config import Configuration
@@ -256,12 +257,18 @@ class ResourceType:
             return
 
         # check for lang resources shipped by the skill
-        possible_directories = (
-            Path(skill_directory, "locale", self.language),
-            Path(skill_directory, resource_subdirectory, self.language),
-            Path(skill_directory, resource_subdirectory),
-            Path(skill_directory, "text", self.language),
-        )
+        if resource_subdirectory:
+            possible_directories = (
+                Path(skill_directory, "locale", self.language),
+                Path(skill_directory, resource_subdirectory, self.language),
+                Path(skill_directory, resource_subdirectory),
+                Path(skill_directory, "text", self.language),
+            )
+        else:
+            possible_directories = (
+                Path(skill_directory, "locale", self.language),
+                Path(skill_directory, "text", self.language),
+            )
         for directory in possible_directories:
             if directory.exists():
                 self.base_directory = directory
@@ -281,7 +288,7 @@ class ResourceType:
         if self.user_directory:
             self.base_directory = self.user_directory
 
-    def _get_resource_subdirectory(self) -> str:
+    def _get_resource_subdirectory(self) -> Optional[str]:
         """Returns the subdirectory for this resource type.
 
         In the older directory schemes, several resource types were stored
@@ -297,10 +304,10 @@ class ResourceType:
             template="dialog",
             vocab="vocab",
             word="dialog",
-            qml="ui"
+            qml="gui"
         )
 
-        return subdirectories[self.resource_type]
+        return subdirectories.get(self.resource_type)
 
 
 class ResourceFile:
@@ -317,7 +324,7 @@ class ResourceFile:
         self.resource_name = resource_name
         self.file_path = self._locate()
 
-    def _locate(self) -> str:
+    def _locate(self) -> Optional[str]:
         """Locates a resource file in the skill's locale directory.
 
         A skill's locale directory can contain a subdirectory structure defined
@@ -347,22 +354,12 @@ class ResourceFile:
                 if file_name in file_names:
                     file_path = Path(directory, file_name)
 
-        # check the core resources
-        if file_path is None and self.resource_type.language:
-            sub_path = Path("text", self.resource_type.language, file_name)
-            file_path = resolve_resource_file(str(sub_path),
-                                              config=Configuration())
-
-        # check non-lang specific core resources
         if file_path is None:
-            file_path = resolve_resource_file(file_name,
-                                              config=Configuration())
-
-        if file_path is None:
-            LOG.error(f"Could not find resource file {file_name}")
+            LOG.debug(f"Could not find resource file {file_name} for lang: {self.resource_type.language}")
 
         return file_path
 
+    @abc.abstractmethod
     def load(self):
         """Override in subclass to define resource type loading behavior."""
         pass
@@ -400,13 +397,6 @@ class QmlFile(ResourceFile):
                 if x.is_file() and file_name == x.name:
                     file_path = Path(self.resource_type.base_directory, file_name)
 
-        # check the core resources
-        if file_path is None:
-            file_path = resolve_resource_file(file_name,
-                                              config=Configuration()) or \
-                        resolve_resource_file(f"ui/{file_name}",
-                                              config=Configuration())
-
         if file_path is None:
             LOG.error(f"Could not find resource file {file_name}")
 
@@ -417,10 +407,13 @@ class QmlFile(ResourceFile):
 
 
 class JsonFile(ResourceFile):
-    def load(self) -> Dict[str, str]:
+    def load(self) -> Dict[str, Any]:
         if self.file_path is not None:
-            with open(self.file_path) as f:
-                return json.load(f)
+            try:
+                with open(self.file_path) as f:
+                    return json.load(f)
+            except Exception as e:
+                LOG.error(f"Failed to load {self.file_path}: {e}")
         return {}
 
 
@@ -657,7 +650,7 @@ class SkillResources:
             vocabulary=ResourceType("vocab", ".voc", self.language),
             word=ResourceType("word", ".word", self.language),
             qml=ResourceType("qml", ".qml"),
-            json=ResourceType("json", ".json")
+            json=ResourceType("json", ".json", self.language)
         )
         for resource_type in resource_types.values():
             if self.skill_id:
