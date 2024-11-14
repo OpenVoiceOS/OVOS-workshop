@@ -257,18 +257,13 @@ class ResourceType:
             return
 
         # check for lang resources shipped by the skill
+        possible_directories = [Path(skill_directory, "locale", self.language)]
         if resource_subdirectory:
-            possible_directories = (
-                Path(skill_directory, "locale", self.language),
+            possible_directories += [
                 Path(skill_directory, resource_subdirectory, self.language),
-                Path(skill_directory, resource_subdirectory),
-                Path(skill_directory, "text", self.language),
-            )
-        else:
-            possible_directories = (
-                Path(skill_directory, "locale", self.language),
-                Path(skill_directory, "text", self.language),
-            )
+                Path(skill_directory, resource_subdirectory)
+            ]
+
         for directory in possible_directories:
             if directory.exists():
                 self.base_directory = directory
@@ -331,7 +326,6 @@ class ResourceFile:
         by the skill author.  Walk the directory and any subdirectories to
         find the resource file.
         """
-        from ovos_utils.file_utils import resolve_resource_file
         file_path = None
         if self.resource_name.endswith(self.resource_type.file_extension):
             file_name = self.resource_name
@@ -376,7 +370,6 @@ class ResourceFile:
 class QmlFile(ResourceFile):
     def _locate(self):
         """ QML files are special because we do not want to walk the directory """
-        from ovos_utils.file_utils import resolve_resource_file
         file_path = None
         if self.resource_name.endswith(self.resource_type.file_extension):
             file_name = self.resource_name
@@ -477,6 +470,7 @@ class VocabularyFile(ResourceFile):
 
 class IntentFile(ResourceFile):
     """Defines an intent file, which skill use to form intents."""
+
     def __init__(self, resource_type, resource_name):
         super().__init__(resource_type, resource_name)
         self.data = None
@@ -679,10 +673,10 @@ class SkillResources:
         dialog_file = DialogFile(self.types.dialog, name)
         dialog_file.data = data
         return dialog_file.load()
-    
+
     def load_intent_file(self, name: str,
-                               data: Optional[dict] = None,
-                               entities: bool = True) -> List[str]:
+                         data: Optional[dict] = None,
+                         entities: bool = True) -> List[str]:
         """
         Loads the contents of an intent file.
 
@@ -866,7 +860,7 @@ class SkillResources:
         )
 
         return skill_regexes
-    
+
     @classmethod
     def get_available_languages(cls, skill_directory: str) -> List[str]:
         """
@@ -893,22 +887,22 @@ class SkillResources:
         if language not in languages:
             raise ValueError(f"Language {language} not available for skill")
 
-        inventory = dict()        
+        inventory = dict()
         for type_ in self.types:
             if specific_type and type_.resource_type != specific_type:
                 continue
 
             inventory[type_.resource_type] = list()
-            
+
             # search all files in the directory and subdirectories and dump its name in a list
             base_dirs = locate_lang_directories(language, self.skill_directory)
             for directory in base_dirs:
                 for file in directory.iterdir():
                     if file.suffix == type_.file_extension:
                         inventory[type_.resource_type].append(file.stem)
-        
+
         inventory["languages"] = languages
-        
+
         return inventory
 
     @staticmethod
