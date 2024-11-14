@@ -864,6 +864,7 @@ class OVOSSkill:
                                              event=event)
                 self.add_event(event, method, speak_errors=False)
 
+    @property
     def __skill_id2name(self) -> str:
         """helper to make a nice string out of a skill_id"""
         return (self.skill_id.split(".")[0].replace("_", " ").
