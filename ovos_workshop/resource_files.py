@@ -59,8 +59,7 @@ def locate_base_directories(skill_directory: str,
     """
     base_dirs = [Path(skill_directory, resource_subdirectory)] if \
         resource_subdirectory else []
-    base_dirs += [Path(skill_directory, "locale"),
-                  Path(skill_directory, "text")]
+    base_dirs += [Path(skill_directory, "locale")]
     candidates = []
     for directory in base_dirs:
         if directory.exists():
@@ -79,8 +78,7 @@ def locate_lang_directories(lang: str, skill_directory: str,
     @param resource_subdirectory: optional extra resource directory to prepend
     @return: list of existing skill resource directories for the given lang
     """
-    base_dirs = [Path(skill_directory, "locale"),
-                 Path(skill_directory, "text")]
+    base_dirs = [Path(skill_directory, "locale")]
     if resource_subdirectory:
         base_dirs.append(Path(skill_directory, resource_subdirectory))
     candidates = []
@@ -101,41 +99,6 @@ def locate_lang_directories(lang: str, skill_directory: str,
     # sort by distance to target lang code
     candidates = sorted(candidates, key=lambda k: k[1])
     return [c[0] for c in candidates]
-
-
-def resolve_resource_file(res_name: str) -> Optional[str]:
-    """Convert a resource into an absolute filename.
-
-    Resource names are in the form: 'filename.ext'
-    or 'path/filename.ext'
-
-    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
-    (defaults to ~/.local/share/mycroft/res_name), and if not found will
-    look at /opt/mycroft/res_name, then finally it will look for res_name
-    in the 'mycroft/res' folder of the source code package.
-
-    Example:
-        With mycroft running as the user 'bob', if you called
-        ``resolve_resource_file('snd/beep.wav')``
-        it would return either:
-        '$XDG_DATA_DIRS/mycroft/beep.wav',
-        '/home/bob/.mycroft/snd/beep.wav' or
-        '/opt/mycroft/snd/beep.wav' or
-        '.../mycroft/res/snd/beep.wav'
-        where the '...' is replaced by the path
-        where the package has been installed.
-
-    Args:
-        res_name (str): a resource path/name
-
-    Returns:
-        (str) path to resource or None if no resource found
-    """
-    log_deprecation(f"This method has moved to `ovos_utils.file_utils`",
-                    "0.1.0")
-    from ovos_utils.file_utils import resolve_resource_file
-    config = Configuration()
-    return resolve_resource_file(res_name, config=config)
 
 
 def find_resource(res_name: str, root_dir: str, res_dirname: str,
