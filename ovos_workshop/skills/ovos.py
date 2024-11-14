@@ -816,7 +816,7 @@ class OVOSSkill:
             self.load_data_files()
             self._register_skill_json()
             self._register_decorated()
-            #self._register_app_launcher()
+            self._register_app_launcher()
             self.register_resting_screen()
 
             self.status.set_started()
@@ -856,8 +856,9 @@ class OVOSSkill:
             if hasattr(method, 'homescreen_icon'):
                 event = f"{self.skill_id}.{method.__name__}.homescreen.app"
                 icon = getattr(method, 'homescreen_icon')
+                LOG.debug(f"homescreen app registered: {event}")
                 self.register_homescreen_app(icon=icon, event=event)
-                self.add_event(event, method)
+                self.add_event(event, method, speak_errors=False)
 
     def _init_settings(self):
         """
@@ -883,7 +884,7 @@ class OVOSSkill:
 
         # starting on ovos-core 0.0.8 a bus event is emitted
         # all settings.json files are monitored for changes in ovos-core
-        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed)
+        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed, speak_errors=False)
 
         if self._monitor_own_settings:
             self._start_filewatcher()
@@ -935,30 +936,27 @@ class OVOSSkill:
         This only allows one screen and if two is registered only one
         will be used.
         """
-        resting_name = None
         for attr_name in get_non_properties(self):
             handler = getattr(self, attr_name)
             if hasattr(handler, 'resting_handler'):
                 resting_name = handler.resting_handler
+                LOG.debug(f"{get_handler_name(handler)} is a resting screen, name: {resting_name}")
 
-                def register(message=None):
-                    self.log.info(f'Registering resting screen {resting_name} for {self.skill_id}.')
+                def register(message=None, name=resting_name):
+                    self.log.info(f'Registering resting screen {name} for {self.skill_id}.')
                     self.bus.emit(Message("homescreen.manager.add",
-                                          {"class": "IdleDisplaySkill",  # TODO - rm in ovos-gui, only for compat
-                                           "name": resting_name,
-                                           "id": self.skill_id}))
+                                          {"name": name, "id": self.skill_id}))
 
                 register()  # initial registering
 
-                self.add_event("homescreen.manager.reload.list", register,
-                               speak_errors=False)
+                self.add_event("homescreen.manager.reload.list", register, speak_errors=False)
 
-                def wrapper(message):
+                def wrapper(message, cb=handler):
                     if message.data["homescreen_id"] == self.skill_id:
-                        handler(message)
+                        LOG.debug(f"triggering resting_handler: {get_handler_name(cb)}")
+                        cb(message)
 
-                self.add_event("homescreen.manager.activate.display", wrapper,
-                               speak_errors=False)
+                self.add_event("homescreen.manager.activate.display", wrapper, speak_errors=False)
 
                 def shutdown_handler(message):
                     if message.data["id"] == self.skill_id:
@@ -966,12 +964,8 @@ class OVOSSkill:
                                               {"id": self.skill_id})
                         self.bus.emit(msg)
 
-                self.add_event("mycroft.skills.shutdown", shutdown_handler,
-                               speak_errors=False)
-
-                # backwards compat listener
-                self.add_event(f'{self.skill_id}.idle', handler,
-                               speak_errors=False)
+                self.add_event("mycroft.skills.shutdown", shutdown_handler, speak_errors=False)
+                break  # TODO - if multiple decorators are used what do? this is not deterministic
 
     def _start_filewatcher(self):
         """
@@ -1102,34 +1096,22 @@ class OVOSSkill:
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
 
-        self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.activate", self.handle_activate,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate,
-                       speak_errors=False)
-        self.add_event("intent.service.skills.deactivated",
-                       self._handle_skill_deactivated, speak_errors=False)
-        self.add_event("intent.service.skills.activated",
-                       self._handle_skill_activated, speak_errors=False)
-        self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent,
-                       speak_errors=False)
-        self.add_event('mycroft.skill.disable_intent',
-                       self.handle_disable_intent, speak_errors=False)
-        self.add_event('mycroft.skill.set_cross_context',
-                       self.handle_set_cross_context, speak_errors=False)
-        self.add_event('mycroft.skill.remove_cross_context',
-                       self.handle_remove_cross_context, speak_errors=False)
-        self.add_event('mycroft.skills.settings.changed',
-                       self.handle_settings_change, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request, speak_errors=False)
+        self.add_event(f"{self.skill_id}.activate", self.handle_activate, speak_errors=False)
+        self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate, speak_errors=False)
+        self.add_event("intent.service.skills.deactivated", self._handle_skill_deactivated, speak_errors=False)
+        self.add_event("intent.service.skills.activated", self._handle_skill_activated, speak_errors=False)
+        self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent, speak_errors=False)
+        self.add_event('mycroft.skill.disable_intent', self.handle_disable_intent, speak_errors=False)
+        self.add_event('mycroft.skill.set_cross_context', self.handle_set_cross_context, speak_errors=False)
+        self.add_event('mycroft.skill.remove_cross_context', self.handle_remove_cross_context, speak_errors=False)
+        self.add_event('mycroft.skills.settings.changed', self.handle_settings_change, speak_errors=False)
 
-        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
-                       speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
-        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded)
+        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
 
     def _send_public_api(self, message: Message):
         """
@@ -1514,7 +1496,7 @@ class OVOSSkill:
     def handle_homescreen_loaded(self, message: Message):
         """homescreen loaded, we should re-register any metadata we want to provide"""
         self._register_skill_json()
-        #self._register_app_launcher()
+        self._register_app_launcher()
 
     def handle_enable_intent(self, message: Message):
         """
@@ -2217,7 +2199,7 @@ class OVOSSkill:
         Create event handler for executing intent or other event.
 
         Args:
-            name (string): IntentParser name
+            name (string): event name
             handler (func): Method to call
             handler_info (string): Base message when reporting skill event
                                    handler status on messagebus.
@@ -2236,7 +2218,8 @@ class OVOSSkill:
                 self._on_event_end(message, handler_info, skill_data,
                                    is_intent=is_intent)
                 return
-            self._on_event_error(error, message, handler_info, skill_data,
+            LOG.error(f"Error handling event '{name}' : {error}")
+            self._on_event_error(str(error), message, handler_info, skill_data,
                                  speak_errors)
 
         def on_start(message):
