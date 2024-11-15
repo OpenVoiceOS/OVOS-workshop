@@ -934,6 +934,7 @@ class OVOSSkill:
         if not os.path.isfile(full_icon_path):
             self.log.error(f"failed to register homescreen app, icon does not exist: {full_icon_path}")
             return
+        os.makedirs(f"{GUI_CACHE_PATH}/{self.skill_id}", exist_ok=True)
         shared_path = f"{GUI_CACHE_PATH}/{self.skill_id}/{icon}"
         shutil.copy(full_icon_path, shared_path)
 
