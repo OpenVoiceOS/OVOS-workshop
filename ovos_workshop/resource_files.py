@@ -68,8 +68,7 @@ def locate_base_directories(skill_directory: str,
 
 
 def locate_lang_directories(lang: str, skill_directory: str,
-                            resource_subdirectory: Optional[str] = None) -> \
-        List[Path]:
+                            resource_subdirectory: Optional[str] = None) -> List[Path]:
     """
     Locate all possible resource directories found in the given skill_directory
     for the specified language
@@ -214,28 +213,17 @@ class ResourceType:
             the skill's directory for the resource type or None if not found
         """
         resource_subdirectory = self._get_resource_subdirectory()
-
         if not self.language:
             self._locate_base_no_lang(skill_directory, resource_subdirectory)
             return
 
         # check for lang resources shipped by the skill
-        possible_directories = [Path(skill_directory, "locale", self.language)]
+        possible_directories = []
         if resource_subdirectory:
-            possible_directories += [
-                Path(skill_directory, resource_subdirectory, self.language),
-                Path(skill_directory, resource_subdirectory)
-            ]
+            possible_directories += self.locate_lang_directories(f"{skill_directory}/{resource_subdirectory}")
+        possible_directories += self.locate_lang_directories(skill_directory)
 
         for directory in possible_directories:
-            if directory.exists():
-                self.base_directory = directory
-                return
-
-        # check for subdialects of same language as a fallback
-        # eg, language is set to en-au but only en-us resources are available
-        similar_dialect_directories = self.locate_lang_directories(skill_directory)
-        for directory in similar_dialect_directories:
             if directory.exists():
                 self.base_directory = directory
                 return
