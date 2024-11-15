@@ -1696,7 +1696,8 @@ class OVOSSkill:
             SessionManager.wait_while_speaking(timeout, sess)
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
-                     expect_response: bool = False, wait: Union[bool, int] = False):
+                     expect_response: bool = False, wait: Union[bool, int] = False,
+                     prerender_transform: Optional[Callable] = None):
         """
         Speak a random sentence from a dialog file.
 
@@ -1713,11 +1714,15 @@ class OVOSSkill:
         """
         if self.dialog_renderer:
             data = data or {}
+            utterance = self.dialog_renderer.render(key, data)
+            if prerender_transform is not None:
+                utterance = prerender_transform(utterance)
             self.speak(
-                self.dialog_renderer.render(key, data),
+                utterance,
                 expect_response, wait, meta={'dialog': key, 'data': data}
             )
         else:
+            # TODO - change this behaviour, speaking the dialog file name isn't that helpful!
             self.log.error(
                 'dialog_render is None, does the locale/dialog folder exist?'
             )
