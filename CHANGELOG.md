@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.4.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.4.1a1) (2024-11-15)
+## [2.4.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.4.2a1) (2024-11-15)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.4.0...2.4.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.4.1...2.4.2a1)
 
 **Merged pull requests:**
 
-- fix:icon file path [\#285](https://github.com/OpenVoiceOS/OVOS-workshop/pull/285) ([JarbasAl](https://github.com/JarbasAl))
+- fix:ensure path exists [\#287](https://github.com/OpenVoiceOS/OVOS-workshop/pull/287) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
