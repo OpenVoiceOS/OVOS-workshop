@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.3.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.3.2a1) (2024-11-12)
+## [2.4.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.4.0a1) (2024-11-15)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.3.1...2.3.2a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.3.2...2.4.0a1)
 
 **Merged pull requests:**
 
-- fix:es\_euphony [\#281](https://github.com/OpenVoiceOS/OVOS-workshop/pull/281) ([JarbasAl](https://github.com/JarbasAl))
+- feat:skilljson and homescreen [\#283](https://github.com/OpenVoiceOS/OVOS-workshop/pull/283) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
