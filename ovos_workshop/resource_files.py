@@ -220,7 +220,8 @@ class ResourceType:
         # check for lang resources shipped by the skill
         possible_directories = []
         if resource_subdirectory:
-            possible_directories += self.locate_lang_directories(f"{skill_directory}/{resource_subdirectory}")
+            subdirectory_path = Path(skill_directory).joinpath(resource_subdirectory)
+            possible_directories += self.locate_lang_directories(str(subdirectory_path))
         possible_directories += self.locate_lang_directories(skill_directory)
 
         for directory in possible_directories:
