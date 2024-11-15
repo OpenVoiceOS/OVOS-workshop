@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -16,8 +17,6 @@ from typing import Dict, Callable, List, Optional, Union
 import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
-from ovos_number_parser import pronounce_number, extract_number
-from ovos_yes_no_solver import YesNoSolver
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
@@ -26,10 +25,12 @@ from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
 from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_cache_save_path
 from ovos_config.locations import get_xdg_config_save_path
+from ovos_number_parser import pronounce_number, extract_number
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
-from ovos_utils.dialog import get_dialog, MustacheDialogRenderer
+from ovos_utils.dialog import MustacheDialogRenderer
 from ovos_utils.events import EventContainer, EventSchedulerInterface
 from ovos_utils.events import get_handler_name, create_wrapper
 from ovos_utils.file_utils import FileWatcher
@@ -38,9 +39,12 @@ from ovos_utils.json_helper import merge_dict
 from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
-from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap, ProcessState
+from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
+from ovos_yes_no_solver import YesNoSolver
+from padacioso import IntentContainer
+
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
@@ -51,7 +55,6 @@ from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.settings import SkillSettingsManager
-from padacioso import IntentContainer
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -811,7 +814,9 @@ class OVOSSkill:
             if self._enable_settings_manager:
                 self._init_settings_manager()
             self.load_data_files()
+            self._register_skill_json()
             self._register_decorated()
+            self._register_app_launcher()
             self.register_resting_screen()
 
             self.status.set_started()
@@ -828,6 +833,42 @@ class OVOSSkill:
             except Exception as e2:
                 LOG.debug(e2)
             raise e
+
+    def _register_skill_json(self, root_directory: Optional[str] = None):
+        """Load skill.json metadata found under locale folder and register with homescreen"""
+        root_directory = root_directory or self.res_dir
+        for lang in self.native_langs:
+            resources = self.load_lang(root_directory, lang)
+            if resources.types.json.base_directory is None:
+                self.log.debug(f'No skill.json loaded for {lang}')
+            else:
+                skill_meta = resources.load_json_file("skill.json")
+                utts = skill_meta.get("examples", [])
+                if utts:
+                    self.log.info(f"Registering example utterances with homescreen for lang: {lang} - {utts}")
+                    self.bus.emit(Message("homescreen.register.examples",
+                                          {"skill_id": self.skill_id, "utterances": utts, "lang": lang}))
+
+    def _register_app_launcher(self):
+        # register app launcher if registered via decorator
+        for attr_name in get_non_properties(self):
+            method = getattr(self, attr_name)
+            if hasattr(method, 'homescreen_app_icon'):
+                name = getattr(method, 'homescreen_app_name')
+                event = f"{self.skill_id}.{name or method.__name__}.homescreen.app"
+                icon = getattr(method, 'homescreen_app_icon')
+                name = name or self.__skill_id2name
+                LOG.debug(f"homescreen app registered: {name} - '{event}'")
+                self.register_homescreen_app(icon=icon,
+                                             name=name or self.skill_id,
+                                             event=event)
+                self.add_event(event, method, speak_errors=False)
+
+    @property
+    def __skill_id2name(self) -> str:
+        """helper to make a nice string out of a skill_id"""
+        return (self.skill_id.split(".")[0].replace("_", " ").
+                replace("-", " ").replace("skill", "").title().strip())
 
     def _init_settings(self):
         """
@@ -853,7 +894,7 @@ class OVOSSkill:
 
         # starting on ovos-core 0.0.8 a bus event is emitted
         # all settings.json files are monitored for changes in ovos-core
-        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed)
+        self.add_event("ovos.skills.settings_changed", self._handle_settings_changed, speak_errors=False)
 
         if self._monitor_own_settings:
             self._start_filewatcher()
@@ -882,6 +923,23 @@ class OVOSSkill:
         """
         self.settings_manager = SkillSettingsManager(self)
 
+    def register_homescreen_app(self, icon: str, name: str, event: str):
+        """the icon file MUST be located under 'gui' subfolder"""
+        # this path is hardcoded in ovos_gui.constants and follows XDG spec
+        # we use it to ensure resource availability between containers
+        # it is the only path assured to be accessible both by skills and GUI
+        GUI_CACHE_PATH = get_xdg_cache_save_path('ovos_gui')
+
+        full_icon_path = f"{self.root_dir}/gui/{icon}"
+        shared_path = f"{GUI_CACHE_PATH}/{self.skill_id}/{icon}"
+        shutil.copy(full_icon_path, shared_path)
+
+        self.bus.emit(Message("homescreen.register.app",
+                              {"skill_id": self.skill_id,
+                               "icon": shared_path,
+                               "name": name,
+                               "event": event}))
+
     def register_resting_screen(self):
         """
         Registers resting screen from the resting_screen_handler decorator.
@@ -889,30 +947,27 @@ class OVOSSkill:
         This only allows one screen and if two is registered only one
         will be used.
         """
-        resting_name = None
         for attr_name in get_non_properties(self):
             handler = getattr(self, attr_name)
             if hasattr(handler, 'resting_handler'):
                 resting_name = handler.resting_handler
+                LOG.debug(f"{get_handler_name(handler)} is a resting screen, name: {resting_name}")
 
-                def register(message=None):
-                    self.log.info(f'Registering resting screen {resting_name} for {self.skill_id}.')
+                def register(message=None, name=resting_name):
+                    self.log.info(f'Registering resting screen {name} for {self.skill_id}.')
                     self.bus.emit(Message("homescreen.manager.add",
-                                          {"class": "IdleDisplaySkill",  # TODO - rm in ovos-gui, only for compat
-                                           "name": resting_name,
-                                           "id": self.skill_id}))
+                                          {"name": name, "id": self.skill_id}))
 
                 register()  # initial registering
 
-                self.add_event("homescreen.manager.reload.list", register,
-                               speak_errors=False)
+                self.add_event("homescreen.manager.reload.list", register, speak_errors=False)
 
-                def wrapper(message):
+                def wrapper(message, cb=handler):
                     if message.data["homescreen_id"] == self.skill_id:
-                        handler(message)
+                        LOG.debug(f"triggering resting_handler: {get_handler_name(cb)}")
+                        cb(message)
 
-                self.add_event("homescreen.manager.activate.display", wrapper,
-                               speak_errors=False)
+                self.add_event("homescreen.manager.activate.display", wrapper, speak_errors=False)
 
                 def shutdown_handler(message):
                     if message.data["id"] == self.skill_id:
@@ -920,14 +975,8 @@ class OVOSSkill:
                                               {"id": self.skill_id})
                         self.bus.emit(msg)
 
-                self.add_event("mycroft.skills.shutdown", shutdown_handler,
-                               speak_errors=False)
-
-                # backwards compat listener
-                self.add_event(f'{self.skill_id}.idle', handler,
-                               speak_errors=False)
-
-                return
+                self.add_event("mycroft.skills.shutdown", shutdown_handler, speak_errors=False)
+                break  # TODO - if multiple decorators are used what do? this is not deterministic
 
     def _start_filewatcher(self):
         """
@@ -976,11 +1025,9 @@ class OVOSSkill:
         """
         Upload settings to a remote backend if configured.
         """
-        if self.settings_manager and self.config_core.get("skills",
-                                                          {}).get("sync2way"):
+        if self.settings_manager and self.config_core.get("skills", {}).get("sync2way"):
             # upload new settings to backend
-            generate = self.config_core.get("skills", {}).get("autogen_meta",
-                                                              True)
+            generate = self.config_core.get("skills", {}).get("autogen_meta", True)
             # this will check global sync flag
             self.settings_manager.upload(generate)
             if generate:
@@ -1058,31 +1105,22 @@ class OVOSSkill:
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
 
-        self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.activate", self.handle_activate,
-                       speak_errors=False)
-        self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate,
-                       speak_errors=False)
-        self.add_event("intent.service.skills.deactivated",
-                       self._handle_skill_deactivated, speak_errors=False)
-        self.add_event("intent.service.skills.activated",
-                       self._handle_skill_activated, speak_errors=False)
-        self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent,
-                       speak_errors=False)
-        self.add_event('mycroft.skill.disable_intent',
-                       self.handle_disable_intent, speak_errors=False)
-        self.add_event('mycroft.skill.set_cross_context',
-                       self.handle_set_cross_context, speak_errors=False)
-        self.add_event('mycroft.skill.remove_cross_context',
-                       self.handle_remove_cross_context, speak_errors=False)
-        self.add_event('mycroft.skills.settings.changed',
-                       self.handle_settings_change, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.ping", self._handle_converse_ack, speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.request", self._handle_converse_request, speak_errors=False)
+        self.add_event(f"{self.skill_id}.activate", self.handle_activate, speak_errors=False)
+        self.add_event(f"{self.skill_id}.deactivate", self.handle_deactivate, speak_errors=False)
+        self.add_event("intent.service.skills.deactivated", self._handle_skill_deactivated, speak_errors=False)
+        self.add_event("intent.service.skills.activated", self._handle_skill_activated, speak_errors=False)
+        self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent, speak_errors=False)
+        self.add_event('mycroft.skill.disable_intent', self.handle_disable_intent, speak_errors=False)
+        self.add_event('mycroft.skill.set_cross_context', self.handle_set_cross_context, speak_errors=False)
+        self.add_event('mycroft.skill.remove_cross_context', self.handle_remove_cross_context, speak_errors=False)
+        self.add_event('mycroft.skills.settings.changed', self.handle_settings_change, speak_errors=False)
 
-        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response,
-                       speak_errors=False)
+        self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
+
+        # homescreen might load after this skill and miss the original events
+        self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
 
     def _send_public_api(self, message: Message):
         """
@@ -1464,6 +1502,11 @@ class OVOSSkill:
         self.intent_service.register_adapt_regex(regex, lang=standardize_lang_tag(lang or self.lang))
 
     # event/intent registering internal handlers
+    def handle_homescreen_loaded(self, message: Message):
+        """homescreen loaded, we should re-register any metadata we want to provide"""
+        self._register_skill_json()
+        self._register_app_launcher()
+
     def handle_enable_intent(self, message: Message):
         """
         Listener to enable a registered intent if it belongs to this skill.
@@ -1554,7 +1597,7 @@ class OVOSSkill:
         # Convert "MyFancySkill" to "My Fancy Skill" for speaking
         handler_name = camel_case_split(self.name)
         msg_data = {'skill': handler_name}
-        speech = get_dialog('skill.error', self.lang, msg_data)
+        speech = _get_dialog('skill.error', self.lang, msg_data)
         if speak_errors:
             self.speak(speech)
         self.log.exception(error)
@@ -1671,7 +1714,7 @@ class OVOSSkill:
                 expect_response, wait, meta={'dialog': key, 'data': data}
             )
         else:
-            self.log.warning(
+            self.log.error(
                 'dialog_render is None, does the locale/dialog folder exist?'
             )
             self.speak(key, expect_response, wait, {})
@@ -2044,7 +2087,8 @@ class OVOSSkill:
         Returns:
               string: list element selected by user, or None
         """
-        assert isinstance(options, list)
+        if not isinstance(options, list):
+            raise ValueError("invalid value for 'options', must be a list of strings")
 
         if not len(options):
             return None
@@ -2164,7 +2208,7 @@ class OVOSSkill:
         Create event handler for executing intent or other event.
 
         Args:
-            name (string): IntentParser name
+            name (string): event name
             handler (func): Method to call
             handler_info (string): Base message when reporting skill event
                                    handler status on messagebus.
@@ -2183,7 +2227,8 @@ class OVOSSkill:
                 self._on_event_end(message, handler_info, skill_data,
                                    is_intent=is_intent)
                 return
-            self._on_event_error(error, message, handler_info, skill_data,
+            LOG.error(f"Error handling event '{name}' : {error}")
+            self._on_event_error(str(error), message, handler_info, skill_data,
                                  speak_errors)
 
         def on_start(message):
@@ -2494,6 +2539,33 @@ class SkillGUI(GUIInterface):
         ui_directories = get_ui_directories(skill.root_dir)
         GUIInterface.__init__(self, skill_id=skill_id, bus=bus, config=config,
                               ui_directories=ui_directories)
+
+
+def _get_dialog(phrase: str, lang: str, context: Optional[dict] = None) -> str:
+    """
+    Looks up a resource file for the given phrase in the specified language.
+
+    Meant only for resources bundled with ovos-workshop and shared across skills
+
+    Args:
+        phrase (str): resource phrase to retrieve/translate
+        lang (str): the language to use
+        context (dict): values to be inserted into the string
+
+    Returns:
+        str: a randomized and/or translated version of the phrase
+    """
+    filename = f"{dirname(dirname(__file__))}/res/text/{lang.split('-')[0]}/{phrase}.dialog"
+
+    if not isfile(filename):
+        LOG.debug('Resource file not found: {}'.format(filename))
+        return phrase
+
+    stache = MustacheDialogRenderer()
+    stache.load_template_file('template', filename)
+    if not context:
+        context = {}
+    return stache.render('template', context)
 
 
 def _get_word(lang, connector):
