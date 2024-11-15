@@ -116,7 +116,7 @@ class SkillSettingsManager:
     @requires_backend
     def upload(self, generate: bool = False):
         if not is_paired():
-            LOG.error("Device needs to be paired to upload settings")
+            LOG.debug("Device needs to be paired to upload settings")
             return
         self.remote_settings.settings = dict(self.skill.settings)
         if generate:
@@ -126,7 +126,7 @@ class SkillSettingsManager:
     @requires_backend
     def upload_meta(self, generate: bool = False):
         if not is_paired():
-            LOG.error("Device needs to be paired to upload settingsmeta")
+            LOG.debug("Device needs to be paired to upload settingsmeta")
             return
         if generate:
             self.remote_settings.settings = dict(self.skill.settings)
@@ -136,7 +136,7 @@ class SkillSettingsManager:
     @requires_backend
     def download(self):
         if not is_paired():
-            LOG.error("Device needs to be paired to download remote settings")
+            LOG.debug("Device needs to be paired to download remote settings")
             return
         self.remote_settings.download()
         # we do not update skill object settings directly
