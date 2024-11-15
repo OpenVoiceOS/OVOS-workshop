@@ -930,7 +930,10 @@ class OVOSSkill:
         # it is the only path assured to be accessible both by skills and GUI
         GUI_CACHE_PATH = get_xdg_cache_save_path('ovos_gui')
 
-        full_icon_path = f"{self.root_dir}/gui/{icon}"
+        full_icon_path = f"{self.res_dir}/gui/{icon}"
+        if not os.path.isfile(full_icon_path):
+            self.log.error(f"failed to register homescreen app, icon does not exist: {full_icon_path}")
+            return
         shared_path = f"{GUI_CACHE_PATH}/{self.skill_id}/{icon}"
         shutil.copy(full_icon_path, shared_path)
 

@@ -1,12 +1,12 @@
 # Changelog
 
-## [2.4.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.4.0a1) (2024-11-15)
+## [2.4.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/2.4.1a1) (2024-11-15)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.3.2...2.4.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.4.0...2.4.1a1)
 
 **Merged pull requests:**
 
-- feat:skilljson and homescreen [\#283](https://github.com/OpenVoiceOS/OVOS-workshop/pull/283) ([JarbasAl](https://github.com/JarbasAl))
+- fix:icon file path [\#285](https://github.com/OpenVoiceOS/OVOS-workshop/pull/285) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
