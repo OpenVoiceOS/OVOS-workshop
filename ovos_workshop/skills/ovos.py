@@ -1697,7 +1697,7 @@ class OVOSSkill:
 
     def speak_dialog(self, key: str, data: Optional[dict] = None,
                      expect_response: bool = False, wait: Union[bool, int] = False,
-                     prerender_transform: Optional[Callable] = None):
+                     render_callback: Optional[Callable[[str, str], str]] = None):
         """
         Speak a random sentence from a dialog file.
 
@@ -1711,12 +1711,25 @@ class OVOSSkill:
             wait (Union[bool, int]): set to True to block while the text
                                      is being spoken for 15 seconds. Alternatively, set
                                      to an integer to specify a timeout in seconds.
+            render_callback (Optional[Callable[[str, str], str]]): A callable 
+                                                           function that 
+                                                           transforms the 
+                                                           utterance before 
+                                                           it is spoken. 
+                                                           The function 
+                                                           should accept 
+                                                           the utterance 
+                                                           string and the 
+                                                           language as input 
+                                                           and return the 
+                                                           modified string. 
+                                                           Defaults to None.
         """
         if self.dialog_renderer:
             data = data or {}
             utterance = self.dialog_renderer.render(key, data)
-            if prerender_transform is not None:
-                utterance = prerender_transform(utterance)
+            if render_callback is not None:
+                utterance = render_callback(utterance, self.lang)
             self.speak(
                 utterance,
                 expect_response, wait, meta={'dialog': key, 'data': data}
