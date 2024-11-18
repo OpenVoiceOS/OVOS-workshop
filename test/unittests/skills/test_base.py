@@ -167,28 +167,18 @@ class TestOVOSSkill(unittest.TestCase):
         pass
 
     def test_handle_settings_file_change(self):
-        real_upload = self.skill._upload_settings
-        self.skill._upload_settings = Mock()
         settings_file = self.skill.settings.path
 
-        # Handle change with no callback
-        self.skill._handle_settings_file_change(settings_file)
-        self.skill._upload_settings.assert_called_once()
-
         # Handle change with callback
-        self.skill._upload_settings.reset_mock()
         self.skill.settings_change_callback = Mock()
         self.skill._handle_settings_file_change(settings_file)
-        self.skill._upload_settings.assert_called_once()
         self.skill.settings_change_callback.assert_called_once()
 
         # Handle non-settings file change
         self.skill._handle_settings_file_change(join(dirname(settings_file),
                                                      "test.file"))
-        self.skill._upload_settings.assert_called_once()
         self.skill.settings_change_callback.assert_called_once()
 
-        self.skill._upload_settings = real_upload
 
     def test_load_lang(self):
         # TODO

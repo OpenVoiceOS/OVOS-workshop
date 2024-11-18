@@ -19,33 +19,9 @@ class Application(OVOSAbstractApplication):
 class TestApp(unittest.TestCase):
     bus = FakeBus()
 
-    test_path = join(dirname(__file__), "test_config.json")
-    settings = {'test': True,
-                'updated': False}
-    settings_obj = JsonStorage(test_path, True)
-    settings_obj.update(settings)
-
     gui = GUIInterface("TestApplication")
 
-    app = Application(skill_id="TestApplication", settings=settings_obj,
-                      gui=gui, bus=bus)
-
-    def test_settings_manager_init(self):
-        self.assertIsNone(self.app.settings_manager)
-
-    def test_settings_init(self):
-        self.assertNotEqual(self.app.settings, self.settings_obj)
-        self.assertFalse(self.app.settings['__mycroft_skill_firstrun'])
-        self.assertTrue(self.app.settings['test'])
-        self.assertFalse(self.app.settings['updated'])
-        self.settings_obj['updated'] = True
-        self.assertFalse(self.app.settings['updated'])
-
-    def test_settings_init_invalid_arg(self):
-        app = Application(skill_id="TestApplication", bus=self.bus,
-                          settings=self.settings)
-        self.assertNotEqual(app.settings, self.settings)
-        self.assertFalse(app.settings['__mycroft_skill_firstrun'])
+    app = Application(skill_id="TestApplication", gui=gui, bus=bus)
 
     def test_gui_init(self):
         self.assertEqual(self.app.gui, self.gui)
