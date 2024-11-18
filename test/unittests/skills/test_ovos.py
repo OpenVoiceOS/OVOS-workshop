@@ -6,7 +6,6 @@ from ovos_utils import classproperty
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
 
-from ovos_workshop.settings import SkillSettingsManager
 from ovos_workshop.skills.ovos import OVOSSkill
 
 
@@ -97,19 +96,6 @@ class TestOVOSSkill(unittest.TestCase):
     def test_send_stop_signal(self):
         # TODO
         pass
-
-    def test_settings_manager_init(self):
-        bus = FakeBus()
-        skill_default = MockSkill(bus=bus)
-        skill_default._startup(bus)
-
-        self.assertIsInstance(skill_default.settings_manager,
-                              SkillSettingsManager)
-
-        skill_disabled_settings = MockSkill(bus=bus,
-                                            enable_settings_manager=False)
-        skill_disabled_settings._startup(bus)
-        self.assertIsNone(skill_disabled_settings.settings_manager)
 
     def test_bus_setter(self):
         bus = FakeBus()

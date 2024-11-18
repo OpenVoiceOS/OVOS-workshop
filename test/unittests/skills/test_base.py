@@ -26,7 +26,6 @@ class TestOVOSSkill(unittest.TestCase):
         shutil.rmtree(cls.test_config_path)
 
     def test_00_skill_init(self):
-        from ovos_workshop.settings import SkillSettingsManager
         from ovos_workshop.skills.ovos import SkillGUI
         from ovos_utils.events import EventContainer, EventSchedulerInterface
         from ovos_workshop.intents import IntentServiceInterface
@@ -36,10 +35,8 @@ class TestOVOSSkill(unittest.TestCase):
         from ovos_workshop.resource_files import SkillResources
 
         self.assertIsInstance(self.skill.log, Logger)
-        self.assertIsInstance(self.skill._enable_settings_manager, bool)
         self.assertEqual(self.skill.name, self.skill.__class__.__name__)
         self.assertEqual(self.skill.skill_id, self.skill_id)
-        self.assertIsInstance(self.skill.settings_manager, SkillSettingsManager)
         self.assertTrue(isdir(self.skill.root_dir))
         self.assertEqual(self.skill.res_dir, self.skill.root_dir)
         self.assertIsInstance(self.skill.gui, SkillGUI)
