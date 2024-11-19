@@ -1842,7 +1842,7 @@ class OVOSSkill:
                 return dialog
 
         def is_cancel(utterance):
-            return self.voc_match(utterance, 'cancel')
+            return self.voc_match(utterance, 'cancel', lang=session.lang)
 
         def validator_default(utterance):
             # accept anything except 'cancel'
@@ -2527,10 +2527,11 @@ def _get_dialog(phrase: str, lang: str, context: Optional[dict] = None) -> str:
     Returns:
         str: a randomized and/or translated version of the phrase
     """
-    filename = f"{dirname(dirname(__file__))}/res/text/{lang.split('-')[0]}/{phrase}.dialog"
+    lang = standardize_lang_tag(lang).split('-')[0]
+    filename = f"{dirname(dirname(__file__))}/locale/{lang}/{phrase}.dialog"
 
     if not isfile(filename):
-        LOG.debug('Resource file not found: {}'.format(filename))
+        LOG.debug(f'Resource file not found: {filename}')
         return phrase
 
     stache = MustacheDialogRenderer()
