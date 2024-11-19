@@ -2122,13 +2122,13 @@ class OVOSSkill:
         requested.
 
         The method first checks in the current Skill's .voc files and secondly
-        in the "res/text" folder of mycroft-core. The result is cached to
+        in the "locale" folder of ovos-workshop. The result is cached to
         avoid hitting the disk each time the method is called.
 
         Args:
             utt (str): Utterance to be tested
-            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
-                                'res/text/en-us/yes.voc')
+            voc_filename (str): Name of vocabulary file (e.g. 'cancel' for
+                                'locale/en-us/cancel.voc')
             lang (str): Language code, defaults to self.lang
             exact (bool): Whether the vocab must exactly match the utterance
 
@@ -2551,7 +2551,8 @@ def _get_word(lang, connector):
     Returns:
         str: translated version of resource name
     """
-    res_file = f"{dirname(dirname(__file__))}/res/text/{lang}" \
+    lang = standardize_lang_tag(lang).split("-")[0]
+    res_file = f"{dirname(dirname(__file__))}/locale/{lang}" \
                f"/word_connectors.json"
     if not os.path.isfile(res_file):
         LOG.warning(f"untranslated file: {res_file}")

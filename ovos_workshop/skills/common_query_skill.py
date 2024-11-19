@@ -69,7 +69,7 @@ class CommonQuerySkill(OVOSSkill):
 
         lang = self.lang.split("-")[0]
         noise_words_filepath = f"text/{lang}/noise_words.list"
-        default_res = f"{dirname(dirname(__file__))}/res/text/{lang}" \
+        default_res = f"{dirname(dirname(__file__))}/locale/{lang}" \
                       f"/noise_words.list"
         noise_words_filename = \
             resolve_resource_file(noise_words_filepath,
