@@ -1,16 +1,12 @@
 # Changelog
 
-## [3.0.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.0.0a1) (2024-11-19)
+## [3.0.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.0.1a1) (2024-11-19)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/2.4.4...3.0.0a1)
-
-**Breaking changes:**
-
-- deprecate!:backend client [\#295](https://github.com/OpenVoiceOS/OVOS-workshop/pull/295) ([JarbasAl](https://github.com/JarbasAl))
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.0.0...3.0.1a1)
 
 **Merged pull requests:**
 
-- Create skill.error.dialog nl-nl [\#294](https://github.com/OpenVoiceOS/OVOS-workshop/pull/294) ([timonvanhasselt](https://github.com/timonvanhasselt))
+- fix:bundled\_resources [\#297](https://github.com/OpenVoiceOS/OVOS-workshop/pull/297) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
