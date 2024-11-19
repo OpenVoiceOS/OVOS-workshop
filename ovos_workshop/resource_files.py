@@ -23,12 +23,11 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Any
 
 from langcodes import tag_distance
-from ovos_config.config import Configuration
 from ovos_config.locations import get_xdg_data_save_path
 from ovos_utils import flatten_list
 from ovos_utils.bracket_expansion import expand_options
 from ovos_utils.dialog import MustacheDialogRenderer, load_dialogs
-from ovos_utils.log import LOG, log_deprecation
+from ovos_utils.log import LOG
 
 SkillResourceTypes = namedtuple(
     "SkillResourceTypes",
@@ -164,6 +163,14 @@ class ResourceType:
         self.language = language
         self.base_directory = None
         self.user_directory = None
+        self.workshop_directory = None
+
+    def locate_workshop_directory(self):
+        if not self.language:
+            return
+        for path in locate_lang_directories(self.language, dirname(__file__)):
+            self.workshop_directory = path
+            return
 
     def locate_lang_directories(self, skill_directory):
         if not self.language:
@@ -296,6 +303,13 @@ class ResourceFile:
         # check the skill resources
         if file_path is None:
             walk_directory = str(self.resource_type.base_directory)
+            for directory, _, file_names in walk(walk_directory):
+                if file_name in file_names:
+                    file_path = Path(directory, file_name)
+
+        # check ovos-workshop resources
+        if file_path is None and self.resource_type.workshop_directory is not None:
+            walk_directory = str(self.resource_type.workshop_directory)
             for directory, _, file_names in walk(walk_directory):
                 if file_name in file_names:
                     file_path = Path(directory, file_name)
@@ -602,6 +616,7 @@ class SkillResources:
             if self.skill_id:
                 resource_type.locate_user_directory(self.skill_id)
             resource_type.locate_base_directory(self.skill_directory)
+            resource_type.locate_workshop_directory()
         return SkillResourceTypes(**resource_types)
 
     def load_json_file(self, name: str = "skill.json") -> Dict[str, str]:
@@ -882,11 +897,7 @@ class SkillResources:
 
 class CoreResources(SkillResources):
     def __init__(self, language):
-        try:
-            from mycroft import MYCROFT_ROOT_PATH
-            directory = f"{MYCROFT_ROOT_PATH}/mycroft/res"
-        except ImportError:
-            directory = f"{dirname(__file__)}/res"
+        directory = f"{dirname(__file__)}/locale"
         super().__init__(directory, language)
 
 
