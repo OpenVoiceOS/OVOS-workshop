@@ -308,7 +308,7 @@ class ResourceFile:
                     file_path = Path(directory, file_name)
 
         # check ovos-workshop resources
-        if file_path is None:
+        if file_path is None and self.resource_type.workshop_directory is not None:
             walk_directory = str(self.resource_type.workshop_directory)
             for directory, _, file_names in walk(walk_directory):
                 if file_name in file_names:
