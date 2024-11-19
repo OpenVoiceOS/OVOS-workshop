@@ -1842,7 +1842,7 @@ class OVOSSkill:
                 return dialog
 
         def is_cancel(utterance):
-            return self.voc_match(utterance, 'cancel')
+            return self.voc_match(utterance, 'cancel', lang=session.lang)
 
         def validator_default(utterance):
             # accept anything except 'cancel'
@@ -2122,13 +2122,13 @@ class OVOSSkill:
         requested.
 
         The method first checks in the current Skill's .voc files and secondly
-        in the "res/text" folder of mycroft-core. The result is cached to
+        in the "locale" folder of ovos-workshop. The result is cached to
         avoid hitting the disk each time the method is called.
 
         Args:
             utt (str): Utterance to be tested
-            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
-                                'res/text/en-us/yes.voc')
+            voc_filename (str): Name of vocabulary file (e.g. 'cancel' for
+                                'locale/en-us/cancel.voc')
             lang (str): Language code, defaults to self.lang
             exact (bool): Whether the vocab must exactly match the utterance
 
@@ -2527,10 +2527,11 @@ def _get_dialog(phrase: str, lang: str, context: Optional[dict] = None) -> str:
     Returns:
         str: a randomized and/or translated version of the phrase
     """
-    filename = f"{dirname(dirname(__file__))}/res/text/{lang.split('-')[0]}/{phrase}.dialog"
+    lang = standardize_lang_tag(lang).split('-')[0]
+    filename = f"{dirname(dirname(__file__))}/locale/{lang}/{phrase}.dialog"
 
     if not isfile(filename):
-        LOG.debug('Resource file not found: {}'.format(filename))
+        LOG.debug(f'Resource file not found: {filename}')
         return phrase
 
     stache = MustacheDialogRenderer()
@@ -2550,7 +2551,8 @@ def _get_word(lang, connector):
     Returns:
         str: translated version of resource name
     """
-    res_file = f"{dirname(dirname(__file__))}/res/text/{lang}" \
+    lang = standardize_lang_tag(lang).split("-")[0]
+    res_file = f"{dirname(dirname(__file__))}/locale/{lang}" \
                f"/word_connectors.json"
     if not os.path.isfile(res_file):
         LOG.warning(f"untranslated file: {res_file}")
