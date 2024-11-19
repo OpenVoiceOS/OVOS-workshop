@@ -13,9 +13,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 class OVOSAbstractApplication(OVOSSkill):
     def __init__(self, skill_id: str, bus: Optional[MessageBusClient] = None,
                  resources_dir: Optional[str] = None,
-                 lang=None, settings: Optional[dict] = None,
-                 gui: Optional[GUIInterface] = None,
-                 enable_settings_manager: bool = False, **kwargs):
+                 gui: Optional[GUIInterface] = None, **kwargs):
         """
         Create an Application. An application is essentially a skill, but
         designed such that it may be run without an intent service.
@@ -23,11 +21,7 @@ class OVOSAbstractApplication(OVOSSkill):
         @param bus: MessageBusClient to bind to application
         @param resources_dir: optional root resource directory (else defaults to
             application `root_dir`
-        @param lang: DEPRECATED language of the application
-        @param settings: DEPRECATED settings object
         @param gui: GUIInterface to bind (if `None`, one is created)
-        @param enable_settings_manager: if True, enables a SettingsManager for
-            this application to manage default settings and backend sync
         """
         self._dedicated_bus = False
         if bus:
@@ -38,15 +32,7 @@ class OVOSAbstractApplication(OVOSSkill):
 
         super().__init__(skill_id=skill_id, bus=bus, gui=gui,
                          resources_dir=resources_dir,
-                         enable_settings_manager=enable_settings_manager,
                          **kwargs)
-
-        if settings:
-            log_deprecation(f"Settings should be set in {self.settings_path}. "
-                            f"Passing `settings` to __init__ is not supported.",
-                            "0.1.0")
-            self.settings.merge(settings)
-
     @property
     def settings_path(self) -> str:
         """

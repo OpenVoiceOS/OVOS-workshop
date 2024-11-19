@@ -54,7 +54,6 @@ from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, \
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
-from ovos_workshop.settings import SkillSettingsManager
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -92,7 +91,6 @@ class OVOSSkill:
                  resources_dir: Optional[str] = None,
                  settings: Optional[JsonStorage] = None,
                  gui: Optional[GUIInterface] = None,
-                 enable_settings_manager: bool = True,
                  skill_id: str = ""):
         """
         Create an OVOSSkill object.
@@ -103,18 +101,12 @@ class OVOSSkill:
         @param settings: Optional settings object, else defined in skill config
             path
         @param gui: Optional SkillGUI, else one is initialized
-        @param enable_settings_manager: if True, enables a SettingsManager for
-            this skill to manage default settings and backend sync
         @param skill_id: Unique ID for this skill
         """
-
         self.log = LOG  # a dedicated namespace will be assigned in _startup
-        self._enable_settings_manager = enable_settings_manager
         self._init_event = Event()
         self.name = name or self.__class__.__name__
         self.skill_id = skill_id  # set by SkillLoader, guaranteed unique
-        self._settings_meta = None  # DEPRECATED - backwards compat only
-        self.settings_manager = None
         self.private_settings = None
 
         # Get directory of skill source (__init__.py)
@@ -811,8 +803,6 @@ class OVOSSkill:
             self.status.set_alive()
             if not self.gui:
                 self._init_skill_gui()
-            if self._enable_settings_manager:
-                self._init_settings_manager()
             self.load_data_files()
             self._register_skill_json()
             self._register_decorated()
@@ -917,12 +907,6 @@ class OVOSSkill:
         self.gui = SkillGUI(self)
         self.gui.setup_default_handlers()
 
-    def _init_settings_manager(self):
-        """
-        Set up the SkillSettingsManager for this skill.
-        """
-        self.settings_manager = SkillSettingsManager(self)
-
     def register_homescreen_app(self, icon: str, name: str, event: str):
         """the icon file MUST be located under 'gui' subfolder"""
         # this path is hardcoded in ovos_gui.constants and follows XDG spec
@@ -1024,19 +1008,6 @@ class OVOSSkill:
             if hasattr(method, 'converse_intents'):
                 for intent_file in getattr(method, 'converse_intents'):
                     self.register_converse_intent(intent_file, method)
-
-    def _upload_settings(self):
-        """
-        Upload settings to a remote backend if configured.
-        """
-        if self.settings_manager and self.config_core.get("skills", {}).get("sync2way"):
-            # upload new settings to backend
-            generate = self.config_core.get("skills", {}).get("autogen_meta", True)
-            # this will check global sync flag
-            self.settings_manager.upload(generate)
-            if generate:
-                # update settingsmeta file on disk
-                self.settings_manager.save_meta()
 
     def bind(self, bus: MessageBusClient):
         """
@@ -1154,7 +1125,6 @@ class OVOSSkill:
             except Exception as e:
                 self.log.exception("settings change callback failed, "
                                    f"file changes not handled!: {e}")
-        self._upload_settings()
 
     def handle_settings_change(self, message: Message):
         """
@@ -1334,8 +1304,6 @@ class OVOSSkill:
             # Store settings
             if self.settings != self._initial_settings:
                 self.settings.store()
-            if self._settings_meta:
-                self._settings_meta.stop()
             if self._settings_watchdog:
                 self._settings_watchdog.shutdown()
         except Exception as e:
