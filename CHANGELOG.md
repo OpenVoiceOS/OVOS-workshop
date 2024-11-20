@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.0.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.0.1a1) (2024-11-19)
+## [3.1.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.0a1) (2024-11-20)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.0.0...3.0.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.0.1...3.1.0a1)
 
 **Merged pull requests:**
 
-- fix:bundled\_resources [\#297](https://github.com/OpenVoiceOS/OVOS-workshop/pull/297) ([JarbasAl](https://github.com/JarbasAl))
+- feat:utterance\_modifiers [\#291](https://github.com/OpenVoiceOS/OVOS-workshop/pull/291) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
