@@ -5,7 +5,7 @@ from typing import Optional, Type
 
 from ovos_bus_client.session import SessionManager
 from ovos_utils import create_killable_daemon
-from ovos_utils.fakebus import Message
+from ovos_bus_client.message import Message
 from ovos_utils.log import LOG
 
 
