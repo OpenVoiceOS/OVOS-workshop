@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.active import ActiveSkill
 

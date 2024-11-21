@@ -497,7 +497,7 @@ class OVOSSkill:
         @param value: new MessageBusClient object
         """
         from ovos_bus_client import MessageBusClient
-        from ovos_utils.messagebus import FakeBus
+        from ovos_utils.fakebus import FakeBus
         if isinstance(value, (MessageBusClient, FakeBus)):
             self._bus = value
         else:

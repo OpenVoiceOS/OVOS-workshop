@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from ovos_bus_client import Message
 
 from ovos_workshop.skills.ovos import OVOSSkill
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 from os.path import dirname
 from ovos_workshop.skill_launcher import SkillLoader
 

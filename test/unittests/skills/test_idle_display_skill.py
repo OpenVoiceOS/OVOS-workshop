@@ -1,6 +1,6 @@
 import unittest
 
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.idle_display_skill import IdleDisplaySkill
 
