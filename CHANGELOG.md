@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.1.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.0a1) (2024-11-20)
+## [3.1.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.1a1) (2024-11-21)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.0.1...3.1.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.0...3.1.1a1)
 
 **Merged pull requests:**
 
-- feat:utterance\_modifiers [\#291](https://github.com/OpenVoiceOS/OVOS-workshop/pull/291) ([JarbasAl](https://github.com/JarbasAl))
+- fix: update deprecated imports from ovos-utils [\#300](https://github.com/OpenVoiceOS/OVOS-workshop/pull/300) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

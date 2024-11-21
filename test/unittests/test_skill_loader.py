@@ -19,7 +19,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from ovos_utils import classproperty
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_workshop.skill_launcher import SkillLoader
 
