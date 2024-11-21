@@ -5,7 +5,7 @@ import sys
 from os import environ
 from os.path import basename, join, dirname, isdir
 
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 
 
 class TestSkillLauncherFunctions(unittest.TestCase):

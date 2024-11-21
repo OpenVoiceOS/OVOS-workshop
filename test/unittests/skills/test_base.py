@@ -10,7 +10,7 @@ from unittest.mock import Mock
 from os.path import join, dirname, isdir
 from ovos_workshop.skills.ovos import OVOSSkill
 
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 
 
 class TestOVOSSkill(unittest.TestCase):

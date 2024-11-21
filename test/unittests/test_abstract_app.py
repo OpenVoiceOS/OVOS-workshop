@@ -1,11 +1,9 @@
 import unittest
 from os import remove
-from os.path import join, dirname
 from unittest.mock import Mock, patch
 
-from json_database import JsonStorage
 from ovos_bus_client.apis.gui import GUIInterface
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 
 from ovos_workshop.app import OVOSAbstractApplication
 from ovos_workshop.skills.ovos import OVOSSkill

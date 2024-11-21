@@ -1,7 +1,7 @@
 import unittest
 
 from ovos_utils.process_utils import RuntimeRequirements
-from ovos_utils.messagebus import FakeBus
+from ovos_utils.fakebus import FakeBus
 from ovos_utils import classproperty
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.resource_files import SkillResources
