@@ -1553,15 +1553,19 @@ class OVOSSkill:
         Store settings (if changed) and indicate that the skill handler has
         completed.
         """
-        if self.settings != self._initial_settings:
-            self.settings.store()
-            self._initial_settings = copy(self.settings)
         if handler_info:
             msg_type = handler_info + '.complete'
             message.context["skill_id"] = self.skill_id
             self.bus.emit(message.forward(msg_type, skill_data))
         if is_intent:
             self.bus.emit(message.forward("ovos.utterance.handled", skill_data))
+
+        try:
+            if self.settings != self._initial_settings:
+                self.settings.store()
+                self._initial_settings = copy(self.settings)
+        except Exception as e:
+            LOG.error(f"Failed to update settings.json : {e}")
 
     def _on_event_error(self, error: str, message: Message, handler_info: str,
                         skill_data: dict, speak_errors: bool):
