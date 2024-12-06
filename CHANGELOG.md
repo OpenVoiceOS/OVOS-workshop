@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.2a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.2a2) (2024-12-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.2a1...3.1.2a2)
+
+**Merged pull requests:**
+
+- requirements: ovos-utils version [\#304](https://github.com/OpenVoiceOS/OVOS-workshop/pull/304) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [3.1.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.2a1) (2024-11-25)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.1...3.1.2a1)
