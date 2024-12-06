@@ -25,7 +25,7 @@ from typing import List, Optional, Tuple, Dict, Any
 from langcodes import tag_distance
 from ovos_config.locations import get_xdg_data_save_path
 from ovos_utils import flatten_list
-from ovos_utils.bracket_expansion import expand_options
+from ovos_utils.bracket_expansion import expand_template
 from ovos_utils.dialog import MustacheDialogRenderer, load_dialogs
 from ovos_utils.log import LOG
 
@@ -430,7 +430,7 @@ class VocabularyFile(ResourceFile):
         vocabulary = []
         if self.file_path is not None:
             for line in self._read():
-                vocabulary.append(expand_options(line.lower()))
+                vocabulary.append(expand_template(line.lower()))
         return vocabulary
 
 
@@ -453,7 +453,7 @@ class IntentFile(ResourceFile):
         if self.file_path is not None:
             for line in self._read():
                 line = line.replace("{{", "{").replace("}}", "}")
-                intents.extend(flatten_list(expand_options(line.lower())))
+                intents.extend(flatten_list(expand_template(line.lower())))
             if not entities:
                 intents = [re.sub(r'{.*?}\s?', '', intent).strip() for intent in intents]
             elif self.data:
