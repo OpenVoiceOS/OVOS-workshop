@@ -224,6 +224,7 @@ class ConversationalGameSkill(OVOSGameSkill):
     def converse(self, message: Message):
         try:
             if self.is_paused:
+                self._autosave()
                 # let ocp_pipeline unpause as appropriate
                 return False
 
@@ -249,6 +250,7 @@ class ConversationalGameSkill(OVOSGameSkill):
         means the user didn't interact with the game for a long time and intent parser will be released
         """
         try:
+            self._autosave()
             if self.is_paused:
                 self.log.info("Game is paused, keeping it active")
                 self.activate()  # keep the game in active skills list so it can still converse
