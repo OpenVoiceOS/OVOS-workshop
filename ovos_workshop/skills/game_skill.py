@@ -8,6 +8,7 @@ from ovos_utils.parse import match_one, MatchStrategy
 
 from ovos_workshop.decorators import ocp_featured_media, ocp_search
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
+from ovos_workshop.skills.ovos import _get_dialog
 
 
 class OVOSGameSkill(OVOSCommonPlaybackSkill):
@@ -141,11 +142,13 @@ class ConversationalGameSkill(OVOSGameSkill):
 
     def on_save_game(self):
         """skills can override method to implement functioonality"""
-        self.speak_dialog("cant_save_game")
+        speech = _get_dialog("cant_save_game", self.lang)
+        self.speak(speech)
 
     def on_load_game(self):
         """skills can override method to implement functioonality"""
-        self.speak_dialog("cant_load_game")
+        speech = _get_dialog("cant_load_game", self.lang)
+        self.speak(speech)
 
     def on_pause_game(self):
         """called by ocp_pipeline on 'pause' if game is being played"""
@@ -153,7 +156,8 @@ class ConversationalGameSkill(OVOSGameSkill):
         self.acknowledge()
         # individual skills can change default value if desired
         if self.settings.get("pause_dialog", False):
-            self.speak_dialog("game_pause")
+            speech = _get_dialog("game_pause", self.lang)
+            self.speak(speech)
 
     def on_resume_game(self):
         """called by ocp_pipeline on 'resume/unpause' if game is being played and paused"""
@@ -161,7 +165,8 @@ class ConversationalGameSkill(OVOSGameSkill):
         self.acknowledge()
         # individual skills can change default value if desired
         if self.settings.get("pause_dialog", False):
-            self.speak_dialog("game_unpause")
+            speech = _get_dialog("game_unpause", self.lang)
+            self.speak(speech)
 
     @abc.abstractmethod
     def on_play_game(self):
