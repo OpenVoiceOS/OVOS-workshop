@@ -175,7 +175,7 @@ class ConversationalGameSkill(OVOSGameSkill):
 
         on_game_stop will be called after this handler"""
 
-    def will_trigger(self, utterance: str, lang: str) -> bool:
+    def skill_will_trigger(self, utterance: str, lang: str, skill_id: Optional[str] = None) -> bool:
         """helper to check if this skill would be selected by ovos-core with the given utterance
 
         useful in converse method
@@ -186,16 +186,17 @@ class ConversationalGameSkill(OVOSGameSkill):
         """
         # determine if an intent from this skill
         # will be selected by ovos-core
+        id_to_check = skill_id or self.skill_id
         intent = self.calc_intent(utterance, lang)
         skill_id = intent["skill_id"] if intent else ""
-        return skill_id == self.skill_id
+        return skill_id == id_to_check
 
     def converse(self, message: Message):
         try:
             utterance = message.data["utterances"][0]
             lang = get_message_lang(message)
             # let the user implemented intents do the job if they can handle the utterance
-            if self.is_playing and not self.will_trigger(utterance, lang):
+            if self.is_playing and not self.skill_will_trigger(utterance, lang):
                 # otherwise pipe utterance to the game handler
                 self.on_game_command(utterance, lang)
                 return True
