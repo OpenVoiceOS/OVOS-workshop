@@ -138,9 +138,14 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
 
 
 class ConversationalGameSkill(OVOSGameSkill):
-    @abc.abstractmethod
-    def on_play_game(self):
-        """called by ocp_pipeline when 'play XXX' matches the game"""
+
+    def on_save_game(self):
+        """skills can override method to implement functioonality"""
+        self.speak_dialog("cant_save_game")
+
+    def on_load_game(self):
+        """skills can override method to implement functioonality"""
+        self.speak_dialog("cant_load_game")
 
     def on_pause_game(self):
         """called by ocp_pipeline on 'pause' if game is being played"""
@@ -155,21 +160,14 @@ class ConversationalGameSkill(OVOSGameSkill):
         self.acknowledge()
 
     @abc.abstractmethod
+    def on_play_game(self):
+        """called by ocp_pipeline when 'play XXX' matches the game"""
+
+    @abc.abstractmethod
     def on_stop_game(self):
         """called when game is stopped for any reason
         auto-save may be implemented here"""
 
-    @abc.abstractmethod
-    def on_save_game(self):
-        """if your game has no save/load functionality you should
-        speak a error dialog here"""
-
-    @abc.abstractmethod
-    def on_load_game(self):
-        """if your game has no save/load functionality you should
-        speak a error dialog here"""
-
-    # converse
     @abc.abstractmethod
     def on_game_command(self, utterance: str, lang: str):
         """pipe user input that wasnt caught by intents to the game
@@ -183,6 +181,7 @@ class ConversationalGameSkill(OVOSGameSkill):
 
         on_game_stop will be called after this handler"""
 
+    # converse
     def skill_will_trigger(self, utterance: str, lang: str, skill_id: Optional[str] = None) -> bool:
         """helper to check if this skill would be selected by ovos-core with the given utterance
 
