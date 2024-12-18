@@ -126,7 +126,7 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
         response = self.bus.wait_for_response(Message("intent.service.intent.get",
                                                       {"utterance": utterance, "lang": lang}),
                                               "intent.service.intent.reply",
-                                              timeout=0.5)
+                                              timeout=1.0)
         if not response:
             return None
         return response.data["intent"]
