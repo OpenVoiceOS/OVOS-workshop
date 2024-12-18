@@ -93,6 +93,10 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
         """called by ocp_pipeline on 'pause' if game is being played"""
 
     @abc.abstractmethod
+    def on_resume_game(self):
+        """called by ocp_pipeline on 'resume/unpause' if game is being played and paused"""
+
+    @abc.abstractmethod
     def on_stop_game(self):
         """called when game is stopped for any reason
         auto-save may be implemented here"""
@@ -136,6 +140,10 @@ class ConversationalGameSkill(OVOSGameSkill):
         """called by ocp_pipeline on 'pause' if game is being played"""
 
     @abc.abstractmethod
+    def on_resume_game(self):
+        """called by ocp_pipeline on 'resume/unpause' if game is being played and paused"""
+
+    @abc.abstractmethod
     def on_stop_game(self):
         """called when game is stopped for any reason
         auto-save may be implemented here"""
@@ -153,7 +161,7 @@ class ConversationalGameSkill(OVOSGameSkill):
     # converse
     @abc.abstractmethod
     def on_game_command(self, utterance: str, lang: str):
-        """pipe user input to the game
+        """pipe user input that wasnt caught by intents to the game
         do any intent matching or normalization here
         don't forget to self.speak the game output too!
         """
