@@ -149,15 +149,19 @@ class ConversationalGameSkill(OVOSGameSkill):
 
     def on_pause_game(self):
         """called by ocp_pipeline on 'pause' if game is being played"""
-        # TODO - default dialog/sound
         self._paused.set()
         self.acknowledge()
+        # individual skills can change default value if desired
+        if self.settings.get("pause_dialog", False):
+            self.speak_dialog("game_pause")
 
     def on_resume_game(self):
         """called by ocp_pipeline on 'resume/unpause' if game is being played and paused"""
-        # TODO - default dialog/sound
         self._paused.clear()
         self.acknowledge()
+        # individual skills can change default value if desired
+        if self.settings.get("pause_dialog", False):
+            self.speak_dialog("game_unpause")
 
     @abc.abstractmethod
     def on_play_game(self):
