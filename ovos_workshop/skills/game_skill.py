@@ -87,6 +87,10 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
     def is_playing(self) -> bool:
         return self._playing.is_set()
 
+    @property
+    def is_paused(self) -> bool:
+        return self._paused.is_set()
+
     @abc.abstractmethod
     def on_play_game(self):
         """called by ocp_pipeline when 'play XXX' matches the game"""
@@ -138,13 +142,17 @@ class ConversationalGameSkill(OVOSGameSkill):
     def on_play_game(self):
         """called by ocp_pipeline when 'play XXX' matches the game"""
 
-    @abc.abstractmethod
     def on_pause_game(self):
         """called by ocp_pipeline on 'pause' if game is being played"""
+        # TODO - default dialog/sound
+        self._paused.set()
+        self.acknowledge()
 
-    @abc.abstractmethod
     def on_resume_game(self):
         """called by ocp_pipeline on 'resume/unpause' if game is being played and paused"""
+        # TODO - default dialog/sound
+        self._paused.clear()
+        self.acknowledge()
 
     @abc.abstractmethod
     def on_stop_game(self):
@@ -193,6 +201,10 @@ class ConversationalGameSkill(OVOSGameSkill):
 
     def converse(self, message: Message):
         try:
+            if self.is_paused:
+                # let ocp_pipeline unpause as appropriate
+                return False
+
             utterance = message.data["utterances"][0]
             lang = get_message_lang(message)
             # let the user implemented intents do the job if they can handle the utterance
@@ -214,7 +226,10 @@ class ConversationalGameSkill(OVOSGameSkill):
         means the user didn't interact with the game for a long time and intent parser will be released
         """
         try:
-            if self.is_playing:
+            if self.is_paused:
+                self.log.info("Game is paused, keeping it active")
+                self.activate()  # keep the game in active skills list so it can still converse
+            elif self.is_playing:
                 self.log.info("Game abandoned due to inactivity")
                 self.on_abandon_game()
                 self.on_stop_game()

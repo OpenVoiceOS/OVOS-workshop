@@ -73,6 +73,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
         self.__resume_handler = None
         self._stop_event = Event()
         self._playing = Event()
+        self._paused = Event()
         # TODO new default icon
         self.skill_icon = skill_icon or ""
 
@@ -391,11 +392,13 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
             self.bus.emit(Message("ovos.common_play.player.state",
                                   {"state": PlayerState.PLAYING}))
             self._playing.set()
+            self._paused.clear()
         else:
             LOG.error(f"Playback requested but {self.skill_id} handler not "
                       "implemented")
 
     def __handle_ocp_pause(self, message):
+        self._paused.set()
         if self.__pause_handler:
             if self.__pause_handler(message):
                 self.bus.emit(Message("ovos.common_play.player.state",
@@ -405,6 +408,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                       "implemented")
 
     def __handle_ocp_resume(self, message):
+        self._paused.clear()
         if self.__resume_handler:
             if self.__resume_handler(message):
                 self.bus.emit(Message("ovos.common_play.player.state",
@@ -430,6 +434,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     def __handle_ocp_stop(self, message):
         # for skills managing their own playback
         if self._playing.is_set():
+            self._paused.clear()
             self.stop()
             self.gui.release()
             self.bus.emit(Message("ovos.common_play.player.state",
@@ -545,6 +550,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def _handle_stop(self, message):
         self._playing.clear()
+        self._paused.clear()
         super()._handle_stop(message)
 
     def default_shutdown(self):
