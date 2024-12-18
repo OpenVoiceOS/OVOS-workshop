@@ -1076,7 +1076,7 @@ class OVOSSkill:
         """
         Register default messagebus event handlers
         """
-        self.add_event('mycroft.stop', self.__handle_stop, speak_errors=False)
+        self.add_event('mycroft.stop', self._handle_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
 
@@ -1264,7 +1264,7 @@ class OVOSSkill:
 
         self.bus.emit(message.reply(f"{self.skill_id}.stop.response", data))
 
-    def __handle_stop(self, message):
+    def _handle_stop(self, message):
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """

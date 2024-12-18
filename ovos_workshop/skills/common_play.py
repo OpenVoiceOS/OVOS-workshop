@@ -543,6 +543,10 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                    "thumbnail": self.skill_icon,
                                    "playlist": results}))
 
+    def _handle_stop(self, message):
+        self._playing.clear()
+        super()._handle_stop(message)
+
     def default_shutdown(self):
         self.bus.emit(
             Message('ovos.common_play.skills.detach',
