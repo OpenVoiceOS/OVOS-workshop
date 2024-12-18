@@ -30,9 +30,10 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
     """
 
     def __init__(self, skill_voc_filename: str,
+                 *args,
                  skill_icon: str = "",
                  game_image: str = "",
-                 *args, **kwargs):
+                 **kwargs):
         """IMPORTANT: contents of skill_voc_filename are crucial for intent matching
         without that ocp_pipeline might not recognize the skill as a game"""
         self.game_image = game_image
@@ -190,20 +191,31 @@ class ConversationalGameSkill(OVOSGameSkill):
         return skill_id == self.skill_id
 
     def converse(self, message: Message):
-        utterance = message.data["utterances"][0]
-        lang = get_message_lang(message)
-        # let the user implemented intents do the job if they can handle the utterance
-        if self.is_playing and not self.will_trigger(utterance, lang):
-            # otherwise pipe utterance to the game handler
-            self.on_game_command(utterance, lang)
-            return True
-        return False
+        try:
+            utterance = message.data["utterances"][0]
+            lang = get_message_lang(message)
+            # let the user implemented intents do the job if they can handle the utterance
+            if self.is_playing and not self.will_trigger(utterance, lang):
+                # otherwise pipe utterance to the game handler
+                self.on_game_command(utterance, lang)
+                return True
+            return False
+        except (KeyError, IndexError) as e:
+            self.log.error(f"Error processing converse message: {e}")
+            return False
+        except Exception as e:
+            self.log.exception(f"Unexpected error in converse: {e}")
+            return False
 
     def handle_deactivate(self, message: Message):
         """
         Called when this skill is no longer considered active by the intent service;
         means the user didn't interact with the game for a long time and intent parser will be released
         """
-        if self.is_playing:
-            self.on_abandon_game()
-            self.on_stop_game()
+        try:
+            if self.is_playing:
+                self.log.info("Game abandoned due to inactivity")
+                self.on_abandon_game()
+                self.on_stop_game()
+        except Exception as e:
+            self.log.exception(f"Error during game deactivation: {e}")
