@@ -198,9 +198,22 @@ class ConversationalGameSkill(OVOSGameSkill):
         skill_id = intent["skill_id"] if intent else ""
         return skill_id == id_to_check
 
+    @property
+    def save_is_implemented(self) -> bool:
+        """
+        True if this skill implements a `save` method
+        """
+        return self.__class__.on_save_game is not ConversationalGameSkill.on_save_game
+
+    def _autosave(self):
+        """helper to save the game automatically if enabled in settings.json and implemented by skill"""
+        if self.settings.get("auto_save", False) and self.save_is_implemented:
+            self.on_save_game()
+
     def converse(self, message: Message):
         try:
             if self.is_paused:
+                self._autosave()
                 # let ocp_pipeline unpause as appropriate
                 return False
 
@@ -225,6 +238,7 @@ class ConversationalGameSkill(OVOSGameSkill):
         means the user didn't interact with the game for a long time and intent parser will be released
         """
         try:
+            self._autosave()
             if self.is_paused:
                 self.log.info("Game is paused, keeping it active")
                 self.activate()  # keep the game in active skills list so it can still converse
@@ -234,3 +248,7 @@ class ConversationalGameSkill(OVOSGameSkill):
                 self.on_stop_game()
         except Exception as e:
             self.log.exception(f"Error during game deactivation: {e}")
+
+    def stop(self) -> bool:
+        self._autosave()
+        return super().stop()
