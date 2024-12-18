@@ -22,6 +22,7 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
     bus events emitted to trigger this skill:
     - 'ovos.common_play.{self.skill_id}.play'
     - 'ovos.common_play.{self.skill_id}.pause'
+    - 'ovos.common_play.{self.skill_id}.resume'
     - 'ovos.common_play.{self.skill_id}.stop'
     - 'ovos.common_play.{self.skill_id}.save' - TODO add intent to ocp_pipeline exclusive to MediaType.GAME
     - 'ovos.common_play.{self.skill_id}.load' - TODO add intent to ocp_pipeline exclusive to MediaType.GAME
@@ -41,6 +42,7 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
         # here we make them mandatory implementations via abc.abstractmethod
         self.__playback_handler = self.on_play_game
         self.__pause_handler = self.on_pause_game
+        self.__resume_handler = self.on_resume_game
 
     @ocp_featured_media()
     def _ocp_featured(self) -> Playlist:
