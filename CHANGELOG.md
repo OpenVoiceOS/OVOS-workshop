@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.1.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.3a1) (2024-12-18)
+## [3.2.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.0a1) (2024-12-18)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.2...3.1.3a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.3...3.2.0a1)
 
 **Merged pull requests:**
 
-- fix: intent layers [\#307](https://github.com/OpenVoiceOS/OVOS-workshop/pull/307) ([JarbasAl](https://github.com/JarbasAl))
+- feat: game skill [\#306](https://github.com/OpenVoiceOS/OVOS-workshop/pull/306) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
