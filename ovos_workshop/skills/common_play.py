@@ -1,13 +1,12 @@
 import os
 from inspect import signature
 from threading import Event
-from typing import List
-
-from ovos_utils import camel_case_split
-from ovos_utils.log import LOG
+from typing import List, Callable, Optional
 
 from ovos_bus_client import Message
 from ovos_config.locations import get_xdg_cache_save_path
+from ovos_utils import camel_case_split
+from ovos_utils.log import LOG
 from ovos_workshop.skills.ovos import OVOSSkill
 
 # backwards compat imports, do not delete, skills import from here
@@ -56,23 +55,30 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     vocab for starting playback is needed.
     """
 
-    def __init__(self, supported_media: List[MediaType] = None,
+    def __init__(self, *args,
+                 supported_media: List[MediaType] = None,
                  skill_icon: str = "",
                  skill_voc_filename: str = "",
-                 *args, **kwargs):
+                 playback_handler: Optional[Callable[[Optional[Message]], None]] = None,
+                 pause_handler: Optional[Callable[[Optional[Message]], None]] = None,
+                 next_handler: Optional[Callable[[Optional[Message]], None]] = None,
+                 prev_handler: Optional[Callable[[Optional[Message]], None]] = None,
+                 resume_handler: Optional[Callable[[Optional[Message]], None]] = None,
+                 **kwargs):
         self.supported_media = supported_media or [MediaType.GENERIC]
         self.skill_aliases = []
         self.skill_voc_filename = skill_voc_filename
         self._search_handlers = []  # added via decorators
         self._featured_handlers = []  # added via decorators
         self._current_query = None
-        self.__playback_handler = None
-        self.__pause_handler = None
-        self.__next_handler = None
-        self.__prev_handler = None
-        self.__resume_handler = None
+        self.__playback_handler = playback_handler
+        self.__pause_handler = pause_handler
+        self.__next_handler = next_handler
+        self.__prev_handler = prev_handler
+        self.__resume_handler = resume_handler
         self._stop_event = Event()
         self._playing = Event()
+        self._paused = Event()
         # TODO new default icon
         self.skill_icon = skill_icon or ""
 
@@ -387,17 +393,23 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     # @killable_event("ovos.common_play.stop", react_to_stop=True)
     def __handle_ocp_play(self, message):
         if self.__playback_handler:
-            self.__playback_handler(message)
+            params = signature(self.__playback_handler).parameters
+            kwargs = {"message": message} if "message" in params else {}
+            self.__playback_handler(**kwargs)
             self.bus.emit(Message("ovos.common_play.player.state",
                                   {"state": PlayerState.PLAYING}))
             self._playing.set()
+            self._paused.clear()
         else:
             LOG.error(f"Playback requested but {self.skill_id} handler not "
                       "implemented")
 
     def __handle_ocp_pause(self, message):
+        self._paused.set()
         if self.__pause_handler:
-            if self.__pause_handler(message):
+            params = signature(self.__playback_handler).parameters
+            kwargs = {"message": message} if "message" in params else {}
+            if self.__pause_handler(**kwargs):
                 self.bus.emit(Message("ovos.common_play.player.state",
                                       {"state": PlayerState.PAUSED}))
         else:
@@ -405,8 +417,11 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                       "implemented")
 
     def __handle_ocp_resume(self, message):
+        self._paused.clear()
         if self.__resume_handler:
-            if self.__resume_handler(message):
+            params = signature(self.__playback_handler).parameters
+            kwargs = {"message": message} if "message" in params else {}
+            if self.__resume_handler(**kwargs):
                 self.bus.emit(Message("ovos.common_play.player.state",
                                       {"state": PlayerState.PLAYING}))
         else:
@@ -415,14 +430,18 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
 
     def __handle_ocp_next(self, message):
         if self.__next_handler:
-            self.__next_handler(message)
+            params = signature(self.__playback_handler).parameters
+            kwargs = {"message": message} if "message" in params else {}
+            self.__next_handler(**kwargs)
         else:
             LOG.error(f"Play Next requested but {self.skill_id} handler not "
                       "implemented")
 
     def __handle_ocp_prev(self, message):
         if self.__prev_handler:
-            self.__prev_handler(message)
+            params = signature(self.__playback_handler).parameters
+            kwargs = {"message": message} if "message" in params else {}
+            self.__prev_handler(**kwargs)
         else:
             LOG.error(f"Play Next requested but {self.skill_id} handler not "
                       "implemented")
@@ -430,6 +449,7 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
     def __handle_ocp_stop(self, message):
         # for skills managing their own playback
         if self._playing.is_set():
+            self._paused.clear()
             self.stop()
             self.gui.release()
             self.bus.emit(Message("ovos.common_play.player.state",
@@ -542,6 +562,11 @@ class OVOSCommonPlaybackSkill(OVOSSkill):
                                    "skill_name": self.skill_aliases[0],
                                    "thumbnail": self.skill_icon,
                                    "playlist": results}))
+
+    def _handle_stop(self, message):
+        self._playing.clear()
+        self._paused.clear()
+        super()._handle_stop(message)
 
     def default_shutdown(self):
         self.bus.emit(
