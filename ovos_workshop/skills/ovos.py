@@ -2387,6 +2387,7 @@ class OVOSSkill:
         Returns:
                 bool: True if disabled, False if it wasn't registered
         """
+        intent_name = intent_name.split(f"{self.skill_id}:")[-1]
         if intent_name in self.intent_service:
             self.log.info('Disabling intent ' + intent_name)
             name = f'{self.skill_id}:{intent_name}'
@@ -2411,6 +2412,7 @@ class OVOSSkill:
         Returns:
             bool: True if enabled, False if it wasn't registered
         """
+        intent_name = intent_name.split(f"{self.skill_id}:")[-1]
         intent = self.intent_service.get_intent(intent_name)
         if intent:
             if ".intent" in intent_name:
