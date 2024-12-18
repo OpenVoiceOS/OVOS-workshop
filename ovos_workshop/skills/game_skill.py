@@ -183,7 +183,6 @@ class ConversationalGameSkill(OVOSGameSkill):
         don't forget to self.speak the game output too!
         """
 
-    @abc.abstractmethod
     def on_abandon_game(self):
         """user abandoned game mid interaction
 
