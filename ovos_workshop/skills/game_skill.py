@@ -25,8 +25,8 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
     - 'ovos.common_play.{self.skill_id}.pause'
     - 'ovos.common_play.{self.skill_id}.resume'
     - 'ovos.common_play.{self.skill_id}.stop'
-    - 'ovos.common_play.{self.skill_id}.save' - TODO add intent to ocp_pipeline exclusive to MediaType.GAME
-    - 'ovos.common_play.{self.skill_id}.load' - TODO add intent to ocp_pipeline exclusive to MediaType.GAME
+    - 'ovos.common_play.{self.skill_id}.save'
+    - 'ovos.common_play.{self.skill_id}.load'
 
     """
 
@@ -39,12 +39,11 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
         without that ocp_pipeline might not recognize the skill as a game"""
         self.game_image = game_image
         super().__init__(skill_icon=skill_icon, skill_voc_filename=skill_voc_filename,
-                         supported_media=[MediaType.GAME], *args, **kwargs)
-        # in regular OCP skills these can be set via decorators
-        # here we make them mandatory implementations via abc.abstractmethod
-        self.__playback_handler = self.on_play_game
-        self.__pause_handler = self.on_pause_game
-        self.__resume_handler = self.on_resume_game
+                         supported_media=[MediaType.GAME],
+                         playback_handler=self.on_play_game,
+                         pause_handler=self.on_pause_game,
+                         resume_handler=self.on_resume_game,
+                         *args, **kwargs)
 
     @ocp_featured_media()
     def _ocp_featured(self) -> Playlist:
