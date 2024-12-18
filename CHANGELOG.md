@@ -1,20 +1,12 @@
 # Changelog
 
-## [3.1.2a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.2a2) (2024-12-06)
+## [3.1.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.3a1) (2024-12-18)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.2a1...3.1.2a2)
-
-**Merged pull requests:**
-
-- requirements: ovos-utils version [\#304](https://github.com/OpenVoiceOS/OVOS-workshop/pull/304) ([JarbasAl](https://github.com/JarbasAl))
-
-## [3.1.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.1.2a1) (2024-11-25)
-
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.1...3.1.2a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.2...3.1.3a1)
 
 **Merged pull requests:**
 
-- Update ovos-config requirement from \<1.0.0,\>=0.0.12 to \>=0.0.12,\<2.0.0 in /requirements [\#302](https://github.com/OpenVoiceOS/OVOS-workshop/pull/302) ([dependabot[bot]](https://github.com/apps/dependabot))
+- fix: intent layers [\#307](https://github.com/OpenVoiceOS/OVOS-workshop/pull/307) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

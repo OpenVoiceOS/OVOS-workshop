@@ -211,7 +211,8 @@ class IntentLayers:
             if layer_name not in self._active_layers:
                 self._active_layers.append(layer_name)
             for intent in self._layers[layer_name]:
-                self.skill.enable_intent(intent)
+                intent_name = intent.split(f"{self.skill_id}:")[-1]
+                self.skill.enable_intent(intent_name)
         else:
             LOG.debug("no layer named: " + layer_name)
 
@@ -223,7 +224,8 @@ class IntentLayers:
             if layer_name in self._active_layers:
                 self._active_layers.remove(layer_name)
             for intent in self._layers[layer_name]:
-                self.skill.disable_intent(intent)
+                intent_name = intent.split(f"{self.skill_id}:")[-1]
+                self.skill.disable_intent(intent_name)
         else:
             LOG.debug("no layer named: " + layer_name)
 
