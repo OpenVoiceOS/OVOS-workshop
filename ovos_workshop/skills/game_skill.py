@@ -124,14 +124,14 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
             return True
         return False
 
-    def calc_intent(self, utterance: str, lang: str) -> Optional[Dict[str, str]]:
+    def calc_intent(self, utterance: str, lang: str, timeout=1.0) -> Optional[Dict[str, str]]:
         """helper to check what intent would be selected by ovos-core"""
         # let's see what intent ovos-core will assign to the utterance
         # NOTE: converse, common_query and fallbacks are not included in this check
         response = self.bus.wait_for_response(Message("intent.service.intent.get",
                                                       {"utterance": utterance, "lang": lang}),
                                               "intent.service.intent.reply",
-                                              timeout=1.0)
+                                              timeout=timeout)
         if not response:
             return None
         return response.data["intent"]
@@ -192,7 +192,7 @@ class ConversationalGameSkill(OVOSGameSkill):
         on_game_stop will be called after this handler"""
 
     # converse
-    def skill_will_trigger(self, utterance: str, lang: str, skill_id: Optional[str] = None) -> bool:
+    def skill_will_trigger(self, utterance: str, lang: str, skill_id: Optional[str] = None, timeout=0.8) -> bool:
         """helper to check if this skill would be selected by ovos-core with the given utterance
 
         useful in converse method
@@ -204,7 +204,7 @@ class ConversationalGameSkill(OVOSGameSkill):
         # determine if an intent from this skill
         # will be selected by ovos-core
         id_to_check = skill_id or self.skill_id
-        intent = self.calc_intent(utterance, lang)
+        intent = self.calc_intent(utterance, lang, timeout=timeout)
         skill_id = intent["skill_id"] if intent else ""
         return skill_id == id_to_check
 
@@ -220,26 +220,44 @@ class ConversationalGameSkill(OVOSGameSkill):
         if self.settings.get("auto_save", False) and self.save_is_implemented:
             self.on_save_game()
 
-    def converse(self, message: Message):
-        try:
-            if self.is_paused:
-                # let ocp_pipeline unpause as appropriate
-                return False
+    def _async_cmd(self, message: Message):
+        utterance = message.data["utterances"][0]
+        lang = get_message_lang(message)
+        self.log.debug(f"Piping utterance to game: {utterance}")
+        self.on_game_command(utterance, lang)
 
-            self._autosave()
+    def converse(self, message: Message) -> bool:
+        try:
             utterance = message.data["utterances"][0]
             lang = get_message_lang(message)
             # let the user implemented intents do the job if they can handle the utterance
-            if self.is_playing and not self.skill_will_trigger(utterance, lang):
-                # otherwise pipe utterance to the game handler
-                self.on_game_command(utterance, lang)
+            # otherwise pipe utterance to the game handler
+            if self.skill_will_trigger(utterance, lang):
+                self.log.debug("Skill intent will trigger, don't pipe utterance to game")
+                return False
+
+            if self.is_paused:
+                self.log.debug("game is paused")
+                # let ocp_pipeline unpause as appropriate
+                return False
+
+            try:
+                self._autosave()
+            except Exception as e:
+                self.log.error(f"Autosave failed: {e}")
+
+            if self.is_playing:
+                # do this async so converse executes faster
+                self.bus.once(f"{self.skill_id}.game_cmd", self._async_cmd)
+                self.bus.emit(message.forward(f"{self.skill_id}.game_cmd", message.data))
                 return True
+
             return False
         except (KeyError, IndexError) as e:
-            self.log.error(f"Error processing converse message: {e}")
+            self.log.error(f"Error processing game converse message: {e}")
             return False
         except Exception as e:
-            self.log.exception(f"Unexpected error in converse: {e}")
+            self.log.exception(f"Unexpected error in game converse: {e}")
             return False
 
     def handle_deactivate(self, message: Message):
