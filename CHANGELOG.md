@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.2.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.0a1) (2024-12-18)
+## [3.2.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.1a1) (2024-12-19)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.1.3...3.2.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.2.0...3.2.1a1)
 
 **Merged pull requests:**
 
-- feat: game skill [\#306](https://github.com/OpenVoiceOS/OVOS-workshop/pull/306) ([JarbasAl](https://github.com/JarbasAl))
+- fix: improve game skill converse [\#310](https://github.com/OpenVoiceOS/OVOS-workshop/pull/310) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
