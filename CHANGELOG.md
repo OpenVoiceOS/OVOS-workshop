@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.2.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.1a1) (2024-12-19)
+## [3.2.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.2a1) (2024-12-26)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.2.0...3.2.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.2.1...3.2.2a1)
 
 **Merged pull requests:**
 
-- fix: improve game skill converse [\#310](https://github.com/OpenVoiceOS/OVOS-workshop/pull/310) ([JarbasAl](https://github.com/JarbasAl))
+- fix: voc\_match ignore case [\#312](https://github.com/OpenVoiceOS/OVOS-workshop/pull/312) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
