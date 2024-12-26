@@ -2157,20 +2157,22 @@ class OVOSSkill:
         Returns:
             bool: True if the utterance has the given vocabulary it
         """
+        lang = lang or self.lang
         match = False
         try:
             _vocs = self.voc_list(voc_filename, lang)
         except FileNotFoundError:
+            LOG.warning(f"{self.skill_id} failed to find voc file '{voc_filename}' for lang '{lang}' in `{self.res_dir}'")
             return False
 
         if utt and _vocs:
             if exact:
                 # Check for exact match
-                match = any(i.strip() == utt
+                match = any(i.strip().lower() == utt.lower()
                             for i in _vocs)
             else:
                 # Check for matches against complete words
-                match = any([re.match(r'.*\b' + i + r'\b.*', utt)
+                match = any([re.match(r'.*\b' + i + r'\b.*', utt, re.IGNORECASE)
                              for i in _vocs])
 
         return match
