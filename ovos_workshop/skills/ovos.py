@@ -158,7 +158,7 @@ class OVOSSkill:
         self.public_api: Dict[str, dict] = {}
 
         self._cq_handler = None
-        self._cq_calllback = None
+        self._cq_callback = None
 
         self._original_converse = self.converse  # for get_response
 
@@ -1012,6 +1012,9 @@ class OVOSSkill:
             if hasattr(method, 'common_query'):
                 self._cq_handler = method
                 self._cq_callback = method.cq_callback
+                print(666, method.__dict__)
+                LOG.debug(f"Registering common query handler for: {self.skill_id} - callback: {self._cq_callback}")
+                self.__handle_common_query_ping(Message("ovos.common_query.ping"))
 
             if hasattr(method, 'converse_intents'):
                 for intent_file in getattr(method, 'converse_intents'):
@@ -1033,7 +1036,6 @@ class OVOSSkill:
             self.intent_layers.bind(self)
             self.audio_service = OCPInterface(self.bus)
             self.private_settings = PrivateSettings(self.skill_id)
-            self.__handle_common_query_ping(Message("ovos.common_query.ping"))
 
 
     def __handle_common_query_ping(self, message):
@@ -1046,23 +1048,21 @@ class OVOSSkill:
     def __handle_query_action(self, message: Message):
         """
         If this skill's response was spoken to the user, this method is called.
-        Phrase and callback data from `CQS_match_query_phrase` will be passed
-        to the `CQS_action` method.
+
         @param message: `question:action` message
         """
-        if not self._cq_handler or message.data["skill_id"] != self.skill_id:
+        if not self._cq_callback or message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
-        data = message.data.get("callback_data") or {}
-        # Invoke derived class to provide playback data
+        LOG.debug(f"common query callback for: {self.skill_id}")
         lang = get_message_lang(message)
-        self._cq_calllback(message.data["phrase"], data.get("answer"), lang)
+        answer = message.data.get("answer") or message.data.get("callback_data", {}).get("answer")
+        self._cq_callback(message.data["phrase"], answer, lang)
 
     def __handle_question_query(self, message: Message):
         """
-        Handle an incoming user query. Get a result from this skill's
-        `CQS_match_query_phrase` method and emit a response back to the intent
-        service.
+        Handle an incoming question query.
+
         @param message: Message with matched query 'phrase'
         """
         if not self._cq_handler:
@@ -1079,7 +1079,7 @@ class OVOSSkill:
         answer = None
         confidence = 0
         try:
-            answer, confidence = self._cq_handler(search_phrase, lang)
+            answer, confidence = self._cq_handler(search_phrase, lang) or (None, 0)
             LOG.debug(f"Common QA {self.skill_id} result: {answer}")
         except:
             LOG.exception(f"Failed to get answer from {self._cq_handler}")
@@ -1088,6 +1088,7 @@ class OVOSSkill:
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
+                                            "callback_data": {"answer": answer}, # so we get it in callback
                                             "conf": confidence}))
         else:
             # Signal we are done (can't handle it)

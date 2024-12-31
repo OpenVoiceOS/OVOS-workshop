@@ -126,7 +126,6 @@ def common_query(callback: Optional[CQCallback] = None):
     """
     Decorator for adding a method as an intent handler.
     """
-
     def real_decorator(func):
         # mark the method as a common_query handler
         func.common_query = True
