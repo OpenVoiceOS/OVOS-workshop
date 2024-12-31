@@ -1,3 +1,4 @@
+import binascii
 import datetime
 import json
 import os
@@ -14,7 +15,6 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event, RLock
 from typing import Dict, Callable, List, Optional, Union
 
-import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
 from ovos_bus_client import MessageBusClient
@@ -1036,7 +1036,6 @@ class OVOSSkill:
             self.audio_service = OCPInterface(self.bus)
             self.private_settings = PrivateSettings(self.skill_id)
 
-
     def __handle_common_query_ping(self, message):
         if self._cq_handler:
             # announce skill to common query pipeline
@@ -1056,7 +1055,18 @@ class OVOSSkill:
         LOG.debug(f"common query callback for: {self.skill_id}")
         lang = get_message_lang(message)
         answer = message.data.get("answer") or message.data.get("callback_data", {}).get("answer")
-        self._cq_callback(message.data["phrase"], answer, lang)
+
+        # Inspect the callback signature
+        callback_signature = signature(self._cq_callback)
+        params = callback_signature.parameters
+
+        # Check if the first parameter is 'self' (indicating it's an instance method)
+        if len(params) > 0 and list(params.keys())[0] == 'self':
+            # Instance method: pass 'self' as the first argument
+            self._cq_callback(self, message.data["phrase"], answer, lang)
+        else:
+            # Static method or function: don't pass 'self'
+            self._cq_callback(message.data["phrase"], answer, lang)
 
     def __handle_question_query(self, message: Message):
         """
@@ -1087,7 +1097,7 @@ class OVOSSkill:
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "answer": answer,
-                                            "callback_data": {"answer": answer}, # so we get it in callback
+                                            "callback_data": {"answer": answer},  # so we get it in callback
                                             "conf": confidence}))
         else:
             # Signal we are done (can't handle it)
@@ -1164,11 +1174,9 @@ class OVOSSkill:
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
 
         self.add_event('question:query', self.__handle_question_query, speak_errors=False)
-        self.add_event("ovos.common_query.ping", self.__handle_common_query_ping,  speak_errors=False)
+        self.add_event("ovos.common_query.ping", self.__handle_common_query_ping, speak_errors=False)
         self.add_event('question:action', self.__handle_query_action,
-                       handler_info='mycroft.skill.handler',
-                       activation=True, is_intent=True,
-                       speak_errors=False)
+                       handler_info='mycroft.skill.handler', is_intent=True,  speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
         self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
@@ -2238,7 +2246,8 @@ class OVOSSkill:
         try:
             _vocs = self.voc_list(voc_filename, lang)
         except FileNotFoundError:
-            LOG.warning(f"{self.skill_id} failed to find voc file '{voc_filename}' for lang '{lang}' in `{self.res_dir}'")
+            LOG.warning(
+                f"{self.skill_id} failed to find voc file '{voc_filename}' for lang '{lang}' in `{self.res_dir}'")
             return False
 
         if utt and _vocs:
