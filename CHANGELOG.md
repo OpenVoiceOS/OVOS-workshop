@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.0a1) (2024-12-31)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.2.2a1...3.3.0a1)
+
+**Closed issues:**
+
+- refactor: simplify common query [\#314](https://github.com/OpenVoiceOS/OVOS-workshop/issues/314)
+
+**Merged pull requests:**
+
+- feat:common\_query\_decorator [\#315](https://github.com/OpenVoiceOS/OVOS-workshop/pull/315) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [3.2.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.2.2a1) (2024-12-26)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.2.1...3.2.2a1)
