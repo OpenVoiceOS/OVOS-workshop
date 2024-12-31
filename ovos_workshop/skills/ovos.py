@@ -1,3 +1,4 @@
+import binascii
 import datetime
 import json
 import os
@@ -14,7 +15,6 @@ from os.path import join, abspath, dirname, basename, isfile
 from threading import Event, RLock
 from typing import Dict, Callable, List, Optional, Union
 
-import binascii
 from json_database import JsonStorage
 from langcodes import closest_match
 from ovos_bus_client import MessageBusClient
@@ -156,6 +156,9 @@ class OVOSSkill:
 
         # Skill Public API
         self.public_api: Dict[str, dict] = {}
+
+        self._cq_handler = None
+        self._cq_callback = None
 
         self._original_converse = self.converse  # for get_response
 
@@ -1005,6 +1008,13 @@ class OVOSSkill:
             if hasattr(method, 'converse'):
                 self.converse = method
 
+            # TODO support for multiple common query handlers (?)
+            if hasattr(method, 'common_query'):
+                self._cq_handler = method
+                self._cq_callback = method.cq_callback
+                LOG.debug(f"Registering common query handler for: {self.skill_id} - callback: {self._cq_callback}")
+                self.__handle_common_query_ping(Message("ovos.common_query.ping"))
+
             if hasattr(method, 'converse_intents'):
                 for intent_file in getattr(method, 'converse_intents'):
                     self.register_converse_intent(intent_file, method)
@@ -1025,6 +1035,75 @@ class OVOSSkill:
             self.intent_layers.bind(self)
             self.audio_service = OCPInterface(self.bus)
             self.private_settings = PrivateSettings(self.skill_id)
+
+    def __handle_common_query_ping(self, message):
+        if self._cq_handler:
+            # announce skill to common query pipeline
+            self.bus.emit(message.reply("ovos.common_query.pong",
+                                        {"skill_id": self.skill_id},
+                                        {"skill_id": self.skill_id}))
+
+    def __handle_query_action(self, message: Message):
+        """
+        If this skill's response was spoken to the user, this method is called.
+
+        @param message: `question:action` message
+        """
+        if not self._cq_callback or message.data["skill_id"] != self.skill_id:
+            # Not for this skill!
+            return
+        LOG.debug(f"common query callback for: {self.skill_id}")
+        lang = get_message_lang(message)
+        answer = message.data.get("answer") or message.data.get("callback_data", {}).get("answer")
+
+        # Inspect the callback signature
+        callback_signature = signature(self._cq_callback)
+        params = callback_signature.parameters
+
+        # Check if the first parameter is 'self' (indicating it's an instance method)
+        if len(params) > 0 and list(params.keys())[0] == 'self':
+            # Instance method: pass 'self' as the first argument
+            self._cq_callback(self, message.data["phrase"], answer, lang)
+        else:
+            # Static method or function: don't pass 'self'
+            self._cq_callback(message.data["phrase"], answer, lang)
+
+    def __handle_question_query(self, message: Message):
+        """
+        Handle an incoming question query.
+
+        @param message: Message with matched query 'phrase'
+        """
+        if not self._cq_handler:
+            return
+        lang = get_message_lang(message)
+        search_phrase = message.data["phrase"]
+        message.context["skill_id"] = self.skill_id
+        LOG.debug(f"Common QA: {self.skill_id}")
+        # First, notify the requestor that we are attempting to handle
+        # (this extends a timeout while this skill looks for a match)
+        self.bus.emit(message.response({"phrase": search_phrase,
+                                        "skill_id": self.skill_id,
+                                        "searching": True}))
+        answer = None
+        confidence = 0
+        try:
+            answer, confidence = self._cq_handler(search_phrase, lang) or (None, 0)
+            LOG.debug(f"Common QA {self.skill_id} result: {answer}")
+        except:
+            LOG.exception(f"Failed to get answer from {self._cq_handler}")
+
+        if answer and confidence >= 0.5:
+            self.bus.emit(message.response({"phrase": search_phrase,
+                                            "skill_id": self.skill_id,
+                                            "answer": answer,
+                                            "callback_data": {"answer": answer},  # so we get it in callback
+                                            "conf": confidence}))
+        else:
+            # Signal we are done (can't handle it)
+            self.bus.emit(message.response({"phrase": search_phrase,
+                                            "skill_id": self.skill_id,
+                                            "searching": False}))
 
     def _register_public_api(self):
         """
@@ -1093,6 +1172,11 @@ class OVOSSkill:
         self.add_event('mycroft.skills.settings.changed', self.handle_settings_change, speak_errors=False)
 
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
+
+        self.add_event('question:query', self.__handle_question_query, speak_errors=False)
+        self.add_event("ovos.common_query.ping", self.__handle_common_query_ping, speak_errors=False)
+        self.add_event('question:action', self.__handle_query_action,
+                       handler_info='mycroft.skill.handler', is_intent=True,  speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
         self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
@@ -2157,20 +2241,23 @@ class OVOSSkill:
         Returns:
             bool: True if the utterance has the given vocabulary it
         """
+        lang = lang or self.lang
         match = False
         try:
             _vocs = self.voc_list(voc_filename, lang)
         except FileNotFoundError:
+            LOG.warning(
+                f"{self.skill_id} failed to find voc file '{voc_filename}' for lang '{lang}' in `{self.res_dir}'")
             return False
 
         if utt and _vocs:
             if exact:
                 # Check for exact match
-                match = any(i.strip() == utt
+                match = any(i.strip().lower() == utt.lower()
                             for i in _vocs)
             else:
                 # Check for matches against complete words
-                match = any([re.match(r'.*\b' + i + r'\b.*', utt)
+                match = any([re.match(r'.*\b' + re.escape(i) + r'\b.*', utt, re.IGNORECASE)
                              for i in _vocs])
 
         return match

@@ -59,6 +59,7 @@ class CommonQuerySkill(OVOSSkill):
     """
 
     def __init__(self, *args, **kwargs):
+        log_deprecation("'CommonQuerySkill' class has been deprecated, use @common_query decorator with regular OVOSSkill instead", "4.0.0")
         # these should probably be configurable
         self.level_confidence = {
             CQSMatchLevel.EXACT: 0.9,
