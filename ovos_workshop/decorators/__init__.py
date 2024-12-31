@@ -118,6 +118,22 @@ def skill_api_method(func: callable):
     return func
 
 
+def common_query():
+    """
+    Decorator for adding a method as an intent handler.
+    """
+
+    def real_decorator(func):
+        # mark the method as a common_query handler
+        if not hasattr(func, 'common_query'):
+            func.common_query = True
+
+        return func
+
+    return real_decorator
+
+
+
 def converse_handler(func):
     """
     Decorator for aliasing a method as the converse method

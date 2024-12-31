@@ -157,6 +157,8 @@ class OVOSSkill:
         # Skill Public API
         self.public_api: Dict[str, dict] = {}
 
+        self._common_query_handlers = []
+
         self._original_converse = self.converse  # for get_response
 
         self.__responses = {}
@@ -1005,6 +1007,9 @@ class OVOSSkill:
             if hasattr(method, 'converse'):
                 self.converse = method
 
+            if hasattr(method, 'common_query') and method not in self._common_query_handlers:
+                self._common_query_handlers.append(method)
+
             if hasattr(method, 'converse_intents'):
                 for intent_file in getattr(method, 'converse_intents'):
                     self.register_converse_intent(intent_file, method)
@@ -1025,6 +1030,55 @@ class OVOSSkill:
             self.intent_layers.bind(self)
             self.audio_service = OCPInterface(self.bus)
             self.private_settings = PrivateSettings(self.skill_id)
+            self.__handle_common_query_ping(Message("ovos.common_query.ping"))
+
+
+    def __handle_common_query_ping(self, message):
+        if self._common_query_handlers:
+            # announce skill to common query pipeline
+            self.bus.emit(message.reply("ovos.common_query.pong",
+                                        {"skill_id": self.skill_id},
+                                        {"skill_id": self.skill_id}))
+
+    def __handle_question_query(self, message: Message):
+        """
+        Handle an incoming user query. Get a result from this skill's
+        `CQS_match_query_phrase` method and emit a response back to the intent
+        service.
+        @param message: Message with matched query 'phrase'
+        """
+        if not self._common_query_handlers:
+            return
+
+        search_phrase = message.data["phrase"]
+        message.context["skill_id"] = self.skill_id
+        LOG.debug(f"Common QA: {self.skill_id}")
+        # First, notify the requestor that we are attempting to handle
+        # (this extends a timeout while this skill looks for a match)
+        self.bus.emit(message.response({"phrase": search_phrase,
+                                        "skill_id": self.skill_id,
+                                        "searching": True}))
+
+        for handler in self._common_query_handlers:
+            try:
+                answer, confidence = handler(search_phrase)
+                LOG.debug(f"Common QA {self.skill_id} result: {answer}")
+            except:
+                LOG.exception(f"Failed to get answer from {handler}")
+                continue
+
+            if answer and confidence >= 0.5:
+                self.bus.emit(message.response({"phrase": search_phrase,
+                                                "skill_id": self.skill_id,
+                                                "answer": answer,
+                                                "handles_speech": False,
+                                                "conf": confidence}))
+                break # TODO support for multiple responses from same skill in common query plugin
+        else:
+            # Signal we are done (can't handle it)
+            self.bus.emit(message.response({"phrase": search_phrase,
+                                            "skill_id": self.skill_id,
+                                            "searching": False}))
 
     def _register_public_api(self):
         """
@@ -1093,6 +1147,9 @@ class OVOSSkill:
         self.add_event('mycroft.skills.settings.changed', self.handle_settings_change, speak_errors=False)
 
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
+
+        self.add_event('question:query', self.__handle_question_query, speak_errors=False)
+        self.add_event("ovos.common_query.ping", self.__handle_common_query_ping,  speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
         self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
@@ -2172,7 +2229,7 @@ class OVOSSkill:
                             for i in _vocs)
             else:
                 # Check for matches against complete words
-                match = any([re.match(r'.*\b' + i + r'\b.*', utt, re.IGNORECASE)
+                match = any([re.match(r'.*\b' + re.escape(i) + r'\b.*', utt, re.IGNORECASE)
                              for i in _vocs])
 
         return match
