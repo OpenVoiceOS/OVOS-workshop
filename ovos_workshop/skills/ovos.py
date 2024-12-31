@@ -1050,7 +1050,7 @@ class OVOSSkill:
         to the `CQS_action` method.
         @param message: `question:action` message
         """
-        if message.data["skill_id"] != self.skill_id:
+        if not self._cq_handler or message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
         data = message.data.get("callback_data") or {}
