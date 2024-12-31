@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Optional
+from typing import Optional, Callable
 from ovos_utils.log import log_deprecation
 
 from ovos_workshop.decorators.killable import killable_intent, killable_event
@@ -118,16 +118,19 @@ def skill_api_method(func: callable):
     return func
 
 
-def common_query():
+# utterance, answer, lang
+CQCallback = Callable[[Optional[str], Optional[str], Optional[str]], None]
+
+
+def common_query(callback: Optional[CQCallback] = None):
     """
     Decorator for adding a method as an intent handler.
     """
 
     def real_decorator(func):
         # mark the method as a common_query handler
-        if not hasattr(func, 'common_query'):
-            func.common_query = True
-
+        func.common_query = True
+        func.cq_callback = callback
         return func
 
     return real_decorator

@@ -157,7 +157,8 @@ class OVOSSkill:
         # Skill Public API
         self.public_api: Dict[str, dict] = {}
 
-        self._common_query_handlers = []
+        self._cq_handler = None
+        self._cq_calllback = None
 
         self._original_converse = self.converse  # for get_response
 
@@ -1007,8 +1008,10 @@ class OVOSSkill:
             if hasattr(method, 'converse'):
                 self.converse = method
 
-            if hasattr(method, 'common_query') and method not in self._common_query_handlers:
-                self._common_query_handlers.append(method)
+            # TODO support for multiple common query handlers (?)
+            if hasattr(method, 'common_query'):
+                self._cq_handler = method
+                self._cq_callback = method.cq_callback
 
             if hasattr(method, 'converse_intents'):
                 for intent_file in getattr(method, 'converse_intents'):
@@ -1034,11 +1037,26 @@ class OVOSSkill:
 
 
     def __handle_common_query_ping(self, message):
-        if self._common_query_handlers:
+        if self._cq_handler:
             # announce skill to common query pipeline
             self.bus.emit(message.reply("ovos.common_query.pong",
                                         {"skill_id": self.skill_id},
                                         {"skill_id": self.skill_id}))
+
+    def __handle_query_action(self, message: Message):
+        """
+        If this skill's response was spoken to the user, this method is called.
+        Phrase and callback data from `CQS_match_query_phrase` will be passed
+        to the `CQS_action` method.
+        @param message: `question:action` message
+        """
+        if message.data["skill_id"] != self.skill_id:
+            # Not for this skill!
+            return
+        data = message.data.get("callback_data") or {}
+        # Invoke derived class to provide playback data
+        lang = get_message_lang(message)
+        self._cq_calllback(message.data["phrase"], data.get("answer"), lang)
 
     def __handle_question_query(self, message: Message):
         """
@@ -1047,9 +1065,9 @@ class OVOSSkill:
         service.
         @param message: Message with matched query 'phrase'
         """
-        if not self._common_query_handlers:
+        if not self._cq_handler:
             return
-
+        lang = get_message_lang(message)
         search_phrase = message.data["phrase"]
         message.context["skill_id"] = self.skill_id
         LOG.debug(f"Common QA: {self.skill_id}")
@@ -1058,22 +1076,19 @@ class OVOSSkill:
         self.bus.emit(message.response({"phrase": search_phrase,
                                         "skill_id": self.skill_id,
                                         "searching": True}))
+        answer = None
+        confidence = 0
+        try:
+            answer, confidence = self._cq_handler(search_phrase, lang)
+            LOG.debug(f"Common QA {self.skill_id} result: {answer}")
+        except:
+            LOG.exception(f"Failed to get answer from {self._cq_handler}")
 
-        for handler in self._common_query_handlers:
-            try:
-                answer, confidence = handler(search_phrase)
-                LOG.debug(f"Common QA {self.skill_id} result: {answer}")
-            except:
-                LOG.exception(f"Failed to get answer from {handler}")
-                continue
-
-            if answer and confidence >= 0.5:
-                self.bus.emit(message.response({"phrase": search_phrase,
-                                                "skill_id": self.skill_id,
-                                                "answer": answer,
-                                                "handles_speech": False,
-                                                "conf": confidence}))
-                break # TODO support for multiple responses from same skill in common query plugin
+        if answer and confidence >= 0.5:
+            self.bus.emit(message.response({"phrase": search_phrase,
+                                            "skill_id": self.skill_id,
+                                            "answer": answer,
+                                            "conf": confidence}))
         else:
             # Signal we are done (can't handle it)
             self.bus.emit(message.response({"phrase": search_phrase,
@@ -1150,6 +1165,10 @@ class OVOSSkill:
 
         self.add_event('question:query', self.__handle_question_query, speak_errors=False)
         self.add_event("ovos.common_query.ping", self.__handle_common_query_ping,  speak_errors=False)
+        self.add_event('question:action', self.__handle_query_action,
+                       handler_info='mycroft.skill.handler',
+                       activation=True, is_intent=True,
+                       speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
         self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)
