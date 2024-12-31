@@ -1012,7 +1012,6 @@ class OVOSSkill:
             if hasattr(method, 'common_query'):
                 self._cq_handler = method
                 self._cq_callback = method.cq_callback
-                print(666, method.__dict__)
                 LOG.debug(f"Registering common query handler for: {self.skill_id} - callback: {self._cq_callback}")
                 self.__handle_common_query_ping(Message("ovos.common_query.ping"))
 
