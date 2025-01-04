@@ -125,7 +125,7 @@ class CommonQuerySkill(OVOSSkill):
     # announce skill to ovos-core
     def __handle_common_query_ping(self, message):
         self.bus.emit(message.reply("ovos.common_query.pong",
-                                    {"skill_id": self.skill_id},
+                                    {"skill_id": self.skill_id, "is_classic_cq": True},
                                     {"skill_id": self.skill_id}))
 
     def __handle_question_query(self, message: Message):
