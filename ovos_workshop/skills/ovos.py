@@ -1058,13 +1058,14 @@ class OVOSSkill:
         self.bus.emit(message)
 
     def __handle_skill_query_action(self, message: Message):
-        if not self._cq_callback:
-            LOG.debug(f"no common query callback registered for: {self.skill_id}")
-            return  # nothing to do
-
         LOG.debug(f"common query callback for: {self.skill_id}")
         lang = get_message_lang(message)
         answer = message.data.get("answer") or message.data.get("callback_data", {}).get("answer")
+        self.speak(answer)
+
+        if not self._cq_callback:
+            LOG.debug(f"no common query callback registered for: {self.skill_id}")
+            return  # nothing to do
 
         # Inspect the callback signature
         callback_signature = signature(self._cq_callback)
