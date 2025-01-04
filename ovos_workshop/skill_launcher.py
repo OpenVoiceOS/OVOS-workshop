@@ -13,7 +13,7 @@ from ovos_config.locale import setup_locale
 from ovos_plugin_manager.skills import find_skill_plugins, get_skill_directories
 from ovos_utils import wait_for_exit_signal
 from ovos_utils.file_utils import FileWatcher
-from ovos_utils.log import LOG, deprecated, log_deprecation
+from ovos_utils.log import LOG, log_deprecation
 from ovos_utils.process_utils import RuntimeRequirements
 
 from ovos_workshop.skills.active import ActiveSkill
