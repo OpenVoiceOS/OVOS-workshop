@@ -1,20 +1,12 @@
 # Changelog
 
-## [3.3.1a2](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.1a2) (2025-01-04)
+## [3.3.2a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.2a1) (2025-01-04)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.1a1...3.3.1a2)
-
-**Merged pull requests:**
-
-- refactor: simplify cq messages [\#319](https://github.com/OpenVoiceOS/OVOS-workshop/pull/319) ([JarbasAl](https://github.com/JarbasAl))
-
-## [3.3.1a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.1a1) (2025-01-04)
-
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.0...3.3.1a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.1...3.3.2a1)
 
 **Merged pull requests:**
 
-- chore: add warnings [\#317](https://github.com/OpenVoiceOS/OVOS-workshop/pull/317) ([JarbasAl](https://github.com/JarbasAl))
+- fix:cq\_speak [\#321](https://github.com/OpenVoiceOS/OVOS-workshop/pull/321) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
