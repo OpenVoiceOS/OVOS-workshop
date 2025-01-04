@@ -1053,6 +1053,9 @@ class OVOSSkill:
         if not self._cq_callback or message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
+        # call the correct handler as if cq was updated
+        message.msg_type += f".{self.skill_id}"
+        self.bus.emit(message)
 
     def __handle_skill_query_action(self, message: Message):
         LOG.debug(f"common query callback for: {self.skill_id}")
