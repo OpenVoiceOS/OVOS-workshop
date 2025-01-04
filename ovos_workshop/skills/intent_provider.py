@@ -4,10 +4,21 @@ from ovos_utils.log import LOG, log_deprecation
 from ovos_bus_client.message import Message
 from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_config.config import read_mycroft_config, update_mycroft_config
+import warnings
 
+warnings.warn(
+    "use pipeline plugins instead",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 class BaseIntentEngine:
     def __init__(self, name, config=None):
+        warnings.warn(
+            "make a pipeline plugin instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         log_deprecation("This base class is not supported", "0.1.0")
         self.name = name.lower()
         config = config or read_mycroft_config()
@@ -51,6 +62,11 @@ class BaseIntentEngine:
 
 class IntentEngineSkill(FallbackSkill):
     def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "make a pipeline plugin instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         log_deprecation("This base class is not supported", "0.1.0")
         super().__init__(*args, **kwargs)
         self.engine = None

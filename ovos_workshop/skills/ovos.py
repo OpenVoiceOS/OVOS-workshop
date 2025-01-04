@@ -1040,7 +1040,7 @@ class OVOSSkill:
         if self._cq_handler:
             # announce skill to common query pipeline
             self.bus.emit(message.reply("ovos.common_query.pong",
-                                        {"skill_id": self.skill_id},
+                                        {"skill_id": self.skill_id, "is_classic_cq": False},
                                         {"skill_id": self.skill_id}))
 
     def __handle_query_action(self, message: Message):
@@ -1049,9 +1049,19 @@ class OVOSSkill:
 
         @param message: `question:action` message
         """
+        # backwards compat, for older common query pipeline versions
         if not self._cq_callback or message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
+        # call the correct handler as if cq was updated
+        message.msg_type += f".{self.skill_id}"
+        self.bus.emit(message)
+
+    def __handle_skill_query_action(self, message: Message):
+        if not self._cq_callback:
+            LOG.debug(f"no common query callback registered for: {self.skill_id}")
+            return  # nothing to do
+
         LOG.debug(f"common query callback for: {self.skill_id}")
         lang = get_message_lang(message)
         answer = message.data.get("answer") or message.data.get("callback_data", {}).get("answer")
@@ -1175,8 +1185,9 @@ class OVOSSkill:
 
         self.add_event('question:query', self.__handle_question_query, speak_errors=False)
         self.add_event("ovos.common_query.ping", self.__handle_common_query_ping, speak_errors=False)
-        self.add_event('question:action', self.__handle_query_action,
-                       handler_info='mycroft.skill.handler', is_intent=True,  speak_errors=False)
+        self.add_event(f'question:action.{self.skill_id}', self.__handle_skill_query_action,
+                       handler_info='mycroft.skill.handler', is_intent=True, speak_errors=False)
+        self.add_event('question:action', self.__handle_query_action, speak_errors=False)
 
         # homescreen might load after this skill and miss the original events
         self.add_event("homescreen.metadata.get", self.handle_homescreen_loaded, speak_errors=False)

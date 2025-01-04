@@ -1,4 +1,11 @@
 from ovos_utils.log import log_deprecation
+import warnings
+
+warnings.warn(
+    "Import from `ovos_workshop.decorators`",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 def converse_handler(func):

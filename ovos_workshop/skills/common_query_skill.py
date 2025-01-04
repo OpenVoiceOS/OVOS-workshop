@@ -18,7 +18,7 @@ from typing import List, Optional, Tuple
 from ovos_bus_client import Message
 from ovos_utils.file_utils import resolve_resource_file
 from ovos_utils.log import LOG, log_deprecation
-
+import warnings
 from ovos_workshop.skills.ovos import OVOSSkill
 
 
@@ -60,6 +60,11 @@ class CommonQuerySkill(OVOSSkill):
 
     def __init__(self, *args, **kwargs):
         log_deprecation("'CommonQuerySkill' class has been deprecated, use @common_query decorator with regular OVOSSkill instead", "4.0.0")
+        warnings.warn(
+            "use '@common_query' decorator with regular OVOSSkill instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # these should probably be configurable
         self.level_confidence = {
             CQSMatchLevel.EXACT: 0.9,
@@ -120,7 +125,7 @@ class CommonQuerySkill(OVOSSkill):
     # announce skill to ovos-core
     def __handle_common_query_ping(self, message):
         self.bus.emit(message.reply("ovos.common_query.pong",
-                                    {"skill_id": self.skill_id},
+                                    {"skill_id": self.skill_id, "is_classic_cq": True},
                                     {"skill_id": self.skill_id}))
 
     def __handle_question_query(self, message: Message):

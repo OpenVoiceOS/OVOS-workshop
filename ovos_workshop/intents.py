@@ -3,7 +3,7 @@ import itertools
 from os.path import exists
 from threading import RLock
 from typing import List, Tuple, Optional
-
+import warnings
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.util import get_mycroft_bus
 from ovos_utils.log import LOG, log_deprecation
@@ -500,6 +500,11 @@ class IntentServiceInterface:
         name = intent_name.split(':')[1]
         log_deprecation(f"Update to `self.remove_intent({name})",
                         "0.1.0")
+        warnings.warn(
+            "use `self.remove_intent' instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.remove_intent(name)
 
     def remove_intent(self, intent_name: str):
@@ -614,6 +619,11 @@ class IntentServiceInterface:
 
     def get_intent_names(self):
         log_deprecation("Reference `intent_names` directly", "0.1.0")
+        warnings.warn(
+            "use `self.intent_names' property instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.intent_names
 
     def detach_all(self):

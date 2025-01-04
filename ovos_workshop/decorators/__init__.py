@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Optional, Callable
 from ovos_utils.log import log_deprecation
-
+import warnings
 from ovos_workshop.decorators.killable import killable_intent, killable_event
 from ovos_workshop.decorators.layers import enables_layer, \
     disables_layer, layer_intent, removes_layer, resets_layers, replaces_layer
@@ -75,6 +75,11 @@ def intent_file_handler(intent_file: str):
     """
     Deprecated decorator for adding a method as an intent file handler.
     """
+    warnings.warn(
+        "Use `@intent_handler' instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     def real_decorator(func):
         # Store the intent_file inside the function

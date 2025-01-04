@@ -1,3 +1,10 @@
+import warnings
+warnings.warn(
+    "will be removed soon",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 try:  # TODO - remove this file in next stable release
     from ovos_utils.ocp import *
 except ImportError:
