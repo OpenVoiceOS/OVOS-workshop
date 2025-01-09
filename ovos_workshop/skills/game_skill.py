@@ -3,7 +3,7 @@ from typing import Optional, Dict, Iterable
 
 from ovos_bus_client.message import Message
 from ovos_bus_client.util import get_message_lang
-from ovos_utils.ocp import MediaType, MediaEntry, PlaybackType, Playlist
+from ovos_utils.ocp import MediaType, MediaEntry, PlaybackType, Playlist, PlayerState
 from ovos_utils.parse import match_one, MatchStrategy
 
 from ovos_workshop.decorators import ocp_featured_media, ocp_search
@@ -118,11 +118,22 @@ class OVOSGameSkill(OVOSCommonPlaybackSkill):
         """if your game has no save/load functionality you should
         speak a error dialog here"""
 
-    def stop(self) -> bool:
+    def stop_game(self):
+        """to be called by skills if they want to stop game programatically"""
         if self.is_playing:
+            self._paused.clear()
+            self.gui.release()
+            self.log.debug("changing OCP state: PlayerState.STOPPED ")
+            self.bus.emit(Message("ovos.common_play.player.state",
+                                  {"state": PlayerState.STOPPED}))
+            self._playing.clear()
             self.on_stop_game()
             return True
         return False
+
+    def stop(self) -> bool:
+        """NOTE: not meant to be called by the skill, this is a callback"""
+        return self.stop_game()
 
     def calc_intent(self, utterance: str, lang: str, timeout=1.0) -> Optional[Dict[str, str]]:
         """helper to check what intent would be selected by ovos-core"""
@@ -273,7 +284,7 @@ class ConversationalGameSkill(OVOSGameSkill):
                 self._autosave()
                 self.log.info("Game abandoned due to inactivity")
                 self.on_abandon_game()
-                self.on_stop_game()
+                self.stop_game()
         except Exception as e:
             self.log.exception(f"Error during game deactivation: {e}")
 
