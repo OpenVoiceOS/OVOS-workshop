@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.4a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.4a1) (2025-01-09)
+
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.3a1...3.3.4a1)
+
+**Merged pull requests:**
+
+- fix: stop DRY [\#325](https://github.com/OpenVoiceOS/OVOS-workshop/pull/325) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [3.3.3a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.3a1) (2025-01-09)
 
 [Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.2...3.3.3a1)
