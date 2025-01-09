@@ -31,15 +31,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  py_build_tests:
-    uses: neongeckocom/.github/.github/workflows/python_build_tests.yml@master
-    with:
-      python_version: "3.8"
-
   unit_tests:
     strategy:
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11" ]
+        python-version: [3.9, "3.10", "3.11"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
