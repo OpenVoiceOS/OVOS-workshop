@@ -1166,7 +1166,7 @@ class OVOSSkill:
         """
         Register default messagebus event handlers
         """
-        self.add_event('mycroft.stop', self._handle_stop, speak_errors=False)
+        self.add_event('mycroft.stop', self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop, speak_errors=False)
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
 
@@ -1348,33 +1348,13 @@ class OVOSSkill:
         sess = SessionManager.get(message)
         data = {"skill_id": self.skill_id, "result": False}
         try:
-            data["result"] = self.stop_session(sess)
+            data["result"] = self.stop_session(sess) or self.stop() or False
         except Exception as e:
             data["error"] = str(e)
             self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
-        if data["result"] and sess.session_id == "default":
-            # TODO - track if speech is coming from this skill!
-            # this is not currently tracked
-            self.bus.emit(message.reply("mycroft.audio.speech.stop",
-                                        {"skill_id": self.skill_id}))
-
+        if data["result"]:
+            self.__responses[sess.session_id] = None # abort any ongoing get_response
         self.bus.emit(message.reply(f"{self.skill_id}.stop.response", data))
-
-    def _handle_stop(self, message):
-        """Handler for the "mycroft.stop" signal. Runs the user defined
-        `stop()` method.
-        """
-        message.context['skill_id'] = self.skill_id
-        self.bus.emit(message.forward(self.skill_id + ".stop"))
-        sess = SessionManager.get(message)
-        try:
-            stopped = self.stop_session(sess) or self.stop() or False
-            LOG.debug(f"{self.skill_id} stopped: {stopped}")
-            if stopped:
-                self.bus.emit(message.reply("mycroft.stop.handled",
-                                            {"by": "skill:" + self.skill_id}))
-        except Exception as e:
-            self.log.exception(f'Failed to stop skill: {self.skill_id}: {e}')
 
     def default_shutdown(self):
         """
@@ -2155,7 +2135,7 @@ class OVOSSkill:
 
     def ask_selection(self, options: List[str], dialog: str = '',
                       data: Optional[dict] = None, min_conf: float = 0.65,
-                      numeric: bool = False):
+                      numeric: bool = False, num_retries: int = -1):
         """
         Read options, ask dialog question and wait for an answer.
 
@@ -2193,7 +2173,7 @@ class OVOSSkill:
             opt_str = join_word_list(options, "or", sep=",", lang=self.lang) + "?"
             self.speak(opt_str, wait=True)
 
-        resp = self.get_response(dialog=dialog, data=data)
+        resp = self.get_response(dialog=dialog, data=data, num_retries=num_retries)
 
         if resp:
             match, score = match_one(resp, options)
