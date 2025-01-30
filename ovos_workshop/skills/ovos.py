@@ -4,9 +4,11 @@ import json
 import os
 import re
 import shutil
+import string
 import sys
 import time
 import traceback
+import unicodedata
 from copy import copy
 from hashlib import md5
 from inspect import signature
@@ -17,6 +19,12 @@ from typing import Dict, Callable, List, Optional, Union
 
 from json_database import JsonStorage
 from langcodes import closest_match
+from ovos_config.config import Configuration
+from ovos_config.locations import get_xdg_cache_save_path
+from ovos_config.locations import get_xdg_config_save_path
+from ovos_number_parser import pronounce_number, extract_number
+from ovos_yes_no_solver import YesNoSolver
+
 from ovos_bus_client import MessageBusClient
 from ovos_bus_client.apis.enclosure import EnclosureAPI
 from ovos_bus_client.apis.gui import GUIInterface
@@ -24,10 +32,6 @@ from ovos_bus_client.apis.ocp import OCPInterface
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
-from ovos_config.config import Configuration
-from ovos_config.locations import get_xdg_cache_save_path
-from ovos_config.locations import get_xdg_config_save_path
-from ovos_number_parser import pronounce_number, extract_number
 from ovos_plugin_manager.language import OVOSLangTranslationFactory, OVOSLangDetectionFactory
 from ovos_utils import camel_case_split, classproperty
 from ovos_utils.dialog import MustacheDialogRenderer
@@ -42,9 +46,6 @@ from ovos_utils.parse import match_one
 from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_yes_no_solver import YesNoSolver
-from padacioso import IntentContainer
-
 from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
     AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
@@ -54,6 +55,7 @@ from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, \
 from ovos_workshop.resource_files import ResourceFile, \
     CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
+from padacioso import IntentContainer
 
 
 def simple_trace(stack_trace: List[str]) -> str:
@@ -2210,7 +2212,7 @@ class OVOSSkill:
         return self._voc_cache.get(cache_key) or []
 
     def voc_match(self, utt: str, voc_filename: str, lang: Optional[str] = None,
-                  exact: bool = False):
+                  exact: bool = False, ensure_ascii=True):
         """
         Determine if the given utterance contains the vocabulary provided.
 
@@ -2229,6 +2231,7 @@ class OVOSSkill:
                                 'locale/en-us/cancel.voc')
             lang (str): Language code, defaults to self.lang
             exact (bool): Whether the vocab must exactly match the utterance
+            ensure_ascii (bool): Whether to ignore accents and punctuation
 
         Returns:
             bool: True if the utterance has the given vocabulary it
@@ -2243,6 +2246,10 @@ class OVOSSkill:
             return False
 
         if utt and _vocs:
+            if ensure_ascii:
+                utt = remove_accents_and_punct(utt)
+                _vocs = [remove_accents_and_punct(v) for v in _vocs]
+
             if exact:
                 # Check for exact match
                 match = any(i.strip().lower() == utt.lower()
@@ -2764,3 +2771,21 @@ def _join_word_list_es(items: List[str], connector: str, sep: str = ",") -> str:
             final_connector = "u"
 
     return f"{joined_string} {final_connector} {items[-1]}"
+
+# TODO - move to ovos-utils
+def remove_accents_and_punct(input_str: str) -> str:
+    """
+    Normalize the input string by removing accents and punctuation (except for '{' and '}').
+
+    Args:
+        input_str (str): The input string to be processed.
+
+    Returns:
+        str: The processed string with accents and punctuation removed.
+    """
+    rm_chars = [c for c in string.punctuation if c not in ("{", "}")]
+    # Normalize to NFD (Normalization Form Decomposed), which separates characters and diacritical marks
+    nfkd_form = unicodedata.normalize('NFD', input_str)
+    # Remove characters that are not ASCII letters or punctuation we want to keep
+    return ''.join([char for char in nfkd_form
+                    if unicodedata.category(char) != 'Mn' and char not in rm_chars])
