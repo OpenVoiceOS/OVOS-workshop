@@ -4,11 +4,9 @@ import json
 import os
 import re
 import shutil
-import string
 import sys
 import time
 import traceback
-import unicodedata
 from copy import copy
 from hashlib import md5
 from inspect import signature
@@ -43,17 +41,14 @@ from ovos_utils.json_helper import merge_dict
 from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
-from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap
-from ovos_utils.process_utils import RuntimeRequirements
+from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap, RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
-    AbortQuestion
+from ovos_utils.text_utils import remove_accents_and_punct
+from ovos_workshop.decorators.killable import AbortEvent, killable_event, AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.filesystem import FileSystemAccess
-from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, \
-    munge_intent_parser, IntentServiceInterface
-from ovos_workshop.resource_files import ResourceFile, \
-    CoreResources, find_resource, SkillResources
+from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, munge_intent_parser, IntentServiceInterface
+from ovos_workshop.resource_files import ResourceFile, CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from padacioso import IntentContainer
 
@@ -2772,20 +2767,4 @@ def _join_word_list_es(items: List[str], connector: str, sep: str = ",") -> str:
 
     return f"{joined_string} {final_connector} {items[-1]}"
 
-# TODO - move to ovos-utils
-def remove_accents_and_punct(input_str: str) -> str:
-    """
-    Normalize the input string by removing accents and punctuation (except for '{' and '}').
 
-    Args:
-        input_str (str): The input string to be processed.
-
-    Returns:
-        str: The processed string with accents and punctuation removed.
-    """
-    rm_chars = [c for c in string.punctuation if c not in ("{", "}")]
-    # Normalize to NFD (Normalization Form Decomposed), which separates characters and diacritical marks
-    nfkd_form = unicodedata.normalize('NFD', input_str)
-    # Remove characters that are not ASCII letters or punctuation we want to keep
-    return ''.join([char for char in nfkd_form
-                    if unicodedata.category(char) != 'Mn' and char not in rm_chars])
