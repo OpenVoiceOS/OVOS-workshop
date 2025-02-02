@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.3.5a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.5a1) (2025-01-30)
+## [3.3.6a1](https://github.com/OpenVoiceOS/OVOS-workshop/tree/3.3.6a1) (2025-02-02)
 
-[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.4...3.3.5a1)
+[Full Changelog](https://github.com/OpenVoiceOS/OVOS-workshop/compare/3.3.5...3.3.6a1)
 
 **Merged pull requests:**
 
-- fix:voc\_match [\#327](https://github.com/OpenVoiceOS/OVOS-workshop/pull/327) ([JarbasAl](https://github.com/JarbasAl))
+- refactor:shared utils [\#329](https://github.com/OpenVoiceOS/OVOS-workshop/pull/329) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
