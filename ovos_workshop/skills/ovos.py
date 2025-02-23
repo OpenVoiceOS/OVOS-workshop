@@ -751,6 +751,7 @@ class OVOSSkill:
 
     def on_ready_status(self):
         LOG.info(f'{self.skill_id} is ready.')
+        self.bus.emit(Message("mycroft.skill.ready", {"id": self.skill_id}))
 
     def on_error_status(self, e='Unknown'):
         LOG.exception(f'{self.skill_id} initialization failed')
