@@ -13,7 +13,7 @@ ovos-workshop==3.3.6a1
 ├── ovos-skill-application-launcher==0.5.11a1 [requires: ovos-workshop>=0.0.15,<4.0.0]
 ├── ovos-skill-camera==1.0.5a1 [requires: ovos-workshop>=0.0.12]
 ├── ovos-skill-cmd==0.2.10a2 [requires: ovos-workshop>=0.0.15,<4.0.0]
-├── ovos-skill-color-picker==0.0.6 [requires: ovos-workshop]
+├── ovos-skill-color-picker==0.0.7 [requires: ovos-workshop]
 ├── ovos-skill-confucius-quotes==0.1.11a1 [requires: ovos-workshop>=0.0.15,<4.0.0]
 ├── ovos-skill-date-time==0.4.9 [requires: ovos-workshop>=0.0.16,<4.0.0]
 ├── ovos-skill-days-in-history==0.3.10a1 [requires: ovos-workshop>=3.1.0,<4.0.0]
