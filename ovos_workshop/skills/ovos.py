@@ -990,7 +990,8 @@ class OVOSSkill:
             method = getattr(self, attr_name)
             if hasattr(method, 'intents'):
                 for intent in getattr(method, 'intents'):
-                    self.register_intent(intent, method)
+                    voc_blacklist = method.voc_blacklist if hasattr(method, 'voc_blacklist') else []
+                    self.register_intent(intent, method, voc_blacklist=voc_blacklist)
 
             if hasattr(method, 'intent_files'):
                 for intent_file in getattr(method, 'intent_files'):
@@ -1440,7 +1441,7 @@ class OVOSSkill:
             self.intent_layers.update_layer(layer_name, [name])
 
     def register_intent(self, intent_parser: Union[IntentBuilder, Intent, str],
-                        handler: callable):
+                        handler: callable, voc_blacklist: Optional[List[str]] = None):
         """
         Register an Intent with the intent service.
 
@@ -1452,10 +1453,11 @@ class OVOSSkill:
         if isinstance(intent_parser, str):
             if not intent_parser.endswith('.intent'):
                 raise ValueError
-            return self.register_intent_file(intent_parser, handler)
+            return self.register_intent_file(intent_parser, handler, voc_blacklist)
         return self._register_adapt_intent(intent_parser, handler)
 
-    def register_intent_file(self, intent_file: str, handler: callable):
+    def register_intent_file(self, intent_file: str, handler: callable,
+                             voc_blacklist: Optional[List[str]] = None):
         """Register an Intent file with the intent service.
 
         For example:
@@ -1488,6 +1490,11 @@ class OVOSSkill:
                 self.log.error(f'Unable to find "{intent_file}"')
                 continue
             filename = str(resource_file.file_path)
+
+            disallowed_strings = []
+            for enty in voc_blacklist:
+                disallowed_strings += self.voc_list(enty, lang=lang)
+
             self.intent_service.register_padatious_intent(name, filename, lang)
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler',
