@@ -567,7 +567,7 @@ class IntentServiceInterface:
         self.bus.emit(msg.forward('remove_context', {'context': context}))
 
     def register_padatious_intent(self, intent_name: str, filename: str,
-                                  lang: str):
+                                  lang: str, string_blacklist: Optional[List[str]] = None):
         """
         Register a Padatious intent file with the intent service.
         @param intent_name: Unique intent identifier
@@ -585,7 +585,8 @@ class IntentServiceInterface:
         data = {'file_name': filename,
                 "samples": samples,
                 'name': intent_name,
-                'lang': lang}
+                'lang': lang,
+                'blacklisted_words': string_blacklist}
         msg = dig_for_message() or Message("")
         if "skill_id" not in msg.context:
             msg.context["skill_id"] = self.skill_id

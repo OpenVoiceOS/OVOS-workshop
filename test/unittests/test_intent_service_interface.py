@@ -140,6 +140,6 @@ class UtteranceIntentRegistrationTest(unittest.TestCase):
 
         intent_service.register_padatious_intent('test', filename, lang='en-US')
         expected_data = {'file_name': '/tmp/test.intent', 'lang': 'en-US', 'name': 'test',
-                         'samples': ['this is a test', 'test the intent']}
+                         'samples': ['this is a test', 'test the intent'], 'blacklisted_words': None}
         self.check_emitter([expected_data])
 

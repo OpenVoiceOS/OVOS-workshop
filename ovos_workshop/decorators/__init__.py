@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Optional, Callable
+from typing import Optional, Callable, List
 from ovos_utils.log import log_deprecation
 import warnings
 from ovos_workshop.decorators.killable import killable_intent, killable_event
@@ -54,7 +54,7 @@ def removes_context(context: str):
     return context_removes_decorator
 
 
-def intent_handler(intent_parser: object):
+def intent_handler(intent_parser: object, voc_blacklist: Optional[List[str]] = None):
     """
     Decorator for adding a method as an intent handler.
     @param intent_parser: string intent name or adapt.IntentBuilder object
@@ -65,31 +65,12 @@ def intent_handler(intent_parser: object):
         # This will be used later to call register_intent
         if not hasattr(func, 'intents'):
             func.intents = []
+        if not hasattr(func, 'voc_blacklist'):
+            func.voc_blacklist = []
         func.intents.append(intent_parser)
+        func.voc_blacklist += voc_blacklist or []
         return func
 
-    return real_decorator
-
-
-def intent_file_handler(intent_file: str):
-    """
-    Deprecated decorator for adding a method as an intent file handler.
-    """
-    warnings.warn(
-        "Use `@intent_handler' instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    def real_decorator(func):
-        # Store the intent_file inside the function
-        # This will be used later to call register_intent_file
-        if not hasattr(func, 'intent_files'):
-            func.intent_files = []
-        func.intent_files.append(intent_file)
-        return func
-
-    log_deprecation(f"Use `@intent_handler({intent_file})`", "0.1.0")
     return real_decorator
 
 
@@ -139,7 +120,6 @@ def common_query(callback: Optional[CQCallback] = None):
         return func
 
     return real_decorator
-
 
 
 def converse_handler(func):
