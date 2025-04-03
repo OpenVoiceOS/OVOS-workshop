@@ -1495,7 +1495,7 @@ class OVOSSkill:
             for enty in voc_blacklist:
                 disallowed_strings += self.voc_list(enty, lang=lang)
 
-            self.intent_service.register_padatious_intent(name, filename, lang)
+            self.intent_service.register_padatious_intent(name, filename, lang, string_blacklist=disallowed_strings)
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler',
                            activation=True, is_intent=True)
