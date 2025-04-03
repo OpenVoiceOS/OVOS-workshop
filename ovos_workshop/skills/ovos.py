@@ -1492,7 +1492,7 @@ class OVOSSkill:
             filename = str(resource_file.file_path)
 
             disallowed_strings = []
-            for enty in voc_blacklist:
+            for enty in voc_blacklist or []:
                 disallowed_strings += self.voc_list(enty, lang=lang)
 
             self.intent_service.register_padatious_intent(name, filename, lang, string_blacklist=disallowed_strings)
