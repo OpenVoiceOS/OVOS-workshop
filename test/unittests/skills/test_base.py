@@ -323,7 +323,7 @@ class TestOVOSSkill(unittest.TestCase):
         skill.config_core["secondary_langs"] = []
         skill.register_intent_file("time.intent", Mock(__name__="test"))
         skill.intent_service.register_padatious_intent.assert_called_once_with(
-            f"{skill.skill_id}:time.intent", en_intent_file, "en-US")
+            f"{skill.skill_id}:time.intent", en_intent_file, "en-US", string_blacklist=[])
 
         # With secondary language
         skill.intent_service.register_padatious_intent.reset_mock()
@@ -332,9 +332,9 @@ class TestOVOSSkill(unittest.TestCase):
         self.assertEqual(
             skill.intent_service.register_padatious_intent.call_count, 2)
         skill.intent_service.register_padatious_intent.assert_any_call(
-            f"{skill.skill_id}:time.intent", en_intent_file, "en-US")
+            f"{skill.skill_id}:time.intent", en_intent_file, "en-US", string_blacklist=[])
         skill.intent_service.register_padatious_intent.assert_any_call(
-            f"{skill.skill_id}:time.intent", uk_intent_file, "uk-UA")
+            f"{skill.skill_id}:time.intent", uk_intent_file, "uk-UA", string_blacklist=[])
 
     def test_register_entity_file(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)

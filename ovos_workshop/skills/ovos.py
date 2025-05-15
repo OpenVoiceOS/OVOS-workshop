@@ -4,11 +4,9 @@ import json
 import os
 import re
 import shutil
-import string
 import sys
 import time
 import traceback
-import unicodedata
 from copy import copy
 from hashlib import md5
 from inspect import signature
@@ -43,17 +41,14 @@ from ovos_utils.json_helper import merge_dict
 from ovos_utils.lang import standardize_lang_tag
 from ovos_utils.log import LOG
 from ovos_utils.parse import match_one
-from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap
-from ovos_utils.process_utils import RuntimeRequirements
+from ovos_utils.process_utils import ProcessStatus, StatusCallbackMap, RuntimeRequirements
 from ovos_utils.skills import get_non_properties
-from ovos_workshop.decorators.killable import AbortEvent, killable_event, \
-    AbortQuestion
+from ovos_utils.text_utils import remove_accents_and_punct
+from ovos_workshop.decorators.killable import AbortEvent, killable_event, AbortQuestion
 from ovos_workshop.decorators.layers import IntentLayers
 from ovos_workshop.filesystem import FileSystemAccess
-from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, \
-    munge_intent_parser, IntentServiceInterface
-from ovos_workshop.resource_files import ResourceFile, \
-    CoreResources, find_resource, SkillResources
+from ovos_workshop.intents import IntentBuilder, Intent, munge_regex, munge_intent_parser, IntentServiceInterface
+from ovos_workshop.resource_files import ResourceFile, CoreResources, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from padacioso import IntentContainer
 
@@ -995,7 +990,8 @@ class OVOSSkill:
             method = getattr(self, attr_name)
             if hasattr(method, 'intents'):
                 for intent in getattr(method, 'intents'):
-                    self.register_intent(intent, method)
+                    voc_blacklist = method.voc_blacklist if hasattr(method, 'voc_blacklist') else []
+                    self.register_intent(intent, method, voc_blacklist=voc_blacklist)
 
             if hasattr(method, 'intent_files'):
                 for intent_file in getattr(method, 'intent_files'):
@@ -1445,7 +1441,7 @@ class OVOSSkill:
             self.intent_layers.update_layer(layer_name, [name])
 
     def register_intent(self, intent_parser: Union[IntentBuilder, Intent, str],
-                        handler: callable):
+                        handler: callable, voc_blacklist: Optional[List[str]] = None):
         """
         Register an Intent with the intent service.
 
@@ -1457,10 +1453,11 @@ class OVOSSkill:
         if isinstance(intent_parser, str):
             if not intent_parser.endswith('.intent'):
                 raise ValueError
-            return self.register_intent_file(intent_parser, handler)
+            return self.register_intent_file(intent_parser, handler, voc_blacklist)
         return self._register_adapt_intent(intent_parser, handler)
 
-    def register_intent_file(self, intent_file: str, handler: callable):
+    def register_intent_file(self, intent_file: str, handler: callable,
+                             voc_blacklist: Optional[List[str]] = None):
         """Register an Intent file with the intent service.
 
         For example:
@@ -1493,7 +1490,12 @@ class OVOSSkill:
                 self.log.error(f'Unable to find "{intent_file}"')
                 continue
             filename = str(resource_file.file_path)
-            self.intent_service.register_padatious_intent(name, filename, lang)
+
+            disallowed_strings = []
+            for enty in voc_blacklist or []:
+                disallowed_strings += self.voc_list(enty, lang=lang)
+
+            self.intent_service.register_padatious_intent(name, filename, lang, string_blacklist=disallowed_strings)
         if handler:
             self.add_event(name, handler, 'mycroft.skill.handler',
                            activation=True, is_intent=True)
@@ -2772,20 +2774,4 @@ def _join_word_list_es(items: List[str], connector: str, sep: str = ",") -> str:
 
     return f"{joined_string} {final_connector} {items[-1]}"
 
-# TODO - move to ovos-utils
-def remove_accents_and_punct(input_str: str) -> str:
-    """
-    Normalize the input string by removing accents and punctuation (except for '{' and '}').
 
-    Args:
-        input_str (str): The input string to be processed.
-
-    Returns:
-        str: The processed string with accents and punctuation removed.
-    """
-    rm_chars = [c for c in string.punctuation if c not in ("{", "}")]
-    # Normalize to NFD (Normalization Form Decomposed), which separates characters and diacritical marks
-    nfkd_form = unicodedata.normalize('NFD', input_str)
-    # Remove characters that are not ASCII letters or punctuation we want to keep
-    return ''.join([char for char in nfkd_form
-                    if unicodedata.category(char) != 'Mn' and char not in rm_chars])
