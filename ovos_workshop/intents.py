@@ -15,7 +15,9 @@ from ovos_utils.log import LOG, log_deprecation
 # OVOS-INTENT-4 keyword-intent definition primitives, re-exported from ovos-spec-tools.
 from ovos_spec_tools import (Intent, IntentBuilder, open_intent_envelope,
                              SpecMessage, INTENT_FILE_SUFFIX,
-                             inline_keywords, expand, MalformedTemplate)
+                             declared_slot_types, inline_keywords, expand,
+                             MalformedTemplate)
+from ovos_spec_tools.expansion import strip_type_prefixes
 from ovos_spec_tools.resources import read_resource_file
 
 from ovos_workshop.decorators import ContextGate
@@ -648,6 +650,13 @@ class IntentServiceInterface:
             LOG.warning(f"{self.skill_id}: not registering template "
                         f"'{intent_name}' ({lang}), it has no valid samples")
             return
+        # OVOS-INTENT-4 §6.1: the payload's `slots` are bare names and the
+        # `slot_types` map declares each one's type, so the type prefix an
+        # author wrote (OVOS-INTENT-1 §3.4) is read off the templates and then
+        # folded away — §4.1 expansion emits bare `{name}`, and an engine that
+        # does not implement typed slots sees exactly an untyped template.
+        slot_types = declared_slot_types(samples)
+        samples = [strip_type_prefixes(sample) for sample in samples]
         # OVOS-INTENT-1 §3.6/§3.7: validate with <name> refs held by a placeholder.
         samples = _drop_malformed_samples(samples, intent_name, lang,
                                           self.skill_id)
@@ -673,7 +682,10 @@ class IntentServiceInterface:
                 "samples": samples,
                 'name': intent_name,
                 'lang': lang,
-                'blacklisted_words': blacklisted_words}
+                'blacklisted_words': blacklisted_words,
+                # kept so a skill can resolve a slot's declared type when it
+                # reads OVOS-INTENT-1 §5.6 entries off a dispatch message
+                'slot_types': slot_types}
         # INTENT-4 §8.1: replace any prior registration of this (intent_name, lang).
         slot = None
         for i, (registered_name, registered_data) in enumerate(self.registered_intents):
@@ -704,7 +716,8 @@ class IntentServiceInterface:
                                    # declarations, riding as unknown-field
                                    # extensions per INTENT-4 §5.3
                                    "requires_context": requires_context or [],
-                                   "excludes_context": excludes_context or []}))
+                                   "excludes_context": excludes_context or [],
+                                   **({"slot_types": slot_types} if slot_types else {})}))
         if slot is None:
             self.registered_intents.append((name, data))
         else:

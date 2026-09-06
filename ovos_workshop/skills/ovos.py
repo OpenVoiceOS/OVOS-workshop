@@ -28,7 +28,7 @@ from os.path import join, abspath, dirname, basename, isfile
 from pathlib import Path
 from queue import Queue
 from threading import Event, RLock, Thread
-from typing import Dict, Callable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Callable, List, Optional, Set, Tuple, Union
 
 from json_database import JsonStorage
 from ovos_bus_client import MessageBusClient
@@ -53,7 +53,8 @@ from ovos_bus_client.handler import HandlerLifecycle
 from ovos_bus_client.message import Message, dig_for_message
 from ovos_bus_client.session import SessionManager, Session
 from ovos_bus_client.util import get_message_lang
-from ovos_spec_tools import (SpecMessage, canonical_intent_topic,
+from ovos_spec_tools import (REGISTERED_TYPES, SpecMessage,
+                             canonical_intent_topic, declared_slots,
                              standardize_lang)
 from ovos_spec_tools.resources import read_resource_file
 from ovos_config.config import Configuration
@@ -86,6 +87,21 @@ from ovos_workshop.intents import IntentBuilder, Intent, IntentServiceInterface
 from ovos_workshop.resource_files import ResourceFile, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
 from ovos_workshop.skills.util import join_word_list, simple_trace
+
+
+def _typed_slots_map(message: Message) -> Dict[str, Any]:
+    """The OVOS-INTENT-1 §5.6 `data.typed_slots` map, or an empty one."""
+    typed_slots = message.data.get("typed_slots")
+    return typed_slots if isinstance(typed_slots, dict) else {}
+
+
+def _is_typed_entry(entry: Any) -> bool:
+    """Whether `entry` has the OVOS-INTENT-1 §5.6 shape a consumer can read."""
+    span = entry.get("span") if isinstance(entry, dict) else None
+    return (isinstance(entry, dict) and "value" in entry
+            and isinstance(entry.get("surface"), str)
+            and isinstance(span, (list, tuple)) and len(span) == 2
+            and all(isinstance(edge, int) for edge in span))
 
 
 class OVOSSkill:
@@ -1467,10 +1483,10 @@ class OVOSSkill:
             # exclusions — values that MUST NOT bind to that slot (the
             # canonical use is keeping anaphoric pronouns out of a referential
             # slot). Keyed by slot name so consuming engines can drop them.
+            # A typed slot (OVOS-INTENT-1 §3.4 `{type:name}`) is keyed by its
+            # bare name, the prefix is not part of it.
             slot_blacklist = {}
-            with open(filename) as f:
-                slots = set(re.findall(r"{(.+?)}", f.read()))
-            for slot in slots:
+            for slot in declared_slots(samples):
                 phrases = resources.load_blacklist_file(slot)
                 if phrases:
                     slot_blacklist[slot] = phrases
@@ -2429,6 +2445,75 @@ class OVOSSkill:
                 LOG.error(f"OptionMatcher plugin failed: {e}")
                 resp = None
         return resp
+
+    def typed_slot(self, message: Message, name: str) -> Any:
+        """
+        Get the normalized value an engine computed for a slot, if any.
+
+        OVOS-INTENT-1 §5.6: `data.typed_slots` maps a registered type to the
+        entries of that type found in the utterance, while `message.data[name]`
+        stays the surface string the slot bound. The entry for a slot is the
+        one whose `surface` equals that value; a repeated value is ambiguous
+        and the first entry is taken.
+
+        Only the type the intent declared for this slot is searched, so a
+        surface string that several engines found under different types still
+        resolves to the declared one. A slot with no declared type - an
+        untyped template placeholder, or a name the handler invented - falls
+        back to searching every registered type, in REGISTERED_TYPES order.
+
+        @param message: intent dispatch message
+        @param name: slot name, as declared by the intent template
+        @return: normalized value of the type the slot declared, or None if no
+                 entry covers the slot
+        """
+        surface = message.data.get(name)
+        if not isinstance(surface, str):
+            return None
+        declared = self._declared_slot_type(message, name)
+        for slot_type in [declared] if declared else REGISTERED_TYPES:
+            for entry in self.typed_slots(message, slot_type):
+                if entry["surface"] == surface:
+                    return entry["value"]
+        return None
+
+    def _declared_slot_type(self, message: Message,
+                            name: str) -> Optional[str]:
+        """The type this skill declared for `name`, per the OVOS-INTENT-4 §6.1
+        registration of the intent `message` dispatches."""
+        # OVOS-MSG-1 §2.1.1: the dispatch topic is `<skill_id>:<intent_name>`,
+        # and registrations are keyed by the bare intent name.
+        intent_name = message.msg_type.split(":")[-1]
+        for registered, data in self.intent_service.registered_intents:
+            if registered == intent_name and isinstance(data, dict):
+                declared = data.get("slot_types") or {}
+                if name in declared:
+                    return declared[name]
+        return None
+
+    def typed_slots(self, message: Message,
+                    slot_type: str) -> List[Dict[str, Any]]:
+        """
+        Get every entry of one registered type found in the utterance.
+
+        OVOS-INTENT-1 §5.6: an engine that computes a type reports what it
+        found whether or not a slot bound it, so a handler that parses the
+        whole utterance reads the entries directly. Each entry carries `span`,
+        `surface` and `value`; an empty list means the type was computed and
+        nothing of that kind was found, or was not computed at all.
+
+        @param message: intent dispatch message
+        @param slot_type: registered type name, e.g. "number" or "date"
+        @return: entries of that type in span order
+        """
+        entries = _typed_slots_map(message).get(slot_type)
+        if not isinstance(entries, list):
+            return []
+        valid = [entry for entry in entries if _is_typed_entry(entry)]
+        if len(valid) != len(entries):
+            LOG.debug(f"dropping malformed OVOS-INTENT-1 §5.6 typed_slots "
+                      f"entries for type {slot_type!r}")
+        return sorted(valid, key=lambda entry: tuple(entry["span"]))
 
     def voc_list(self, voc_filename: str,
                  lang: Optional[str] = None) -> List[str]:
