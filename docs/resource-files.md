@@ -113,11 +113,9 @@ def handle_set_timer(self, message):
 
 A handler that parses the whole utterance and declares no slot reads the
 entries directly instead: `typed_slots(message, "date")` returns every date
-the engine found, in span order. Its empty list is not evidence of absence —
-it covers both the type being computed and nothing found, and the type never
-being computed, which OVOS-INTENT-1 §5.6 keeps distinct. A handler that must
-tell the two apart reads `message.data.get("typed_slots")` and checks whether
-the type is a key of the map at all.
+the engine found, in span order. The `typed_slots` map carries only types
+with at least one entry, so an empty list means no date is available,
+whatever the cause.
 
 ## Entity Files (Padatious)
 
