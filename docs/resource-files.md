@@ -79,6 +79,46 @@ what is the weather in {location}
 (show | tell me) the weather
 ```
 
+## Typed Slots
+
+A slot may declare a type: `{number:amount}` names the slot `amount` and asks
+the engine for a number. The registered types are `number`, `duration`, `date`
+and `color`. The prefix is not part of the slot name — the samples that reach
+the engine carry the bare `{amount}`, an unregistered type degrades to an
+untyped slot with a warning, and the declared types travel separately in the
+registration's `slot_types` map (OVOS-INTENT-4 §6.1). An engine MAY use them to
+constrain where the slot matches (OVOS-INTENT-1 §5.6).
+
+Requiring a slot and requiring its type are different things. To require the
+slot, list it in `required_slots` on the intent: the engine enforces it, and
+the orchestrator backstop rejects a Match whose slot map lacks it
+(OVOS-PIPELINE-1 §6.2). The type carries no such guarantee. Neither backstop
+consults `data.typed_slots`, and a slot value is never coerced
+(OVOS-INTENT-1 §5.3), so `{number:amount}` guarantees a value, not a number:
+the engine may bind text no number parser recognized.
+
+That makes the type check the skill's own. `typed_slot()` returns the
+normalized value for a slot, and `None` when no typed entry covers what the
+engine bound — the handler re-prompts or refuses:
+
+```python
+@intent_handler("set.timer.intent")
+def handle_set_timer(self, message):
+    minutes = self.typed_slot(message, "amount")
+    if minutes is None:
+        self.speak_dialog("how.many.minutes")
+        return
+    self.start_timer(minutes)
+```
+
+A handler that parses the whole utterance and declares no slot reads the
+entries directly instead: `typed_slots(message, "date")` returns every date
+the engine found, in span order. Its empty list is not evidence of absence —
+it covers both the type being computed and nothing found, and the type never
+being computed, which OVOS-INTENT-1 §5.6 keeps distinct. A handler that must
+tell the two apart reads `message.data.get("typed_slots")` and checks whether
+the type is a key of the map at all.
+
 ## Entity Files (Padatious)
 
 One example value per line. An `.entity` file fills a `{slot}` named by a `.intent` template:
