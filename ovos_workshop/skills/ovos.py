@@ -2499,8 +2499,9 @@ class OVOSSkill:
         OVOS-INTENT-1 §5.6: an engine that computes a type reports what it
         found whether or not a slot bound it, so a handler that parses the
         whole utterance reads the entries directly. Each entry carries `span`,
-        `surface` and `value`; an empty list means the type was computed and
-        nothing of that kind was found, or was not computed at all.
+        `surface` and `value`; the `typed_slots` map carries only types with
+        at least one entry, so an empty list means no value of that type is
+        available, whatever the cause.
 
         @param message: intent dispatch message
         @param slot_type: registered type name, e.g. "number" or "date"
