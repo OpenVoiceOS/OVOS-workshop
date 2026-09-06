@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.7.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.0a1) (2026-09-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.6.9a1...9.7.0a1)
+
+**Merged pull requests:**
+
+- feat: typed slots — slot\_types on registration and a typed value helper \(INTENT-4 §6.1, INTENT-1 §5.6\) [\#599](https://github.com/OpenVoiceOS/ovos-workshop/pull/599) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [9.6.9a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.6.9a1) (2026-09-05)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.6.8a1...9.6.9a1)
@@ -373,10 +381,6 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.0a1...9.3.0a2)
 
-**Merged pull requests:**
-
-- test: e2e regression guard for INTENT-4 keyword samples with CamelCase vocab [\#491](https://github.com/OpenVoiceOS/ovos-workshop/pull/491) ([JarbasAl](https://github.com/JarbasAl))
-
 ## [9.3.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.0a1) (2026-07-24)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.2.10a1...9.3.0a1)
@@ -487,15 +491,15 @@
 
 ## [8.1.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.1.0a1) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.1.0a1)
-
-## [8.0.4a4](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a4) (2026-04-08)
-
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.0.4a4)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.1.0a1)
 
 ## [8.0.4a3](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a3) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a3)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.0.4a3)
+
+## [8.0.4a4](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a4) (2026-04-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a4)
 
 ## [8.0.4a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a2) (2026-04-08)
 
