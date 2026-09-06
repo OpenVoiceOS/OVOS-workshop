@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.7.0a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.0a2) (2026-09-06)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.0a1...9.7.0a2)
+
+**Merged pull requests:**
+
+- docs: typed slots carry only types with entries [\#601](https://github.com/OpenVoiceOS/ovos-workshop/pull/601) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [9.7.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.0a1) (2026-09-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.6.9a1...9.7.0a1)
@@ -372,10 +380,6 @@
 ## [9.3.1a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.1a1) (2026-07-24)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.0a2...9.3.1a1)
-
-**Merged pull requests:**
-
-- fix: bump padacioso floor to 2.2.1a1 so dangling \<name\> refs raise MalformedTemplate [\#493](https://github.com/OpenVoiceOS/ovos-workshop/pull/493) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [9.3.0a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.0a2) (2026-07-24)
 
