@@ -25,6 +25,7 @@ from ovos_workshop.skills.ovos import OVOSSkill
 
 from ovos_utils.fakebus import FakeBus
 from ovos_bus_client.message import Message
+from ovos_bus_client.session import Session, SessionManager
 
 
 class TestOVOSSkill(unittest.TestCase):
@@ -1077,13 +1078,84 @@ class TestOVOSSkill(unittest.TestCase):
         # TODO
         pass
 
-    def test_set_cross_skill_contest(self):
-        # TODO
-        pass
+    def test_set_context_turns_remaining_lands_on_session(self):
+        """OVOS-CONTEXT-1 §1.2's one-turn confirmation gate
+        (`{"value": ..., "turns_remaining": 1}`) must be reachable from the
+        skill API."""
+        bus = FakeBus()
+        skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
+
+        session = Session("test_set_context_turns_remaining")
+        msg = Message("some.intent", {}, {"session": session.serialize()})
+
+        def dispatch(message):
+            skill.set_context("confirming_milk", turns_remaining=1)
+
+        dispatch(msg)
+
+        try:
+            live = SessionManager.get(msg)
+            entry = live.intent_context[f"{skill.skill_id}:confirming_milk"]
+            self.assertEqual(entry["turns_remaining"], 1)
+        finally:
+            # `default_shutdown()` is idempotent (guarded by
+            # `_shutdown_done`) - calling it now means the `__del__` that
+            # runs whenever GC eventually drops `skill` is a no-op, instead
+            # of an unbounded-delay call into whatever mock/patch another
+            # test has active on `OVOSSkill.default_shutdown` at the time.
+            skill.default_shutdown()
+
+    def test_set_cross_skill_context_no_bus_mutation(self):
+        """OVOS-CONTEXT-1 §5.0: there is no bus topic whose purpose is to
+        mutate context - `set_cross_skill_context` must write the shared
+        entry directly into the session, not rely on a Message to do it."""
+        bus = FakeBus()
+        skill = OVOSSkill(bus=bus, skill_id="skill.a")
+
+        session = Session("test_set_cross_skill_context_no_bus")
+        msg = Message("some.intent", {}, {"session": session.serialize()})
+
+        received = []
+        bus.on("mycroft.skill.set_cross_context", lambda m: received.append(m))
+
+        def dispatch(message):
+            skill.set_cross_skill_context("person", "Bob", turns_remaining=3)
+
+        dispatch(msg)
+
+        try:
+            # the mutation already landed on the session, synchronously,
+            # independent of whatever legacy compat message rides the bus
+            live = SessionManager.get(msg)
+            self.assertIn("person", live.intent_context)
+            entry = live.intent_context["person"]
+            self.assertEqual(entry["value"], "Bob")
+            self.assertEqual(entry["turns_remaining"], 3)
+        finally:
+            # see test_set_context_turns_remaining_lands_on_session
+            skill.default_shutdown()
 
     def test_remove_cross_skill_context(self):
-        # TODO
-        pass
+        """Symmetric with set_cross_skill_context: removal also lands on
+        the shared session entry, not only on the legacy broadcast."""
+        bus = FakeBus()
+        skill = OVOSSkill(bus=bus, skill_id="skill.a")
+
+        session = Session("test_remove_cross_skill_context")
+        session.set_intent_context("person", "Bob", scope="shared")
+        msg = Message("some.intent", {}, {"session": session.serialize()})
+
+        def dispatch(message):
+            skill.remove_cross_skill_context("person")
+
+        dispatch(msg)
+
+        try:
+            live = SessionManager.get(msg)
+            self.assertIsNone(live.intent_context["person"])
+        finally:
+            # see test_set_context_turns_remaining_lands_on_session
+            skill.default_shutdown()
 
     def test_register_vocabulary(self):
         # TODO
