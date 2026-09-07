@@ -132,13 +132,18 @@ class _AdaptIntentApi:
             element = [sid + e.replace(sid, '') for e in i]
             at_least_one.append(tuple(element))
         intent_parser.at_least_one = at_least_one
-        excludes = []
-        for e in intent_parser.excludes:
-            if not e.startswith(sid):
-                excludes.append(sid + e)
-            else:
-                excludes.append(e)
-        intent_parser.excludes = excludes
+        # OVOS-INTENT-4 §5.2: `excluded` is optional (absent = []). Some
+        # adapt Intent implementations (e.g. legacy `adapt-parser`) predate
+        # the `excludes` concept and have no such attribute; leave them
+        # untouched rather than inventing one.
+        if hasattr(intent_parser, "excludes"):
+            excludes = []
+            for e in intent_parser.excludes:
+                if not e.startswith(sid):
+                    excludes.append(sid + e)
+                else:
+                    excludes.append(e)
+            intent_parser.excludes = excludes
 
     # ------------------------------------------------------------------
     #  legacy bus emits — called by the spec-compliant producer for
@@ -509,7 +514,10 @@ class IntentServiceInterface:
         required_names = [r[0] for r in intent_parser.requires]
         optional_names = [o[0] for o in intent_parser.optional]
         one_of_groups = [list(g) for g in intent_parser.at_least_one]
-        excluded_names = list(intent_parser.excludes)
+        # OVOS-INTENT-4 §5.2: `excluded` is optional (absent = []). Some
+        # adapt Intent implementations (e.g. legacy `adapt-parser`) predate
+        # the `excludes` concept and have no such attribute.
+        excluded_names = list(getattr(intent_parser, "excludes", []))
 
         referenced = set(required_names) | set(optional_names) | \
                      set(excluded_names)

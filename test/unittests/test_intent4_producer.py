@@ -108,6 +108,22 @@ class AdaptKeywordSpecTest(unittest.TestCase):
         # legacy register_intent still emitted (dual-emit)
         self.assertEqual(len(self.bus.of_type("register_intent")), 1)
 
+    def test_register_intent_tolerates_adapt_parser_without_excludes(self):
+        """OVOS-INTENT-4 §5.2: `excluded` is optional (absent = []). A real
+        ``adapt.intent.Intent`` built via ``IntentBuilder(...).build()``
+        against the legacy ``adapt-parser`` package has no ``excludes``
+        attribute at all (that concept post-dates it); registering such an
+        intent must not raise, and the payload's `excluded` key must be an
+        empty list."""
+        self.iface.register_adapt_keyword("setKW", "set", lang="en-US")
+        parser = IntentBuilder("set_brightness").require("setKW").build()
+        del parser.excludes  # simulate the legacy adapt-parser Intent shape
+
+        self.iface.register_intent("set_brightness", parser)
+
+        data, _ = self.bus.of_type(SpecMessage.INTENT_REGISTER_KEYWORD)[0]
+        self.assertEqual(data["excluded"], [])
+
     def test_register_keyword_intent_context_gating_undeclared_defaults_empty(self):
         """OVOS-CONTEXT-1 §6/§6.1: an intent with no gating declaration has
         no precondition - both fields ride the payload as empty lists."""
