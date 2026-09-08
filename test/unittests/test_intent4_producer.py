@@ -9,6 +9,7 @@ import unittest
 from hashlib import md5
 
 import pytest
+from ovos_bus_client.message import Message
 from ovos_spec_tools import SpecMessage
 from ovos_utils.fakebus import FakeBus
 
@@ -187,6 +188,39 @@ class AdaptKeywordSpecTest(unittest.TestCase):
         # spec-only hand emit: the producer must NOT itself emit the legacy
         # `detach_intent` (the bus MIGRATION_MAP bridges it transparently).
         self.assertEqual(self.bus.of_type("detach_intent"), [])
+
+    def test_deregister_stamps_own_skill_id_over_ambient_context(self):
+        """INTENT-4 §3.2: payload skill_id must equal context.skill_id on
+        ovos.intent.deregister. A skill detaching its own intent while
+        handling another component's message must not inherit that
+        component's context skill_id."""
+        self.iface.register_adapt_keyword("xKW", "x", lang="en-US")
+        parser = IntentBuilder("foo").require("xKW").build()
+        self.iface.register_adapt_intent("foo", parser)
+        self.bus.captured.clear()
+
+        ambient = Message("other.skill.event", {},
+                          {"skill_id": "other.skill",
+                           "session": {"session_id": "s1"}})
+
+        second = IntentServiceInterface(self.bus)
+        second.set_id("second.skill")
+
+        def handler(message):
+            # `message` is a local so dig_for_message() finds it, exactly as
+            # it does inside a skill's bus handler
+            self.iface.remove_intent("test.skill:foo")
+            second.remove_intent("second.skill:bar")
+
+        handler(ambient)
+
+        spec = self.bus.of_type(SpecMessage.INTENT_DEREGISTER)
+        self.assertEqual(len(spec), 2)
+        for (data, context), skill_id in zip(spec, ["test.skill", "second.skill"]):
+            self.assertEqual(data["skill_id"], skill_id)
+            self.assertEqual(context["skill_id"], skill_id)
+            self.assertEqual(context["session"]["session_id"], "s1")
+        self.assertEqual(ambient.context["skill_id"], "other.skill")
 
 
 class PadatiousSpecTest(unittest.TestCase):
