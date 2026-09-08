@@ -120,6 +120,10 @@ class OVOSSkill:
         bus (MycroftWebsocketClient): Optional bus connection
     """
 
+    #: How many answered stop-ping rounds to remember, so the bookkeeping
+    #: cannot grow without bound on a long-lived skill.
+    STOP_PING_ROUNDS_REMEMBERED: int = 32
+
     def __init__(self, name: Optional[str] = None,
                  bus: Optional[MessageBusClient] = None,
                  resources_dir: Optional[str] = None,
@@ -223,6 +227,8 @@ class OVOSSkill:
         self.__responses = {}
         self.__validated_responses = {}
         self._threads = []  # for killable events decorator
+        self._stop_ping_lock = RLock()
+        self._stop_ping_rounds: List[Tuple[str, str]] = []
 
         # yay, following python best practices again!
         if self.skill_id and bus:
@@ -1170,6 +1176,12 @@ class OVOSSkill:
         self.add_event(f"{self.skill_id}.stop", self._handle_session_stop,
                        handler_info='mycroft.skill.handler', is_intent=True,
                        intent_name='stop', speak_errors=False)
+        # STOP-1 §4.2: the stop cascade polls on the broadcast
+        # `ovos.stop.ping`, and "a handler that does not subscribe to
+        # `ovos.stop.ping` is treated as `can_handle: false` for that round".
+        self.add_event(SpecMessage.STOP_PING.value, self._handle_stop_ack,
+                       speak_errors=False)
+        # Pre-spec cores emit only the per-skill twin; they get the same answer.
         self.add_event(f"{self.skill_id}.stop.ping", self._handle_stop_ack, speak_errors=False)
         self.add_event(f"{self.skill_id}.converse.get_response", self.__handle_get_response, speak_errors=False)
 
@@ -1242,13 +1254,31 @@ class OVOSSkill:
 
     def _handle_stop_ack(self, message: Message):
         """
-        Inform skills service if we want to handle stop. Individual skills
-        must implement the method self.can_stop to enable or
-        disable stop support.
-        @param message: `{self.skill_id}.stop.ping` Message
+        Inform the stop cascade whether this skill has stoppable activity.
+        Individual skills implement `self.can_stop` to enable or disable
+        stop support.
+
+        Answers both the STOP-1 §4.2 broadcast `ovos.stop.ping` and the
+        pre-spec per-skill `{self.skill_id}.stop.ping` a core may still emit
+        alongside it. A core emitting both gets exactly one pong, because
+        PIPELINE-1 §4.5 keys a poll round by the `session_id` of
+        `context.session` and by `context.utterance_id` (§9.1.1) — both
+        propagate to either ping by reply derivation — and "where one
+        candidate answers twice in a round, the first valid pong wins". A
+        pre-spec core that stamps no `utterance_id` names no round, so its
+        pings are answered one for one, exactly as before.
+        @param message: `ovos.stop.ping` or `{self.skill_id}.stop.ping` Message
         """
+        utterance_id = message.context.get("utterance_id")
+        if utterance_id is not None:
+            round_id = (SessionManager.get(message).session_id, utterance_id)
+            with self._stop_ping_lock:
+                if round_id in self._stop_ping_rounds:
+                    return
+                self._stop_ping_rounds.append(round_id)
+                del self._stop_ping_rounds[:-self.STOP_PING_ROUNDS_REMEMBERED]
         self.bus.emit(message.reply(
-            "skill.stop.pong",
+            SpecMessage.STOP_PONG.value,
             data={"skill_id": self.skill_id,
                   "can_handle": self.can_stop(message)},
             context={"skill_id": self.skill_id}))
