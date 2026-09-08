@@ -6,11 +6,13 @@ ovos.intent.deregister.
 """
 import os
 import unittest
+from unittest.mock import patch
 from hashlib import md5
 
 import pytest
 from ovos_bus_client.message import Message
 from ovos_spec_tools import SpecMessage
+from ovos_bus_client.message import Message
 from ovos_utils.fakebus import FakeBus
 
 from ovos_workshop.intents import (IntentServiceInterface, IntentBuilder,
@@ -590,3 +592,68 @@ class ContextOnlyRequireTest(unittest.TestCase):
         self.assertEqual(len(emitted), 1)
         self.assertEqual([d["name"] for d in emitted[0][0]["required"]],
                          ["HelloKW"])
+
+
+class RegistrationProvenanceTest(unittest.TestCase):
+    """OVOS-INTENT-4 §3.2: a registration names the registering skill as its
+    producer, whatever message the skill happened to be handling.
+
+    The interface id and the ambient context id differ on purpose. With the
+    same value in both, a producer that simply forwarded the ambient context
+    would pass.
+    """
+
+    AMBIENT = "other.skill"
+    OWN = "test.skill"
+
+    SPEC_TOPICS = ("ovos.intent.register.keyword",
+                   "ovos.intent.register.template",
+                   "ovos.entity.register")
+
+    def setUp(self):
+        self.bus = CapturingBus()
+        self.iface = IntentServiceInterface(self.bus)
+        self.iface.set_id(self.OWN)
+        # the message the skill is handling, belonging to someone else
+        self.ambient = Message("other.skill.event", {},
+                               {"skill_id": self.AMBIENT,
+                                "session": {"session_id": "s1"}})
+        patcher = patch("ovos_workshop.intents.dig_for_message",
+                        return_value=self.ambient)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _spec_emits(self):
+        return [c for c in self.bus.captured if c[0] in self.SPEC_TOPICS]
+
+    def test_every_spec_registration_names_this_skill_as_producer(self):
+        self.iface.register_adapt_keyword("xKW", "x", lang="en-US")
+        self.iface.register_adapt_intent(
+            "foo", IntentBuilder("foo").require("xKW").build())
+        self.iface.register_entity("ent", ["a", "b"], lang="en-US")
+        self.iface.register_template("tpl", ["say hi"], lang="en-US")
+
+        emits = self._spec_emits()
+        self.assertEqual(sorted({c[0] for c in emits}), sorted(self.SPEC_TOPICS))
+        for msg_type, data, context in emits:
+            with self.subTest(topic=msg_type):
+                self.assertEqual(context.get("skill_id"), self.OWN)
+                self.assertEqual(data.get("skill_id"), self.OWN)
+
+    def test_the_handled_message_is_left_alone(self):
+        """The dug message belongs to its sender, and later code in the same
+        handler still reads it."""
+        self.iface.register_entity("ent", ["a"], lang="en-US")
+        self.assertEqual(self.ambient.context["skill_id"], self.AMBIENT)
+        self.assertEqual(self.ambient.msg_type, "other.skill.event")
+
+    def test_a_registration_outside_a_handler_still_names_the_skill(self):
+        """No ambient message at all: the stamp must not depend on one."""
+        with patch("ovos_workshop.intents.dig_for_message", return_value=None):
+            self.bus.captured.clear()
+            self.iface.register_entity("ent2", ["c"], lang="en-US")
+        emits = self._spec_emits()
+        self.assertTrue(emits)
+        for msg_type, data, context in emits:
+            with self.subTest(topic=msg_type):
+                self.assertEqual(context.get("skill_id"), self.OWN)

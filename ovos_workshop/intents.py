@@ -463,9 +463,15 @@ class IntentServiceInterface:
     def register_keyword(self, vocab_type: str, entity: str,
                          aliases: Optional[List[str]] = None,
                          lang: str = None):
+        # OVOS-INTENT-4 §3.2: this skill is the producer of its own
+        # registration. The dug message may belong to another component,
+        # when a skill registers while handling someone else's message,
+        # and filling the context only when empty ships that component
+        # as the producer. Stamp a copy, never the dug message itself:
+        # later code in the same handler still reads it.
         msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
+        msg = msg.forward(msg.msg_type, msg.data)
+        msg.context["skill_id"] = self.skill_id
         aliases = aliases or []
 
         samples = self._adapt_keyword_samples.setdefault((vocab_type, lang), [])
@@ -572,9 +578,15 @@ class IntentServiceInterface:
     def register_intent(self, name: str, intent_parser: object,
                         requires_context: Optional[List[ContextGate]] = None,
                         excludes_context: Optional[List[ContextGate]] = None):
+        # OVOS-INTENT-4 §3.2: this skill is the producer of its own
+        # registration. The dug message may belong to another component,
+        # when a skill registers while handling someone else's message,
+        # and filling the context only when empty ships that component
+        # as the producer. Stamp a copy, never the dug message itself:
+        # later code in the same handler still reads it.
         msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
+        msg = msg.forward(msg.msg_type, msg.data)
+        msg.context["skill_id"] = self.skill_id
         # INTENT-4 §8.1: replace any prior registration under this name.
         slot = None
         for i, (registered_name, _) in enumerate(self.registered_intents):
@@ -623,9 +635,15 @@ class IntentServiceInterface:
             LOG.warning(f"{self.skill_id}: not registering entity "
                         f"'{entity_name}' ({lang}), it has no valid samples")
             return
+        # OVOS-INTENT-4 §3.2: this skill is the producer of its own
+        # registration. The dug message may belong to another component,
+        # when a skill registers while handling someone else's message,
+        # and filling the context only when empty ships that component
+        # as the producer. Stamp a copy, never the dug message itself:
+        # later code in the same handler still reads it.
         msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
+        msg = msg.forward(msg.msg_type, msg.data)
+        msg.context["skill_id"] = self.skill_id
         # TODO: drop once _PadatiousIntentApi.emit_legacy_register_entity is removed.
         self._padatious.emit_legacy_register_entity(msg, entity_name, samples,
                                                      lang, file_name,
@@ -695,9 +713,15 @@ class IntentServiceInterface:
                 break
         if slot is not None and self.registered_intents[slot][1] == data:
             return
+        # OVOS-INTENT-4 §3.2: this skill is the producer of its own
+        # registration. The dug message may belong to another component,
+        # when a skill registers while handling someone else's message,
+        # and filling the context only when empty ships that component
+        # as the producer. Stamp a copy, never the dug message itself:
+        # later code in the same handler still reads it.
         msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
+        msg = msg.forward(msg.msg_type, msg.data)
+        msg.context["skill_id"] = self.skill_id
         # TODO: drop once _PadatiousIntentApi.emit_legacy_register_template is removed.
         self._padatious.emit_legacy_register_template(msg, intent_name, samples,
                                                        lang, blacklisted_words,
