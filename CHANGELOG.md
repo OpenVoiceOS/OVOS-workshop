@@ -1,8 +1,8 @@
 # Changelog
 
-## [9.7.3a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.3a1) (2026-09-08)
+## [9.7.4a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.4a1) (2026-09-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.2a1...9.7.3a1)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.2a1...9.7.4a1)
 
 **Merged pull requests:**
 
