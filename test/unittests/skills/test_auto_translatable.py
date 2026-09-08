@@ -1,4 +1,8 @@
+import os
+import shutil
+import tempfile
 import unittest
+from os.path import join
 
 from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_workshop.skills.ovos import OVOSSkill
@@ -11,6 +15,22 @@ class TestUniversalSkill(unittest.TestCase):
     def test_00_init(self):
         self.assertIsInstance(self.test_skill, self.UniversalSkill)
         self.assertIsInstance(self.test_skill, OVOSSkill)
+
+    def test_load_lang_honours_root_directory(self):
+        skill = self.UniversalSkill()
+        lang = skill.internal_language
+        skill._load_lang(lang=lang)
+
+        other = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, other)
+        voc_dir = join(other, "locale", lang)
+        os.makedirs(voc_dir)
+        with open(join(voc_dir, "condition.voc"), "w") as f:
+            f.write("sunny\n")
+
+        resources = skill._load_lang(root_directory=other, lang=lang)
+        self.assertEqual(resources.load_vocabulary_file("condition"),
+                         [["sunny"]])
 
     # TODO: Test other class methods
 

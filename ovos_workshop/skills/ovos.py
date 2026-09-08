@@ -187,11 +187,11 @@ class OVOSSkill:
         # loaded lang file resources
         self._lang_resources = {}
 
-        # OVOS-INTENT-3 §auto-entity: tracks which languages already had
-        # their locale .entity files auto-discovered and registered, so a
-        # repeated load_lang() for the same lang (reload/retrain) never
-        # double-emits the same entity registrations.
-        self._auto_registered_entity_langs = set()
+        # OVOS-INTENT-3 §auto-entity: tracks which (resource directory,
+        # lang) pairs already had their locale .entity files auto-discovered
+        # and registered, so a repeated load_lang() for the same pair
+        # (reload/retrain) never double-emits the same entity registrations.
+        self._auto_registered_entity_dirs = set()
         # OVOS-INTENT-3 §auto-entity: tracks (lang -> {entity_file, ...})
         # already sent to the intent service, keyed by the bare entity file
         # name (no extension). Shared by auto-discovery AND the explicit
@@ -611,9 +611,10 @@ class OVOSSkill:
         """
         lang = standardize_lang(lang or self.lang)
         root_directory = root_directory or self.res_dir
-        if lang not in self._lang_resources:
-            self._lang_resources[lang] = SkillResources(root_directory, lang,
-                                                        skill_id=self.skill_id)
+        key = (root_directory, lang)
+        if key not in self._lang_resources:
+            self._lang_resources[key] = SkillResources(root_directory, lang,
+                                                       skill_id=self.skill_id)
             # OVOS-INTENT-3 §auto-entity: register every shipped .entity file
             # for this lang the first time its resources are loaded, so it
             # reaches the matcher in the same batch as (and strictly before)
@@ -621,8 +622,8 @@ class OVOSSkill:
             # calls load_lang() before building/emitting its own template,
             # so hooking the cache-miss path here guarantees ordering without
             # requiring skill authors to call register_entity_file() at all.
-            self._auto_register_entity_files(lang)
-        return self._lang_resources[lang]
+            self._auto_register_entity_files(lang, self._lang_resources[key])
+        return self._lang_resources[key]
 
     def load_dialog_files(self, root_directory: Optional[str] = None):
         """
@@ -1633,7 +1634,8 @@ class OVOSSkill:
         self.intent_service.register_entity(name, samples, lang,
                                             blacklisted_words=blacklist)
 
-    def _auto_register_entity_files(self, lang: str):
+    def _auto_register_entity_files(self, lang: str,
+                                    resources: Optional[SkillResources] = None):
         """
         Auto-discover and register every ".entity" file shipped in this
         skill's locale resources for `lang`.
@@ -1656,23 +1658,24 @@ class OVOSSkill:
 
         Idempotency: guarded twice - `load_lang` only calls this on a
         cache-miss (one call per lang per skill instance in normal use),
-        and `_auto_registered_entity_langs` guards direct/repeated calls
-        (e.g. tests, or a future reload path) from double-emitting.
+        and `_auto_registered_entity_dirs` guards direct/repeated calls
+        (e.g. tests, or a future reload path) from double-emitting. The
+        guard is per (resource directory, lang): a skill pointed at a new
+        `res_dir` registers that directory's entity files.
 
         Can be disabled entirely via the "skills" section of mycroft.conf:
             {"skills": {"auto_register_entity_files": false}}
         """
-        if lang in self._auto_registered_entity_langs:
+        resources = resources or self.load_lang(lang=lang)
+        key = (resources.skill_directory, lang)
+        if key in self._auto_registered_entity_dirs:
             return
-        self._auto_registered_entity_langs.add(lang)
+        self._auto_registered_entity_dirs.add(key)
 
         if not self.config_core.get("skills", {}).get(
                 "auto_register_entity_files", True):
             return
 
-        resources = self._lang_resources.get(lang)
-        if resources is None:
-            return
         entity_dir = resources.types.entity.base_directory
         if not entity_dir or not Path(entity_dir).is_dir():
             return
@@ -2526,7 +2529,7 @@ class OVOSSkill:
         @return: list of string vocab options
         """
         lang = standardize_lang(lang or self.lang)
-        cache_key = lang + voc_filename
+        cache_key = (self.res_dir, lang, voc_filename)
 
         if cache_key not in self._voc_cache:
             vocab = self.resources.load_vocabulary_file(voc_filename)

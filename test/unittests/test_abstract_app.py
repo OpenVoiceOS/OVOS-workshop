@@ -61,7 +61,13 @@ class TestApp(unittest.TestCase):
         remove(test_app.settings_path)
         remove(test_skill.settings_path)
 
-    @patch("ovos_workshop.app.OVOSSkill.default_shutdown")
+    # autospec records the instance, so this asserts WHICH skill was shut
+    # down. The patch replaces the method on OVOSSkill itself, and skills
+    # built by earlier tests stay alive on the shared FakeBus until the
+    # generational collector takes them, which can happen at any point
+    # inside this test; counting calls therefore counts other skills'
+    # finalisers too.
+    @patch("ovos_workshop.app.OVOSSkill.default_shutdown", autospec=True)
     def test_default_shutdown(self, skill_shutdown):
         real_clear_intents = self.app.clear_intents
         real_bus_close = self.app.bus.close
@@ -70,7 +76,13 @@ class TestApp(unittest.TestCase):
         self.app.default_shutdown()
         self.app.clear_intents.assert_called_once()
         self.app.bus.close.assert_not_called()  # No dedicated bus here
-        skill_shutdown.assert_called_once()
+        # count only OUR app's shutdowns: identity keeps other skills'
+        # finalisers out, the count keeps a double shutdown in
+        ours = [c for c in skill_shutdown.call_args_list
+                if c.args[0] is self.app]
+        self.assertEqual(len(ours), 1,
+                         f"expected exactly one OVOSSkill.default_shutdown "
+                         f"for this app, got {len(ours)}")
 
         self.app.bus.close = real_bus_close
         self.app.clear_intents = real_clear_intents

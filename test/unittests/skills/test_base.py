@@ -14,6 +14,7 @@
 import json
 import os
 import shutil
+import tempfile
 import unittest
 
 from logging import Logger
@@ -280,7 +281,6 @@ class TestOVOSSkill(unittest.TestCase):
 
     def test_voc_match(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         lang = "en-US"
 
@@ -289,9 +289,48 @@ class TestOVOSSkill(unittest.TestCase):
         self.assertFalse(skill.voc_match("it is nice outside", "condition",
                                           lang=lang))
 
+    def test_voc_match_after_res_dir_reassigned(self):
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
+        skill.res_dir = join(dirname(__file__), "test_locale")
+        lang = "en-US"
+        self.assertTrue(skill.voc_match("it is hot outside", "condition",
+                                        lang=lang))
+
+        other_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, other_dir)
+        voc_dir = join(other_dir, "locale", lang)
+        os.makedirs(voc_dir)
+        with open(join(voc_dir, "condition.voc"), "w") as f:
+            f.write("sunny\n")
+        skill.res_dir = other_dir
+
+        self.assertTrue(skill.voc_match("it is sunny outside", "condition",
+                                        lang=lang))
+        self.assertFalse(skill.voc_match("it is hot outside", "condition",
+                                         lang=lang))
+
+    def test_load_lang_honours_root_directory(self):
+        skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
+        skill.res_dir = join(dirname(__file__), "test_locale")
+        lang = "en-US"
+        self.assertEqual(
+            skill.load_lang(lang=lang).load_vocabulary_file("condition"),
+            [["hot"], ["cold"], ["freezing"]])
+
+        other_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, other_dir)
+        voc_dir = join(other_dir, "locale", lang)
+        os.makedirs(voc_dir)
+        with open(join(voc_dir, "condition.voc"), "w") as f:
+            f.write("sunny\n")
+
+        self.assertEqual(
+            skill.load_lang(root_directory=other_dir,
+                            lang=lang).load_vocabulary_file("condition"),
+            [["sunny"]])
+
     def test_voc_match_span(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         lang = "en-US"
 
@@ -382,7 +421,6 @@ class TestOVOSSkill(unittest.TestCase):
         skill_cls = type("_IntentFileContextGateSkill", (OVOSSkill,),
                          {"handle_time_intent": handler})
         skill = skill_cls(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
@@ -516,7 +554,6 @@ class TestOVOSSkill(unittest.TestCase):
         from ovos_spec_tools import IntentBuilder
 
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.intent_service.intent_names = []
         skill.intent_service.intent_is_detached.return_value = False
@@ -532,7 +569,6 @@ class TestOVOSSkill(unittest.TestCase):
 
     def test_register_intent_file(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         en_intent_file = join(skill.res_dir, "locale", "en-US", "time.intent")
@@ -566,7 +602,6 @@ class TestOVOSSkill(unittest.TestCase):
 
     def test_register_intent_file_with_context_gating(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         en_samples = ["what time is it"]
@@ -589,7 +624,6 @@ class TestOVOSSkill(unittest.TestCase):
         # workshop must neither register nor listen on the suffixed twin —
         # that compat belongs to ovos-spec-tools at the bus layer.
         skill = OVOSSkill(bus=FakeBus(), skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
@@ -608,7 +642,6 @@ class TestOVOSSkill(unittest.TestCase):
         # the name that goes to the intent service (and so onto the wire in
         # the INTENT-4 registration payload) carries no authoring extension
         skill = OVOSSkill(bus=FakeBus(), skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
@@ -628,7 +661,6 @@ class TestOVOSSkill(unittest.TestCase):
         bus.on("message", lambda m: emitted.append(
             json.loads(m)["type"] if isinstance(m, str) else m.msg_type))
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
@@ -646,7 +678,6 @@ class TestOVOSSkill(unittest.TestCase):
         # the registered handler, matching how a pipeline dispatches
         bus = FakeBus()
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
@@ -710,7 +741,6 @@ class TestOVOSSkill(unittest.TestCase):
     def test_disable_intent_removes_the_canonical_event(self):
         # the author still names the intent by its authoring file
         skill = OVOSSkill(bus=FakeBus(), skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.intent_service.__contains__ = Mock(return_value=True)
         skill.res_dir = join(dirname(__file__), "test_locale")
@@ -729,7 +759,6 @@ class TestOVOSSkill(unittest.TestCase):
 
     def test_register_entity_file(self):
         skill = OVOSSkill(bus=self.bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.intent_service = Mock()
         skill.res_dir = join(dirname(__file__), "test_locale")
         en_file = join(skill.res_dir, "locale", "en-US", "dow.entity")
@@ -775,7 +804,6 @@ class TestOVOSSkill(unittest.TestCase):
 
         bus = FakeBus()
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
@@ -823,7 +851,6 @@ class TestOVOSSkill(unittest.TestCase):
 
         bus = FakeBus()
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
@@ -906,7 +933,6 @@ class TestOVOSSkill(unittest.TestCase):
 
         bus = FakeBus()
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []
@@ -928,7 +954,6 @@ class TestOVOSSkill(unittest.TestCase):
 
         bus = FakeBus()
         skill = OVOSSkill(bus=bus, skill_id=self.skill_id)
-        skill._lang_resources = dict()
         skill.res_dir = join(dirname(__file__), "test_locale")
         skill.config_core["lang"] = "en-US"
         skill.config_core["secondary_langs"] = []

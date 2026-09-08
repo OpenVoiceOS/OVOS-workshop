@@ -29,8 +29,11 @@ should be automatically picked up... i see no reason to not register every
   digit wildcard) rather than silently doing nothing
 """
 import json
+import os
+import shutil
+import tempfile
 import unittest
-from os.path import dirname
+from os.path import dirname, join
 
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_utils.fakebus import FakeBus
@@ -98,6 +101,54 @@ class TestAutoEntityDiscovery(unittest.TestCase):
                       f"nested entity file was not registered, saw: {names}")
         data = next(d for d in self._entity_regs() if d["entity_name"] == "pet")
         self.assertEqual(set(data["samples"]), {"cat", "dog"})
+
+
+class TestAutoEntityResourceDirectory(unittest.TestCase):
+    """Discovery follows the resource directory the resources were built
+    from, not just the language: a skill pointed at a second directory
+    registers that directory's entity files."""
+
+    def setUp(self):
+        self.bus = _make_bus()
+        self.skill = _make_skill(self.bus)
+
+    def _entity_regs(self):
+        return [m["data"] for m in self.bus.emitted_msgs
+                if m["type"] == "ovos.entity.register"]
+
+    def _other_res_dir(self, samples=("go", "shogi")):
+        other = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, other)
+        locale = join(other, "locale", "en-US")
+        os.makedirs(locale)
+        with open(join(locale, "boardgame.entity"), "w") as f:
+            f.write("\n".join(samples) + "\n")
+        return other
+
+    def test_entity_files_registered_after_res_dir_reassigned(self):
+        self.skill.load_lang(RES_DIR, "en-US")
+        self.skill.res_dir = self._other_res_dir()
+        self.skill.load_lang(lang="en-US")
+
+        data = next((d for d in self._entity_regs()
+                     if d["entity_name"] == "boardgame"), None)
+        self.assertIsNotNone(
+            data,
+            f"entity files of the new res_dir were not registered, saw: "
+            f"{[d['entity_name'] for d in self._entity_regs()]}")
+        self.assertEqual(set(data["samples"]), {"go", "shogi"})
+
+    def test_discovery_scans_the_resources_it_is_given(self):
+        """The `resources` argument selects what is scanned; it is not a
+        hint that a lookup by language may override."""
+        from ovos_workshop.resource_files import SkillResources
+        other = self._other_res_dir()
+        resources = SkillResources(other, "en-US",
+                                   skill_id=self.skill.skill_id)
+        self.skill._auto_register_entity_files("en-US", resources)
+
+        names = {d["entity_name"] for d in self._entity_regs()}
+        self.assertIn("boardgame", names)
 
 
 class TestAutoEntityOrdering(unittest.TestCase):

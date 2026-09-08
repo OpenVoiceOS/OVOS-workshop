@@ -68,12 +68,13 @@ class UniversalSkill(OVOSSkill):
         """
         lang = lang or self.internal_language  # self.lang in base class
         root_directory = root_directory or self.res_dir
-        if lang not in self._lang_resources:
-            self._lang_resources[lang] = SkillResources(root_directory, lang,
-                                                        skill_id=self.skill_id)
+        key = (root_directory, lang)
+        if key not in self._lang_resources:
+            self._lang_resources[key] = SkillResources(root_directory, lang,
+                                                       skill_id=self.skill_id)
             # see OVOSSkill.load_lang - same auto entity-file discovery
-            self._auto_register_entity_files(lang)
-        return self._lang_resources[lang]
+            self._auto_register_entity_files(lang, self._lang_resources[key])
+        return self._lang_resources[key]
 
     def detect_language(self, utterance: str):
         """
