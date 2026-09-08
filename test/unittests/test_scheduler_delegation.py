@@ -193,7 +193,7 @@ class TestSpecificationDelegation(unittest.TestCase):
         record = self.record("ring")
         self.assertEqual(record["in"], {"seconds": 60})
         self.assertEqual(record["event"], "test.scheduler.ring")
-        self.assertEqual(record["owner"], self.skill_id)
+        self.assertEqual(record["skill_id"], self.skill_id)
         self.assertEqual(record["data"], {"k": 1})
 
     def test_an_aware_datetime_becomes_the_instant_it_names(self):
