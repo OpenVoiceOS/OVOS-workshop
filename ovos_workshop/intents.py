@@ -733,8 +733,6 @@ class IntentServiceInterface:
 
     def remove_intent(self, intent_name: str):
         msg = dig_for_message() or Message("")
-        if "skill_id" not in msg.context:
-            msg.context["skill_id"] = self.skill_id
         # registered_intents/detached_intents are keyed by the bare canonical
         # name (register_intent/register_template strip any "<skill_id>:"
         # prefix before storing, see register_intent/register_template
@@ -750,9 +748,17 @@ class IntentServiceInterface:
             self.detached_intents.append((key, self.get_intent(key)))
             self.registered_intents = [pair for pair in self.registered_intents
                                        if pair[0] != key]
-        self.bus.emit(msg.forward(SpecMessage.INTENT_DEREGISTER,
-                                  {"skill_id": self.skill_id,
-                                   "intent_name": intent_name}))
+        # OVOS-INTENT-4 §3.2: on ovos.intent.deregister the payload skill_id
+        # must equal context.skill_id, and a skill only ever detaches its own
+        # intents. The dug message may belong to another component (a skill
+        # disabling an intent while handling someone else's message), so
+        # stamp the calling skill on the forward - never mutate the dug
+        # message.
+        out = msg.forward(SpecMessage.INTENT_DEREGISTER,
+                          {"skill_id": self.skill_id,
+                           "intent_name": intent_name})
+        out.context["skill_id"] = self.skill_id
+        self.bus.emit(out)
 
     def intent_is_detached(self, intent_name: str) -> bool:
         # normalize the same way remove_intent() does when it stores the
