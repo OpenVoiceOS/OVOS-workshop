@@ -1,5 +1,23 @@
 # Changelog
 
+## [9.7.3a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.3a1) (2026-09-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.2a1...9.7.3a1)
+
+**Merged pull requests:**
+
+- fix: stamp the registering skill on every INTENT-4 registration [\#617](https://github.com/OpenVoiceOS/ovos-workshop/pull/617) ([JarbasAl](https://github.com/JarbasAl))
+- fix: answer the STOP-1 broadcast ovos.stop.ping [\#612](https://github.com/OpenVoiceOS/ovos-workshop/pull/612) ([JarbasAl](https://github.com/JarbasAl))
+
+## [9.7.2a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.2a1) (2026-09-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.1a1...9.7.2a1)
+
+**Merged pull requests:**
+
+- fix: key resource caches by resource directory [\#613](https://github.com/OpenVoiceOS/ovos-workshop/pull/613) ([JarbasAl](https://github.com/JarbasAl))
+- fix: stamp the calling skill on ovos.intent.deregister context [\#609](https://github.com/OpenVoiceOS/ovos-workshop/pull/609) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [9.7.1a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.1a1) (2026-09-08)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.0a2...9.7.1a1)
@@ -100,17 +118,9 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.6.2a2...9.6.2a3)
 
-**Merged pull requests:**
-
-- docs: cross-link the technical manual [\#505](https://github.com/OpenVoiceOS/ovos-workshop/pull/505) ([JarbasAl](https://github.com/JarbasAl))
-
 ## [9.6.2a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.6.2a2) (2026-09-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.6.2a1...9.6.2a2)
-
-**Merged pull requests:**
-
-- ci: channel-compat — run the unit tests on the OVOS distro release channels [\#504](https://github.com/OpenVoiceOS/ovos-workshop/pull/504) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [9.6.2a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.6.2a1) (2026-09-01)
 
@@ -277,10 +287,6 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.11a1...9.3.11a2)
 
-**Merged pull requests:**
-
-- refactor: register canonical intent topics; compat moves to ovos-spec-tools [\#500](https://github.com/OpenVoiceOS/ovos-workshop/pull/500) ([JarbasAl](https://github.com/JarbasAl))
-
 ## [9.3.11a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.11a1) (2026-08-13)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.10a1...9.3.11a1)
@@ -364,10 +370,6 @@
 ## [9.3.2a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.2a2) (2026-08-01)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.2a1...9.3.2a2)
-
-**Merged pull requests:**
-
-- docs: rewrite README in Simplified Technical English [\#502](https://github.com/OpenVoiceOS/ovos-workshop/pull/502) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [9.3.2a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.2a1) (2026-07-26)
 
@@ -495,15 +497,15 @@
 
 ## [8.1.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.1.0a1) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.1.0a1)
-
-## [8.0.4a3](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a3) (2026-04-08)
-
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.0.4a3)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.1.0a1)
 
 ## [8.0.4a4](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a4) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a4)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.0.4a4)
+
+## [8.0.4a3](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a3) (2026-04-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a3)
 
 ## [8.0.4a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a2) (2026-04-08)
 
