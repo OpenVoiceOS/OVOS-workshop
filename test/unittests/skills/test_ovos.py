@@ -1,4 +1,8 @@
+import shutil
+import tempfile
 import unittest
+from os import makedirs
+from os.path import join
 
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.fakebus import FakeBus
@@ -71,13 +75,34 @@ class TestOVOSSkill(unittest.TestCase):
         # TODO
         pass
 
+    def _colour_voc_skill(self):
+        res_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, res_dir)
+        for lang, words in (("en-US", "red\nblue\n"),
+                            ("es-ES", "rojo\nazul\n")):
+            makedirs(join(res_dir, "locale", lang))
+            with open(join(res_dir, "locale", lang, "colour.voc"), "w") as f:
+                f.write(words)
+        skill = OVOSSkill(bus=FakeBus(), skill_id="test_voc_lang_skill",
+                          resources_dir=res_dir)
+        skill.config_core["lang"] = "en-US"
+        return skill
+
     def test_voc_match(self):
-        # TODO
-        pass
+        skill = self._colour_voc_skill()
+        self.assertEqual(skill.lang, "en-US")
+        self.assertTrue(skill.voc_match("quiero rojo", "colour", lang="es-ES"))
+        self.assertFalse(skill.voc_match("I want red", "colour", lang="es-ES"))
+        self.assertTrue(skill.voc_match("I want red", "colour"))
+        self.assertFalse(skill.voc_match("quiero rojo", "colour"))
 
     def test_voc_list(self):
-        # TODO
-        pass
+        skill = self._colour_voc_skill()
+        self.assertEqual(skill.lang, "en-US")
+        self.assertEqual(skill.voc_list("colour", "es-ES"), ["rojo", "azul"])
+        self.assertEqual(skill.voc_list("colour"), ["red", "blue"])
+        self.assertEqual(skill.voc_list("colour", "es-ES"), ["rojo", "azul"])
+        self.assertEqual(skill.voc_list("colour", "en-US"), ["red", "blue"])
 
     def test_remove_voc(self):
         # TODO
