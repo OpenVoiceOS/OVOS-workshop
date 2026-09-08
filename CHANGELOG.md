@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.7.1a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.1a1) (2026-09-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.0a2...9.7.1a1)
+
+**Merged pull requests:**
+
+- fix: assert the scheduler record's skill\_id, not the retired owner [\#614](https://github.com/OpenVoiceOS/ovos-workshop/pull/614) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [9.7.0a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.0a2) (2026-09-06)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.0a1...9.7.0a2)
@@ -365,17 +373,9 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.1a2...9.3.2a1)
 
-**Merged pull requests:**
-
-- fix: bind intent dispatch handlers to canonical INTENT-4 intent names [\#497](https://github.com/OpenVoiceOS/ovos-workshop/pull/497) ([JarbasAl](https://github.com/JarbasAl))
-
 ## [9.3.1a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.1a2) (2026-07-24)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.1a1...9.3.1a2)
-
-**Merged pull requests:**
-
-- test: restore SessionManager.bus after end2end MiniCroft teardown [\#495](https://github.com/OpenVoiceOS/ovos-workshop/pull/495) ([JarbasAl](https://github.com/JarbasAl))
 
 ## [9.3.1a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.1a1) (2026-07-24)
 
