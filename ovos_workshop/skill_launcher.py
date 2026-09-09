@@ -23,6 +23,7 @@ from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill
 from ovos_workshop.skills.fallback import FallbackSkill
 from ovos_workshop.skills.ovos import OVOSSkill
 from ovos_workshop.skills.game_skill import OVOSGameSkill, ConversationalGameSkill
+from ovos_workshop.skills.capabilities import get_skill_capabilities
 
 SKILL_BASE_CLASSES = [
     OVOSSkill, OVOSCommonPlaybackSkill, ActiveSkill,
@@ -438,6 +439,14 @@ class SkillLoader:
                                "id": self.skill_id,
                                "name": self.instance.name})
             self.bus.emit(message)
+            # OVOS-INTENT-4 SS8.6: announce the skill and its capabilities
+            # through its own bus, so the manifest sees context.skill_id
+            # and the session that loaded it.
+            self.instance.bus.emit(Message(
+                'ovos.skill.loaded',
+                {"skill_id": self.skill_id,
+                 "capabilities": get_skill_capabilities(self.instance)},
+                {"skill_id": self.skill_id}))
             LOG.info(f'Skill {self.skill_id} loaded successfully')
         else:
             message = Message('mycroft.skills.loading_failure',
