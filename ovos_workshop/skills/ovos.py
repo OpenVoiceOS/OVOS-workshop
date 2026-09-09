@@ -86,6 +86,7 @@ from ovos_workshop.filesystem import FileSystemAccess
 from ovos_workshop.intents import IntentBuilder, Intent, IntentServiceInterface
 from ovos_workshop.resource_files import ResourceFile, find_resource, SkillResources
 from ovos_workshop.settings import PrivateSettings
+from ovos_workshop.skills.capabilities import get_skill_capabilities
 from ovos_workshop.skills.util import join_word_list, simple_trace
 
 
@@ -745,6 +746,14 @@ class OVOSSkill:
 
     def on_ready_status(self) -> None:
         LOG.info(f'{self.skill_id} is ready.')
+        # OVOS-INTENT-4 SS8.6/SS10: re-announce alongside the readiness
+        # registrations, so a manifest rebuilt after a core restart
+        # (the skill process survives it) recovers this skill's
+        # capabilities without a full reload.
+        self.bus.emit(Message('ovos.skill.loaded',
+                              {"skill_id": self.skill_id,
+                               "capabilities": get_skill_capabilities(self)},
+                              {"skill_id": self.skill_id}))
 
     def on_error_status(self, e: str = 'Unknown') -> None:
         LOG.exception(f'{self.skill_id} initialization failed: {e}')
