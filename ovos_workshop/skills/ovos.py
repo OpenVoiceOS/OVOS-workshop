@@ -2571,7 +2571,7 @@ class OVOSSkill:
         cache_key = (self.res_dir, lang, voc_filename)
 
         if cache_key not in self._voc_cache:
-            vocab = self.resources.load_vocabulary_file(voc_filename)
+            vocab = self.load_lang(lang=lang).load_vocabulary_file(voc_filename)
             if vocab:
                 self._voc_cache[cache_key] = list(chain(*vocab))
 

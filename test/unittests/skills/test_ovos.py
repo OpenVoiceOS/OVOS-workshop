@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from ovos_utils.process_utils import RuntimeRequirements
@@ -72,12 +73,38 @@ class TestOVOSSkill(unittest.TestCase):
         pass
 
     def test_voc_match(self):
-        # TODO
-        pass
+        import shutil
+        import tempfile
+        skill_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, skill_dir, ignore_errors=True)
+        os.makedirs(os.path.join(skill_dir, "locale", "en-us"))
+        os.makedirs(os.path.join(skill_dir, "locale", "da-dk"))
+        with open(os.path.join(skill_dir, "locale", "en-us", "infinity.voc"), "w") as f:
+            f.write("forever\n")
+        with open(os.path.join(skill_dir, "locale", "da-dk", "infinity.voc"), "w") as f:
+            f.write("evighed\n")
+
+        skill = OVOSSkill(bus=self.bus, skill_id="test_voc_lang_skill",
+                          resources_dir=skill_dir)
+        self.assertTrue(skill.voc_match("evighed", "infinity", lang="da-DK"))
+        self.assertFalse(skill.voc_match("forever", "infinity", lang="da-DK"))
 
     def test_voc_list(self):
-        # TODO
-        pass
+        import shutil
+        import tempfile
+        skill_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, skill_dir, ignore_errors=True)
+        os.makedirs(os.path.join(skill_dir, "locale", "en-us"))
+        os.makedirs(os.path.join(skill_dir, "locale", "da-dk"))
+        with open(os.path.join(skill_dir, "locale", "en-us", "infinity.voc"), "w") as f:
+            f.write("forever\n")
+        with open(os.path.join(skill_dir, "locale", "da-dk", "infinity.voc"), "w") as f:
+            f.write("evighed\n")
+
+        skill = OVOSSkill(bus=self.bus, skill_id="test_voc_lang_skill2",
+                          resources_dir=skill_dir)
+        self.assertEqual(skill.voc_list("infinity", "da-DK"), ["evighed"])
+        self.assertEqual(skill.voc_list("infinity", "en-US"), ["forever"])
 
     def test_remove_voc(self):
         # TODO
