@@ -1,20 +1,29 @@
 # Changelog
 
+## [9.8.1a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.8.1a1) (2026-09-10)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.8.0a1...9.8.1a1)
+
+**Merged pull requests:**
+
+- fix: honour the requested lang in OVOSSkill.voc\_list [\#627](https://github.com/OpenVoiceOS/ovos-workshop/pull/627) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+- translate\(da-DK\): add missing locale files [\#616](https://github.com/OpenVoiceOS/ovos-workshop/pull/616) ([andlo](https://github.com/andlo))
+
 ## [9.8.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.8.0a1) (2026-09-09)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.3a1...9.8.0a1)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.4a1...9.8.0a1)
 
 **Merged pull requests:**
 
 - feat: emit ovos.skill.loaded with derived capabilities [\#623](https://github.com/OpenVoiceOS/ovos-workshop/pull/623) ([JarbasAl](https://github.com/JarbasAl))
 
-## [9.7.3a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.3a1) (2026-09-08)
-
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.4a1...9.7.3a1)
-
 ## [9.7.4a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.4a1) (2026-09-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.2a1...9.7.4a1)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.3a1...9.7.4a1)
+
+## [9.7.3a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.7.3a1) (2026-09-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.7.2a1...9.7.3a1)
 
 **Merged pull requests:**
 
@@ -327,10 +336,6 @@
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.7a1...9.3.8a1)
 
-**Merged pull requests:**
-
-- fix: route language matching through ovos-spec-tools [\#512](https://github.com/OpenVoiceOS/ovos-workshop/pull/512) ([JarbasAl](https://github.com/JarbasAl))
-
 ## [9.3.7a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/9.3.7a1) (2026-08-11)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/9.3.6a1...9.3.7a1)
@@ -501,15 +506,15 @@
 
 ## [8.1.0a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.1.0a1) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.1.0a1)
-
-## [8.0.4a3](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a3) (2026-04-08)
-
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.0.4a3)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a4...8.1.0a1)
 
 ## [8.0.4a4](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a4) (2026-04-08)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a4)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a3...8.0.4a4)
+
+## [8.0.4a3](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a3) (2026-04-08)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/8.0.4a2...8.0.4a3)
 
 ## [8.0.4a2](https://github.com/OpenVoiceOS/ovos-workshop/tree/8.0.4a2) (2026-04-08)
 
@@ -1201,15 +1206,15 @@
 
 ## [0.0.16a1](https://github.com/OpenVoiceOS/ovos-workshop/tree/0.0.16a1) (2023-12-29)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15...0.0.16a1)
-
-## [0.0.15](https://github.com/OpenVoiceOS/ovos-workshop/tree/0.0.15) (2023-12-29)
-
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15a6...0.0.15)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15a6...0.0.16a1)
 
 ## [0.0.15a6](https://github.com/OpenVoiceOS/ovos-workshop/tree/0.0.15a6) (2023-12-29)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15a5...0.0.15a6)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15...0.0.15a6)
+
+## [0.0.15](https://github.com/OpenVoiceOS/ovos-workshop/tree/0.0.15) (2023-12-29)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-workshop/compare/0.0.15a5...0.0.15)
 
 ## [0.0.15a5](https://github.com/OpenVoiceOS/ovos-workshop/tree/0.0.15a5) (2023-12-29)
 
